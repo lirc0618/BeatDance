@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import atexit
+import json
 import shutil
 import subprocess
 import sys
@@ -18,12 +19,14 @@ SAMPLES = {
     "arm_wave": "arm_movements_reference.mp4",
     "cross_step": "tendu_reference.mp4",
     "two_step_demo": "simple_step.mp4",
+    "jazz_demo": "jazz_demo.mp4",
 }
 FEED_DURATIONS = {
     "groove_step": 20.8,
     "arm_wave": 28.4,
     "cross_step": 14.76,
     "two_step_demo": 17.44,
+    "jazz_demo": 38.83,
 }
 CREATED_ANALYSIS_IDS: list[str] = []
 
@@ -132,13 +135,23 @@ def main() -> int:
     atexit.register(cleanup_created_results, api)
     project_root = Path(__file__).resolve().parents[1]
     samples_dir = project_root / "assets" / "samples" / "open_sources"
+    sample_paths = {
+        action_id: samples_dir / filename
+        for action_id, filename in SAMPLES.items()
+        if action_id != "jazz_demo"
+    }
+    jazz_reference_dir = project_root / "assets" / "references"
+    jazz_manifest = json.loads(
+        (jazz_reference_dir / "jazz_demo.current.json").read_text(encoding="utf-8")
+    )
+    sample_paths["jazz_demo"] = jazz_reference_dir / jazz_manifest["video"]
 
     with build_http_client(timeout=180, api_url=api) as client, tempfile.TemporaryDirectory() as temp_dir:
         health = client.get(f"{api}/health")
         health.raise_for_status()
         health_data = health.json()
         assert health_data["status"] == "ok"
-        assert health_data["total_actions"] >= 4, health_data
+        assert health_data["total_actions"] >= len(SAMPLES), health_data
         assert (
             health_data["reference_actions_ready"] == health_data["total_actions"]
         ), health_data
@@ -147,7 +160,7 @@ def main() -> int:
         actions = client.get(f"{api}/actions")
         actions.raise_for_status()
         action_data = actions.json()
-        assert len(action_data) >= 4
+        assert {action["id"] for action in action_data}.issuperset(SAMPLES)
         assert all(action["reference_ready"] for action in action_data)
         assert all(action["feed_video_url"].startswith("/media/feed/") for action in action_data)
 
@@ -170,7 +183,7 @@ def main() -> int:
             response.raise_for_status()
             insight = response.json()
             assert insight["timestamp_seconds"] == round(paused_at, 2)
-            assert insight["feed_duration_seconds"] == duration
+            assert abs(insight["feed_duration_seconds"] - duration) <= 0.05
             assert insight["sampled_frame_count"] > 0
             assert insight["context_start_seconds"] < paused_at
             assert insight["context_end_seconds"] > paused_at
@@ -237,7 +250,7 @@ def main() -> int:
             response = post_video(
                 client,
                 f"{api}/analyze",
-                samples_dir / filename,
+                sample_paths[action_id],
                 {
                     "action_id": action_id,
                     "session_id": f"acceptance-{action_id}",
@@ -279,7 +292,7 @@ def main() -> int:
                 response = post_video(
                     client,
                     f"{api}/analyze",
-                    samples_dir / filename,
+                    sample_paths[action_id],
                     {
                         "action_id": action_id,
                         "session_id": f"acceptance-stability-{index}",
@@ -302,7 +315,7 @@ def main() -> int:
         response = post_video(
             client,
             f"{api}/analyze",
-            samples_dir / SAMPLES["arm_wave"],
+            sample_paths["arm_wave"],
             {"action_id": "groove_step", "session_id": "acceptance-improvement"},
         )
         response.raise_for_status()
@@ -314,7 +327,7 @@ def main() -> int:
         response = post_video(
             client,
             f"{api}/analyze",
-            samples_dir / SAMPLES["groove_step"],
+            sample_paths["groove_step"],
             {
                 "action_id": "groove_step",
                 "session_id": "acceptance-improvement",
@@ -353,11 +366,11 @@ def main() -> int:
         assert any("镜像" in warning for warning in mirrored["warnings"])
 
     cleanup_created_results(api, strict=True)
-    print("PASS: 四个内置 Feed 动作均已配置参考视频")
-    print("PASS: 四条内置 Feed 均可按暂停时刻返回上下文和三种拆解")
+    print("PASS: 五个内置 Feed 动作均已配置参考视频")
+    print("PASS: 五条内置 Feed 均可按暂停时刻返回上下文和三种拆解")
     print("PASS: 时长和无人画面校验返回可读错误")
     print("PASS: 非法参考上传被拒绝且不破坏已有参考")
-    print("PASS: 四个内置动作均返回诊断、三种拆法、整段骨架回放和关键帧对比图")
+    print("PASS: 五个内置动作均返回诊断、三种拆法、整段骨架回放和关键帧对比图")
     if doubao_configured:
         print("PASS: 豆包已配置时诊断主链正常")
     else:

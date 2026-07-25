@@ -137,7 +137,40 @@ PROFILES: dict[str, dict[str, Any]] = {
                 "body_part": "双腿",
             },
         ],
-    }
+    },
+    "jazz": {
+        "description": "节奏踩稳，身体线条再跟上，别让手脚各跳各的。",
+        "feed_caption": "爵士不是摆得多，是每个拍点都刚好落在线条上。",
+        "pause_guides": [
+            {
+                "until_ratio": 0.34,
+                "phase": "重心开场",
+                "likely_stuck_at": "脚到拍了，身体还在路上。",
+                "watch_for": "口令：踩稳，再出线条。",
+                "suggested_focus": "timing",
+                "metric": "timing",
+                "body_part": "躯干",
+            },
+            {
+                "until_ratio": 0.67,
+                "phase": "手脚换边",
+                "likely_stuck_at": "手脚各跳各的，画面就散了。",
+                "watch_for": "口令：脚带重心，手收尾。",
+                "suggested_focus": "auto",
+                "metric": "trajectory",
+                "body_part": "双臂",
+            },
+            {
+                "until_ratio": 1.0,
+                "phase": "线条定点",
+                "likely_stuck_at": "动作到了，线条没刹住。",
+                "watch_for": "口令：到点，停半拍。",
+                "suggested_focus": "upper",
+                "metric": "angle",
+                "body_part": "躯干",
+            },
+        ],
+    },
 }
 
 
@@ -146,6 +179,7 @@ FEATURED_PROFILE_BY_ACTION_ID = {
     "arm_wave": "kemusan",
     "cross_step": "shake",
     "two_step_demo": "jumpstyle",
+    "jazz_demo": "jazz",
 }
 
 

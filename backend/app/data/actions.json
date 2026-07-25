@@ -346,6 +346,28 @@
         "weights": {"timing": 1.05, "trajectory": 1.0, "angle": 0.95},
         "aligned_threshold": 0.22
       }
+    },
+    {
+      "id": "jazz_demo",
+      "name": "爵士",
+      "coaching_profile": "jazz",
+      "description": "节奏踩稳，身体线条再跟上，别让手脚各跳各的。",
+      "duration_hint": "上传 3–8 秒模仿",
+      "cover_url": "",
+      "reference_video_url": "/media/references/jazz_demo.mp4",
+      "reference_manifest": "jazz_demo.current.json",
+      "feed_caption": "爵士不是摆得多，是每个拍点都刚好落在线条上。",
+      "creator": "@测试素材",
+      "segment_label": "39 秒素材 · 任意暂停",
+      "entry_copy": "停拍看这一招",
+      "feed_video_url": "/media/feed/爵士.MP4",
+      "pause_guides": [],
+      "tutorials": [],
+      "diagnosis": {
+        "thresholds": {"timing_seconds": 0.55, "trajectory": 0.55, "angle_degrees": 55.0},
+        "weights": {"timing": 1.05, "trajectory": 1.0, "angle": 0.95},
+        "aligned_threshold": 0.22
+      }
     }
   ]
 }

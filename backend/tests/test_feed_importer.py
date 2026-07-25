@@ -41,18 +41,18 @@ def test_imported_feed_is_immediately_available_as_an_additional_action(tmp_path
     result = importer.import_video(
         source,
         FeedImportSpec(
-            action_id="demo_four",
-            name="第五条测试动作",
+            action_id="demo_extra",
+            name="额外测试动作",
             pause_at_seconds=3.0,
             creator="@测试素材",
         ),
     )
 
     assert result.created is True
-    assert result.action["id"] == "demo_four"
-    assert len(registry.list()) == 5
-    assert stale_reader.get("demo_four")["name"] == "第五条测试动作"
-    stored = registry.get("demo_four")
+    assert result.action["id"] == "demo_extra"
+    assert len(registry.list()) == 6
+    assert stale_reader.get("demo_extra")["name"] == "额外测试动作"
+    stored = registry.get("demo_extra")
     feed_name = Path(stored["feed_video_url"]).name
     assert (settings.feed_dir / feed_name).is_file()
     manifest = json.loads(
@@ -60,12 +60,12 @@ def test_imported_feed_is_immediately_available_as_an_additional_action(tmp_path
     )
     assert (settings.references_dir / manifest["video"]).is_file()
     assert (settings.references_dir / manifest["sequence"]).is_file()
-    assert Analyzer(settings).reference_ready("demo_four") is True
+    assert Analyzer(settings).reference_ready("demo_extra") is True
     insight = PauseCoach(
         registry,
         settings.feed_dir,
         settings.pause_contexts_dir,
-    ).explain("demo_four", timestamp_seconds=3.0)
+    ).explain("demo_extra", timestamp_seconds=3.0)
     assert insight.sampled_frame_count > 0
     assert len(insight.search_results) == 3
 
@@ -150,7 +150,7 @@ def test_importing_the_same_id_replaces_the_catalog_entry(tmp_path):
 
     assert replacement.created is False
     assert third.created is False
-    assert len(registry.list()) == 5
+    assert len(registry.list()) == 6
     assert registry.get("my_move")["name"] == "第三版动作"
     assert registry.get("my_move")["feed_video_url"] != first.action["feed_video_url"]
     assert not (settings.feed_dir / Path(first.action["feed_video_url"]).name).exists()
@@ -396,20 +396,80 @@ def test_startup_removes_only_orphaned_generated_files(tmp_path):
     assert active_manifest.exists()
 
 
-def test_clean_startup_seeds_the_four_featured_dances_and_feed_files(tmp_path):
+def test_clean_startup_seeds_the_five_featured_dances_and_feed_files(tmp_path):
     samples = Path(__file__).parents[2] / "assets" / "samples" / "open_sources"
     settings = Settings(
         data_dir=tmp_path / "data",
         feed_dir=tmp_path / "feeds",
         seed_feed_dir=samples,
+        seed_reference_dir=Path(__file__).parents[2] / "assets" / "references",
     )
     settings.ensure_directories()
 
     settings.bootstrap_runtime_catalog()
 
     actions = ActionRegistry(settings.action_registry_path).list()
-    assert [action["name"] for action in actions] == ["爱你", "科目三", "摇一摇", "Jumpstyle"]
+    assert [action["name"] for action in actions] == [
+        "爱你",
+        "科目三",
+        "摇一摇",
+        "Jumpstyle",
+        "爵士",
+    ]
     assert all(
         (settings.feed_dir / Path(action["feed_video_url"]).name).is_file()
         for action in actions
     )
+    assert Analyzer(settings).reference_ready("jazz_demo") is True
+
+
+def test_upgrade_replaces_the_legacy_fifth_feed_with_jazz_without_overwriting_others(
+    tmp_path,
+):
+    samples = Path(__file__).parents[2] / "assets" / "samples" / "open_sources"
+    references = Path(__file__).parents[2] / "assets" / "references"
+    settings = Settings(
+        data_dir=tmp_path / "data",
+        feed_dir=tmp_path / "feeds",
+        seed_feed_dir=samples,
+        seed_reference_dir=references,
+    )
+    settings.ensure_directories()
+    built_in = json.loads(settings.built_in_action_registry_path.read_text(encoding="utf-8"))
+    legacy = {
+        **built_in,
+        "actions": [
+            {**action, "description": "保留旧数据"}
+            for action in built_in["actions"]
+            if action["id"] != "jazz_demo"
+        ] + [
+            {
+                **built_in["actions"][-1],
+                "id": "library_breakdance_2_step",
+                "name": "Breaking 两步",
+            }
+        ],
+    }
+    runtime_registry = settings.data_dir / "actions.json"
+    runtime_registry.write_text(
+        json.dumps(legacy, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+    settings.bootstrap_runtime_catalog()
+
+    actions = ActionRegistry(settings.action_registry_path).list()
+    assert [action["id"] for action in actions] == [
+        "groove_step",
+        "arm_wave",
+        "cross_step",
+        "two_step_demo",
+        "jazz_demo",
+    ]
+    raw = json.loads(runtime_registry.read_text(encoding="utf-8"))
+    assert raw["actions"][0]["description"] == "保留旧数据"
+    assert all(
+        action["id"] != "library_breakdance_2_step"
+        for action in raw["actions"]
+    )
+    assert Analyzer(settings).reference_ready("jazz_demo") is True

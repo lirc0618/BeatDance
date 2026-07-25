@@ -15,6 +15,7 @@
 - `ballet_plie.mp4`：单人膝髋下沉与回正；
 - `jazz_pas_de_bourree.mp4`：单人爵士交叉步；
 - `tap_dance_technique.mp4`：单人踢踏舞脚步教程；
+- `爵士.MP4`：项目方提供并确认可用于本项目保存与演示的爵士 Feed；
 - `arm_movements_reference.mp4`、`tendu_reference.mp4`：从对应 Feed 截取的
   5 秒同源诊断参考。
 

@@ -5,9 +5,9 @@
 ```text
 assets/
   references/
-    groove_step.mp4
-    arm_wave.mp4
-    cross_step.mp4
+    jazz_demo.current.json
+    jazz_demo-<generation>.mp4
+    jazz_demo-<generation>.npz
   errors/
     groove_step_timing_01.mp4
     groove_step_timing_02.mp4
@@ -16,6 +16,10 @@ assets/
   tutorials/
     ...
 ```
+
+`assets/references/` 保存随项目发布的爵士参考；另外四个内置动作通过
+`make demo-seed` 生成运行时参考，写入 `data/references/`。导入的新动作也使用
+同一运行时目录。
 
 统一要求：
 

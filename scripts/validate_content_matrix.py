@@ -148,7 +148,7 @@ def validate(
 def main() -> int:
     parser = argparse.ArgumentParser(description="校验 BeatDance 教学内容矩阵与许可元数据")
     parser.add_argument("--catalog", type=Path, default=DEFAULT_CATALOG)
-    parser.add_argument("--expected-actions", type=int, default=4)
+    parser.add_argument("--expected-actions", type=int, default=5)
     parser.add_argument("--min-per-action", type=int, default=5)
     parser.add_argument(
         "--strict-sources",

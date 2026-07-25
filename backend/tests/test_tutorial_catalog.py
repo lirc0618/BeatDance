@@ -10,11 +10,17 @@ from app.services.coaching_profiles import with_coaching_profile
 from app.services.tutorial_catalog import load_tutorial_catalog
 
 
-def test_catalog_has_four_actions_and_twenty_items() -> None:
+def test_catalog_has_five_actions_and_twenty_five_items() -> None:
     grouped = load_tutorial_catalog()
 
-    assert set(grouped) == {"groove_step", "arm_wave", "cross_step", "two_step_demo"}
-    assert sum(len(items) for items in grouped.values()) == 20
+    assert set(grouped) == {
+        "groove_step",
+        "arm_wave",
+        "cross_step",
+        "two_step_demo",
+        "jazz_demo",
+    }
+    assert sum(len(items) for items in grouped.values()) == 25
     assert all(len(items) == 5 for items in grouped.values())
     assert all(len({item["view_type"] for item in items}) >= 3 for items in grouped.values())
 

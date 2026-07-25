@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     h5_dir: Path = Path("/app/h5")
     feed_dir: Path = Path("/data/feeds")
     seed_feed_dir: Path = Path("/app/assets/samples/open_sources")
+    seed_reference_dir: Path = Path("/app/assets/references")
     tutorial_assets_dir: Path = Path("assets/tutorials")
     max_video_seconds: float = 8.0
     min_video_seconds: float = 3.0
@@ -117,9 +118,46 @@ class Settings(BaseSettings):
 
     def _bootstrap_runtime_catalog(self) -> None:
         runtime_registry = self.data_dir / "actions.json"
+        built_in = json.loads(
+            self.built_in_action_registry_path.read_text(encoding="utf-8")
+        )
         if not runtime_registry.exists():
             self._atomic_copy(self.built_in_action_registry_path, runtime_registry)
         payload = json.loads(runtime_registry.read_text(encoding="utf-8"))
+        built_in_by_id = {
+            str(action["id"]): action for action in built_in["actions"]
+        }
+        active_ids = {str(action["id"]) for action in payload["actions"]}
+        catalog_changed = False
+        if (
+            "jazz_demo" not in active_ids
+            and "library_breakdance_2_step" in active_ids
+        ):
+            payload = {
+                **payload,
+                "actions": [
+                    built_in_by_id["jazz_demo"]
+                    if action["id"] == "library_breakdance_2_step"
+                    else action
+                    for action in payload["actions"]
+                ],
+            }
+            active_ids.remove("library_breakdance_2_step")
+            active_ids.add("jazz_demo")
+            catalog_changed = True
+        missing = [
+            action
+            for action in built_in["actions"]
+            if str(action["id"]) not in active_ids
+        ]
+        if missing:
+            payload = {
+                **payload,
+                "actions": [*payload["actions"], *missing],
+            }
+            catalog_changed = True
+        if catalog_changed:
+            self._atomic_write_json(runtime_registry, payload)
         for action in payload["actions"]:
             filename = Path(str(action.get("feed_video_url", ""))).name
             if not filename:
@@ -128,10 +166,29 @@ class Settings(BaseSettings):
             target = self.feed_dir / filename
             if not target.exists() and source.is_file():
                 self._atomic_copy(source, target)
+            self._seed_reference(action)
         attribution = self.seed_feed_dir / "ATTRIBUTION.md"
         if attribution.is_file() and not (self.feed_dir / attribution.name).exists():
             self._atomic_copy(attribution, self.feed_dir / attribution.name)
         self._reconcile_generated_files(payload)
+
+    def _seed_reference(self, action: dict) -> None:
+        manifest_name = Path(
+            str(action.get("reference_manifest", f"{action['id']}.current.json"))
+        ).name
+        source_manifest = self.seed_reference_dir / manifest_name
+        target_manifest = self.references_dir / manifest_name
+        if not source_manifest.is_file():
+            return
+        manifest = json.loads(source_manifest.read_text(encoding="utf-8"))
+        for key in ("video", "sequence"):
+            filename = Path(str(manifest[key])).name
+            source = self.seed_reference_dir / filename
+            target = self.references_dir / filename
+            if source.is_file() and not target.exists():
+                self._atomic_copy(source, target)
+        if not target_manifest.exists():
+            self._atomic_copy(source_manifest, target_manifest)
 
     def _reconcile_generated_files(self, payload: dict) -> None:
         """Remove interrupted and superseded imports after a clean startup."""
@@ -176,6 +233,18 @@ class Settings(BaseSettings):
         pending = target.with_name(f".{target.name}-{uuid4().hex}.pending")
         try:
             shutil.copy2(source, pending)
+            pending.replace(target)
+        finally:
+            pending.unlink(missing_ok=True)
+
+    @staticmethod
+    def _atomic_write_json(target: Path, payload: dict) -> None:
+        pending = target.with_name(f".{target.name}-{uuid4().hex}.pending")
+        try:
+            pending.write_text(
+                json.dumps(payload, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
             pending.replace(target)
         finally:
             pending.unlink(missing_ok=True)

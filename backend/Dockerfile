@@ -15,11 +15,13 @@ COPY backend/app /app/app
 COPY h5 /app/h5
 RUN mkdir -p /app/assets/samples/open_sources
 COPY assets/tutorials /app/assets/tutorials
+COPY assets/references /app/assets/references
 COPY assets/samples/open_sources/*.mp4 /app/assets/samples/open_sources/
 COPY assets/samples/open_sources/爱你.MP4 /app/assets/samples/open_sources/
 COPY assets/samples/open_sources/科目三.MP4 /app/assets/samples/open_sources/
 COPY assets/samples/open_sources/摇一摇.MP4 /app/assets/samples/open_sources/
 COPY assets/samples/open_sources/jumpstyle.MP4 /app/assets/samples/open_sources/
+COPY assets/samples/open_sources/爵士.MP4 /app/assets/samples/open_sources/
 COPY assets/samples/open_sources/ATTRIBUTION.md /app/assets/samples/open_sources/
 
 EXPOSE 8000

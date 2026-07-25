@@ -35,7 +35,7 @@ make dev
 
 ## 导入或替换任意测试视频
 
-四个内置动作只是首次启动的样例。打开 H5 后点击首页的「拓展舞库」，可以：
+五个内置动作只是首次启动的样例。打开 H5 后点击首页的「拓展舞库」，可以：
 
 - 预览 13 条开放许可舞蹈素材并一键加入首页；
 - 上传本机 MP4、MOV 或 WEBM；
@@ -80,7 +80,7 @@ make dev
 动作 × 卡点类型 × 教学视角
 ```
 
-20 条教学记录位于 `backend/app/data/tutorial_catalog.json`。现有诊断服务继续按
+25 条教学记录位于 `backend/app/data/tutorial_catalog.json`。现有诊断服务继续按
 动作、失败指标、身体部位和用户关注点进行排序，并从不同教学视角中返回 Top-3。
 
 开发阶段执行结构校验：
@@ -95,12 +95,13 @@ make content-check
 .venv/bin/python scripts/validate_content_matrix.py --strict-sources
 ```
 
-当前 20 条教学视频已记录为 `permission_granted + local_allowed`，实际文件位于
+当前 25 条教学视频已记录为 `permission_granted + local_allowed`，实际文件位于
 `assets/tutorials/`。每个动作包含镜像、局部、慢速、定格和新手版，均保留 AAC
-音轨；H5 与小程序会在推荐卡片中直接播放。需要从四条授权源视频重新生成时执行：
+音轨；H5 与小程序会在推荐卡片中直接播放。需要从五条授权源视频重新生成时执行：
 
 ```bash
 make tutorial-build
+make reference-build
 ```
 
 ## 本地完整流程验收
@@ -124,9 +125,9 @@ make setup-h5
 make accept
 ```
 
-验收覆盖四条内置 Feed 的真实暂停时间点、前后上下文、动作阶段解释、时长/无人
+验收覆盖五条内置 Feed 的真实暂停时间点、前后上下文、动作阶段解释、时长/无人
 画面拒绝、参考更新保护、首练诊断、Top-3 多样化搜索、整段骨架回放与关键帧对比图、豆包未配置
-降级、二练改善、镜像校正、结果删除，以及四个动作各连续 5 次的稳定性和
+降级、二练改善、镜像校正、结果删除，以及五个动作各连续 5 次的稳定性和
 耗时。同源开放样例能验证产品链路，但不能替代真人同机位错误样本标定。
 
 使用仓库自带的开放视频跑通参考注册和分析：
@@ -150,17 +151,15 @@ cp .env.example .env
 docker compose up --build -d
 ```
 
-内置样例首次启动后仍需注册三个参考片段：
+爵士参考会随镜像自动初始化。首次启动后，在宿主机运行以下命令，为另外四个
+内置动作导入 Feed 并生成诊断参考：
 
 ```bash
-python scripts/register_reference.py \
-  --api http://localhost:8000/api/v1 \
-  --token change-me \
-  --action arm_wave \
-  --video assets/references/arm_wave.mp4
+make demo-seed ADMIN_TOKEN="<与 .env 中相同的 ADMIN_TOKEN>"
 ```
 
-依次配置 `arm_wave`、`groove_step`、`cross_step`。
+完成后 `groove_step`、`arm_wave`、`cross_step`、`two_step_demo` 和
+`jazz_demo` 五条均应显示为 `reference_ready=true`。
 
 之后可直接从宿主机运行 `scripts/import_feed.py` 向 Docker API 追加或替换
 任意动作，文件与动作清单都会写入持久卷。
@@ -187,5 +186,5 @@ python scripts/register_reference.py \
 
 - 原始用户视频默认分析后删除；
 - 不做人脸身份识别；
-- 四个内置动作是受控验收集；其他视频可以导入，但使用通用阈值，尚未承诺标定准确率；
+- 五个内置动作是受控验收集；其他视频可以导入，但使用通用阈值，尚未承诺标定准确率；
 - 不宣称专业舞蹈评分或医学建议。

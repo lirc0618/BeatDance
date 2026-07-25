@@ -13,7 +13,7 @@ BeatDance 将视频资产拆成两类管理：
 动作 × 卡点类型 × 教学视角
 ```
 
-当前目录包含 4 个动作、每个动作 5 条教学记录，共 20 条。诊断服务仍按 `error_type`、`body_part`、`focus` 和 `view_type` 排序并返回 Top-3，但内容不再写死在 Python 动作画像中。
+当前目录包含 5 个动作、每个动作 5 条教学记录，共 25 条。诊断服务仍按 `error_type`、`body_part`、`focus` 和 `view_type` 排序并返回 Top-3，但内容不再写死在 Python 动作画像中。
 
 ## 文件位置
 
@@ -48,7 +48,7 @@ make content-check
 .venv/bin/python scripts/validate_content_matrix.py --strict-sources
 ```
 
-当前 20 条记录已标记为 `permission_granted + local_allowed`，并由目录顶层的
+当前 25 条记录已标记为 `permission_granted + local_allowed`，并由目录顶层的
 `permission_record` 记录项目方在 2026-07-25 的统一授权确认。直接授权不要求
 伪造公开来源 URL，因此严格校验接受这份记录，但仍提示逐条补充 `source_url`，
 便于后续审计与署名。
@@ -72,5 +72,6 @@ make content-check
 运行时会自动把该路径转换为 `/media/tutorials/aini-mirror.mp4`，H5 和小程序
 无需再手工拼接媒体地址。
 
-当前 20 条记录均已生成本地有声视频。执行 `make tutorial-build` 可以从四条
+当前 25 条记录均已生成本地有声视频。执行 `make tutorial-build` 可以从五条
 授权演示视频重新生成镜像、局部、慢速、定格和新手版。
+执行 `make reference-build` 可重建爵士默认诊断参考。

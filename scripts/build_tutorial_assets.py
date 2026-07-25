@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build compact, audible tutorial variants from the four authorized demo dances."""
+"""Build compact, audible tutorial variants from the five authorized demo dances."""
 
 from __future__ import annotations
 
@@ -45,6 +45,11 @@ VARIANTS = (
     TutorialVariant("jumpstyle-beat", "jumpstyle.MP4", 5.0, 9.0, "beat"),
     TutorialVariant("jumpstyle-freeze", "jumpstyle.MP4", 6.0, 8.0, "freeze"),
     TutorialVariant("jumpstyle-easy", "jumpstyle.MP4", 3.0, 11.0, "easy"),
+    TutorialVariant("jazz-mirror", "爵士.MP4", 8.0, 10.0, "mirror"),
+    TutorialVariant("jazz-upper", "爵士.MP4", 12.0, 8.0, "upper"),
+    TutorialVariant("jazz-beat", "爵士.MP4", 15.0, 9.0, "beat"),
+    TutorialVariant("jazz-freeze", "爵士.MP4", 19.0, 8.0, "freeze"),
+    TutorialVariant("jazz-easy", "爵士.MP4", 10.0, 11.0, "easy"),
 )
 
 

@@ -11,6 +11,7 @@ def test_featured_dances_each_have_their_own_coaching_language_and_views():
         "arm_wave": {"脚步特写", "0.55×慢放", "节拍慢放", "关键帧定格", "慢速跟跳"},
         "cross_step": {"上身特写", "节奏慢放", "镜像跟摇", "关键帧定格", "慢速跟跳"},
         "two_step_demo": {"脚下特写", "0.55×慢放", "节拍慢放", "关键帧定格", "慢速跟跳"},
+        "jazz_demo": {"镜像跟跳", "上身特写", "节奏慢放", "关键帧定格", "慢速跟跳"},
     }
     stuck_lines: set[str] = set()
 
@@ -20,7 +21,7 @@ def test_featured_dances_each_have_their_own_coaching_language_and_views():
         assert len(action["pause_guides"]) == 3
         stuck_lines.add(action["pause_guides"][0]["likely_stuck_at"])
 
-    assert len(stuck_lines) == 4
+    assert len(stuck_lines) == 5
 
 
 def test_display_name_alone_never_overwrites_an_imported_actions_content():

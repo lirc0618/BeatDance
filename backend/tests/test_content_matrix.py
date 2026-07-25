@@ -17,5 +17,5 @@ def test_strict_content_check_accepts_the_project_permission_record() -> None:
     )
 
     assert result.returncode == 0, result.stdout
-    assert "20 条内容" in result.stdout
+    assert "25 条内容" in result.stdout
     assert "原始来源链接待补" in result.stdout

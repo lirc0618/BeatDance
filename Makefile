@@ -2,7 +2,7 @@ API ?= http://127.0.0.1:8000/api/v1
 ADMIN_TOKEN ?= change-me
 PROJECT_DIR := $(notdir $(CURDIR))
 
-.PHONY: setup setup-h5 dev demo-seed tutorial-build accept up down logs test test-h5 lint content-check video-smoke zip
+.PHONY: setup setup-h5 dev demo-seed tutorial-build reference-build accept up down logs test test-h5 lint content-check video-smoke zip
 
 setup:
 	uv venv --python 3.11 .venv
@@ -14,7 +14,7 @@ setup-h5:
 
 dev:
 	mkdir -p data
-	DATA_DIR="$(CURDIR)/data" H5_DIR="$(CURDIR)/h5" FEED_DIR="$(CURDIR)/data/feeds" SEED_FEED_DIR="$(CURDIR)/assets/samples/open_sources" TUTORIAL_ASSETS_DIR="$(CURDIR)/assets/tutorials" ALLOW_INSECURE_ADMIN_TOKEN=true PUBLIC_BASE_URL="http://localhost:8000" \
+	DATA_DIR="$(CURDIR)/data" H5_DIR="$(CURDIR)/h5" FEED_DIR="$(CURDIR)/data/feeds" SEED_FEED_DIR="$(CURDIR)/assets/samples/open_sources" SEED_REFERENCE_DIR="$(CURDIR)/assets/references" TUTORIAL_ASSETS_DIR="$(CURDIR)/assets/tutorials" ALLOW_INSECURE_ADMIN_TOKEN=true PUBLIC_BASE_URL="http://localhost:8000" \
 		.venv/bin/uvicorn backend.app.main:app --host 127.0.0.1 --port 8000
 
 demo-seed:
@@ -26,6 +26,9 @@ demo-seed:
 
 tutorial-build:
 	.venv/bin/python scripts/build_tutorial_assets.py
+
+reference-build:
+	.venv/bin/python scripts/build_reference_assets.py
 
 accept:
 	.venv/bin/python scripts/full_flow_acceptance.py --admin-token "$(ADMIN_TOKEN)"
