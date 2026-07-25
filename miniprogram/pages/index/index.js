@@ -11,10 +11,25 @@ Page({
   data: { actions: [], loading: true, error: '', insight: null, selectedAction: null },
   onLoad() {
     this.feedTimes = {};
-    this.loadActions();
+    this.actionSignature = '';
+    this.actionsLoading = false;
   },
-  async loadActions() {
-    this.setData({ loading: true, error: '' });
+  onShow() {
+    this.loadActions();
+    this.actionPoll = setInterval(() => {
+      if (!this.data.insight) this.loadActions({ silent: true });
+    }, 5000);
+  },
+  onHide() {
+    clearInterval(this.actionPoll);
+  },
+  onUnload() {
+    clearInterval(this.actionPoll);
+  },
+  async loadActions({ silent = false } = {}) {
+    if (this.actionsLoading) return;
+    this.actionsLoading = true;
+    if (!silent) this.setData({ loading: true, error: '' });
     try {
       const actions = (await request('/actions')).map(action => ({
         ...action,
@@ -22,11 +37,22 @@ Page({
           ? mediaUrl(action.feed_video_url || action.reference_video_url)
           : ''
       }));
-      this.setData({ actions });
+      const signature = JSON.stringify(actions.map(action => [
+        action.id,
+        action.name,
+        action.feed_video_url,
+        action.reference_video_url,
+        action.reference_ready
+      ]));
+      if (signature !== this.actionSignature) {
+        this.actionSignature = signature;
+        this.setData({ actions });
+      }
     } catch (error) {
-      this.setData({ error: error.message });
+      if (!silent) this.setData({ error: error.message });
     } finally {
-      this.setData({ loading: false });
+      this.actionsLoading = false;
+      if (!silent) this.setData({ loading: false });
     }
   },
   trackFeedTime(event) {

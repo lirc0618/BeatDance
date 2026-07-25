@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import fcntl
 import json
 import threading
 from dataclasses import dataclass
@@ -79,13 +80,20 @@ class ActionRegistry:
         with self.lock:
             self.data = data
             self.actions = actions
+            self.modified_ns = self.path.stat().st_mtime_ns
+
+    def _reload_if_changed(self) -> None:
+        if self.path.stat().st_mtime_ns != self.modified_ns:
+            self.reload()
 
     def list(self) -> list[dict[str, Any]]:
         with self.lock:
+            self._reload_if_changed()
             return list(self.actions.values())
 
     def get(self, action_id: str) -> dict[str, Any]:
         with self.lock:
+            self._reload_if_changed()
             if action_id not in self.actions:
                 raise KeyError(f"未知动作：{action_id}")
             return self.actions[action_id]
@@ -93,29 +101,32 @@ class ActionRegistry:
     def replace_action(self, action: dict[str, Any]) -> bool:
         """Atomically append or replace one action and refresh live readers."""
 
-        with self.lock:
-            created = action["id"] not in self.actions
-            items = [
-                action if item["id"] == action["id"] else item
-                for item in self.data["actions"]
-            ]
-            if created:
-                items.append(action)
-            payload = {**self.data, "actions": items}
-            pending = self.path.with_name(
-                f".{self.path.name}-{uuid4().hex}.pending"
-            )
+        lock_path = self.path.with_suffix(f"{self.path.suffix}.lock")
+        with self.lock, lock_path.open("a+") as lock_file:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
             try:
-                pending.write_text(
-                    json.dumps(payload, ensure_ascii=False, indent=2),
-                    encoding="utf-8",
-                )
-                pending.replace(self.path)
+                latest = json.loads(self.path.read_text(encoding="utf-8"))
+                current = {item["id"]: item for item in latest["actions"]}
+                created = action["id"] not in current
+                items = [action if item["id"] == action["id"] else item for item in latest["actions"]]
+                if created:
+                    items.append(action)
+                payload = {**latest, "actions": items}
+                pending = self.path.with_name(f".{self.path.name}-{uuid4().hex}.pending")
+                try:
+                    pending.write_text(
+                        json.dumps(payload, ensure_ascii=False, indent=2),
+                        encoding="utf-8",
+                    )
+                    pending.replace(self.path)
+                finally:
+                    pending.unlink(missing_ok=True)
+                self.data = payload
+                self.actions = {item["id"]: item for item in items}
+                self.modified_ns = self.path.stat().st_mtime_ns
+                return created
             finally:
-                pending.unlink(missing_ok=True)
-            self.data = payload
-            self.actions = {item["id"]: item for item in items}
-            return created
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
 
     def search_tutorials(
         self,
@@ -275,9 +286,13 @@ def compare_poses(
         body_part = timing_group
         direction = "提前" if timing_offset < 0 else "延后"
         primary_error = f"{body_part}动作{direction}"
-        feedback = f"其他部分先别改，把{body_part}的启动时机{('稍微延后' if timing_offset < 0 else '稍微提前')}。"
+        feedback = (
+            f"其他部分先别改，把{body_part}的启动时机{('稍微延后' if timing_offset < 0 else '稍微提前')}。"
+        )
         drill = f"只练{body_part}，跟着四拍做 3 次，再把完整动作加回来。"
-        ref_key, cand_key = trajectory_peak.get(body_part, (len(reference.coords) // 2, len(candidate.coords) // 2))
+        ref_key, cand_key = trajectory_peak.get(
+            body_part, (len(reference.coords) // 2, len(candidate.coords) // 2)
+        )
     elif primary_metric == "trajectory":
         body_part = trajectory_group
         primary_error = f"{body_part}运动路线没有贴上参考"
@@ -367,12 +382,8 @@ def calculate_improvement(baseline: Diagnosis, current: Diagnosis) -> tuple[bool
     # Normalized scores are capped at 1.0 for diagnosis display. Comparing the
     # uncapped measurement preserves visible progress when both attempts exceed
     # the diagnosis threshold.
-    baseline_score = next(
-        metric.score for metric in baseline.metrics if metric.kind == target_metric
-    )
-    current_score = next(
-        metric.score for metric in current.metrics if metric.kind == target_metric
-    )
+    baseline_score = next(metric.score for metric in baseline.metrics if metric.kind == target_metric)
+    current_score = next(metric.score for metric in current.metrics if metric.kind == target_metric)
     percentage = (baseline_score - current_score) / max(baseline_score, 1e-6) * 100.0
     improved = current.status == "aligned" or percentage > 5.0
     return improved, percentage

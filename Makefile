@@ -13,7 +13,7 @@ setup-h5:
 
 dev:
 	mkdir -p data
-	DATA_DIR="$(CURDIR)/data" H5_DIR="$(CURDIR)/h5" FEED_DIR="$(CURDIR)/data/feeds" SEED_FEED_DIR="$(CURDIR)/assets/samples/open_sources" PUBLIC_BASE_URL="http://localhost:8000" \
+	DATA_DIR="$(CURDIR)/data" H5_DIR="$(CURDIR)/h5" FEED_DIR="$(CURDIR)/data/feeds" SEED_FEED_DIR="$(CURDIR)/assets/samples/open_sources" ALLOW_INSECURE_ADMIN_TOKEN=true PUBLIC_BASE_URL="http://localhost:8000" \
 		.venv/bin/uvicorn backend.app.main:app --host 127.0.0.1 --port 8000
 
 demo-seed:

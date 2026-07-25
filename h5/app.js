@@ -4,7 +4,8 @@ const MEDIA_ORIGIN = new URL(API_BASE, location.origin).origin;
 const state = {
   actions: [], action: null, file: null, focus: 'auto',
   sessionId: localStorage.getItem('freezeCoachSession') || crypto.randomUUID(),
-  baselineId: null, pausedAt: null, feedDuration: null, pauseInsight: null
+  baselineId: null, pausedAt: null, feedDuration: null, pauseInsight: null,
+  actionSignature: '', actionsLoading: false
 };
 localStorage.setItem('freezeCoachSession', state.sessionId);
 
@@ -49,10 +50,28 @@ function searchCards(results) {
     </a>`).join('');
 }
 
+function actionSignature(actions) {
+  return JSON.stringify(actions.map(action => [
+    action.id, action.name, action.feed_video_url,
+    action.reference_video_url, action.reference_ready
+  ]));
+}
+
 async function loadActions() {
-  const response = await fetch(`${API}/actions`);
-  if (!response.ok) throw new Error('无法加载 Feed 片段');
-  state.actions = await response.json();
+  if (state.actionsLoading) return;
+  state.actionsLoading = true;
+  let actions;
+  try {
+    const response = await fetch(`${API}/actions`);
+    if (!response.ok) throw new Error('无法加载 Feed 片段');
+    actions = await response.json();
+  } finally {
+    state.actionsLoading = false;
+  }
+  const signature = actionSignature(actions);
+  if (signature === state.actionSignature) return;
+  state.actionSignature = signature;
+  state.actions = actions;
   el('action-count').textContent = String(state.actions.length);
   el('action-list').innerHTML = state.actions.map((action, index) => `
     <article class="feed-card" data-id="${escapeHtml(action.id)}">
@@ -241,3 +260,9 @@ el('retry-button').addEventListener('click', () => {
 loadActions().catch(error => {
   el('action-list').innerHTML = `<p>服务未连接：${escapeHtml(error.message)}<br>可用 ?api=https://你的域名 指定 API。</p>`;
 });
+setInterval(() => {
+  if (document.visibilityState === 'visible'
+      && !document.body.classList.contains('flow-active')) {
+    loadActions().catch(() => {});
+  }
+}, 5000);

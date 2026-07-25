@@ -5,6 +5,39 @@ const projectRoot = path.resolve(__dirname, '..', '..');
 const wrongAttempt = path.join(projectRoot, 'assets/samples/open_sources/arm_movements_reference.mp4');
 const correctedAttempt = path.join(projectRoot, 'assets/samples/open_sources/breakdance_6_step.mp4');
 
+test('Feed 列表会自动发现新导入的视频且不需要刷新页面', async ({ page }) => {
+  let requestCount = 0;
+  await page.route('**/api/v1/actions', async (route) => {
+    const response = await route.fetch();
+    const actions = await response.json();
+    requestCount += 1;
+    if (requestCount > 1) {
+      actions.push({
+        id: 'polled_move',
+        name: '轮询发现的动作',
+        description: '测试动态列表更新',
+        duration_hint: '3–8 秒',
+        cover_url: '',
+        reference_video_url: '',
+        feed_video_url: '',
+        feed_caption: '新导入的视频',
+        creator: '@测试',
+        segment_label: '测试素材',
+        entry_copy: '定格学这一招',
+        reference_ready: false,
+        tutorial_count: 3
+      });
+    }
+    await route.fulfill({ response, json: actions });
+  });
+
+  await page.goto('http://localhost:8000/app/?api=http://127.0.0.1:8000');
+  await expect(page.locator('.feed-card[data-id="polled_move"]')).toHaveCount(0);
+  await expect(page.locator('.feed-card[data-id="polled_move"]')).toHaveCount(1, {
+    timeout: 7000
+  });
+});
+
 test('用户暂停 Feed 后获得时刻解释，再完成首练和二练验证', async ({ page, request }) => {
   const createdIds = [];
   try {

@@ -4,6 +4,7 @@ import json
 import re
 import shutil
 import subprocess
+import threading
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -15,6 +16,10 @@ from .pose import extract_pose_sequence
 from .video import VideoValidationError, probe_video
 
 ACTION_ID = re.compile(r"^[a-z][a-z0-9_-]{0,63}$")
+
+
+class FeedImportBusyError(RuntimeError):
+    pass
 
 
 @dataclass(frozen=True, slots=True)
@@ -42,8 +47,21 @@ class FeedImporter:
     def __init__(self, settings: Settings, registry: ActionRegistry):
         self.settings = settings
         self.registry = registry
+        self.import_slots = threading.BoundedSemaphore(max(1, settings.max_concurrent_feed_imports))
 
     def import_video(
+        self,
+        source: Path,
+        spec: FeedImportSpec,
+    ) -> FeedImportResult:
+        if not self.import_slots.acquire(blocking=False):
+            raise FeedImportBusyError("已有视频正在导入，请稍后重试")
+        try:
+            return self._import_video(source, spec)
+        finally:
+            self.import_slots.release()
+
+    def _import_video(
         self,
         source: Path,
         spec: FeedImportSpec,
@@ -53,17 +71,15 @@ class FeedImporter:
         if not ffmpeg:
             raise RuntimeError("未找到 ffmpeg，无法导入 Feed 视频")
 
+        try:
+            previous_action = self.registry.get(spec.action_id)
+        except KeyError:
+            previous_action = None
         nonce = uuid4().hex
         feed_target = self.settings.feed_dir / f"{spec.action_id}-{nonce}.mp4"
-        reference_video = (
-            self.settings.references_dir / f"{spec.action_id}-{nonce}.mp4"
-        )
-        reference_sequence = (
-            self.settings.references_dir / f"{spec.action_id}-{nonce}.npz"
-        )
-        reference_manifest = (
-            self.settings.references_dir / f"{spec.action_id}-{nonce}.current.json"
-        )
+        reference_video = self.settings.references_dir / f"{spec.action_id}-{nonce}.mp4"
+        reference_sequence = self.settings.references_dir / f"{spec.action_id}-{nonce}.npz"
+        reference_manifest = self.settings.references_dir / f"{spec.action_id}-{nonce}.current.json"
         published = [
             feed_target,
             reference_video,
@@ -78,9 +94,7 @@ class FeedImporter:
                     f"Feed 视频至少需要 3 秒，当前约 {metadata.duration_seconds:.1f} 秒"
                 )
             pause_at = (
-                metadata.duration_seconds / 2
-                if spec.pause_at_seconds is None
-                else spec.pause_at_seconds
+                metadata.duration_seconds / 2 if spec.pause_at_seconds is None else spec.pause_at_seconds
             )
             if pause_at < 0 or pause_at > metadata.duration_seconds:
                 raise VideoValidationError("参考时间点必须位于 Feed 视频时长范围内")
@@ -106,8 +120,7 @@ class FeedImporter:
             )
             if pose.coverage < self.settings.min_pose_coverage:
                 raise VideoValidationError(
-                    f"参考时间点附近人体覆盖率仅 {pose.coverage:.0%}，"
-                    "请换一个单人全身清晰的时间点"
+                    f"参考时间点附近人体覆盖率仅 {pose.coverage:.0%}，请换一个单人全身清晰的时间点"
                 )
             self._save_pose(pose, reference_sequence)
             self._write_json(
@@ -118,6 +131,10 @@ class FeedImporter:
                     "sequence": reference_sequence.name,
                 },
             )
+            if self._storage_bytes() > self.settings.max_feed_storage_mb * 1024 * 1024:
+                raise VideoValidationError(
+                    f"Feed 与参考素材总量不能超过 {self.settings.max_feed_storage_mb}MB"
+                )
             action = self._action_payload(
                 spec,
                 duration_seconds=metadata.duration_seconds,
@@ -125,6 +142,11 @@ class FeedImporter:
                 reference_manifest=reference_manifest.name,
             )
             created = self.registry.replace_action(action)
+            self._prune_old_generations(
+                spec.action_id,
+                current_action=action,
+                previous_action=previous_action,
+            )
             return FeedImportResult(
                 created=created,
                 action=action,
@@ -146,9 +168,68 @@ class FeedImporter:
         if spec.focus not in {"auto", "upper", "lower", "timing"}:
             raise ValueError("关注点必须是 auto、upper、lower 或 timing")
         if source.stat().st_size > self.settings.max_feed_upload_mb * 1024 * 1024:
+            raise VideoValidationError(f"Feed 视频不能超过 {self.settings.max_feed_upload_mb}MB")
+        metadata = probe_video(source)
+        if metadata.duration_seconds < 3:
+            raise VideoValidationError(f"Feed 视频至少需要 3 秒，当前约 {metadata.duration_seconds:.1f} 秒")
+        if metadata.duration_seconds > self.settings.max_feed_seconds:
+            raise VideoValidationError(f"Feed 视频不能超过 {self.settings.max_feed_seconds:g} 秒")
+        action_exists = any(action["id"] == spec.action_id for action in self.registry.list())
+        if not action_exists and len(self.registry.list()) >= self.settings.max_feed_actions:
             raise VideoValidationError(
-                f"Feed 视频不能超过 {self.settings.max_feed_upload_mb}MB"
+                f"Feed 动作不能超过 {self.settings.max_feed_actions} 条；可使用已有 ID 替换"
             )
+
+    def _storage_bytes(self) -> int:
+        return sum(
+            path.stat().st_size
+            for root in (self.settings.feed_dir, self.settings.references_dir)
+            for path in root.iterdir()
+            if path.is_file()
+        )
+
+    def _prune_old_generations(
+        self,
+        action_id: str,
+        *,
+        current_action: dict[str, Any],
+        previous_action: dict[str, Any] | None,
+    ) -> None:
+        """Keep the active and immediately previous generation for safe readers."""
+
+        keep: set[Path] = set()
+        for action in (current_action, previous_action):
+            if not action:
+                continue
+            feed_name = Path(str(action.get("feed_video_url", ""))).name
+            if feed_name:
+                keep.add(self.settings.feed_dir / feed_name)
+            manifest_name = Path(str(action.get("reference_manifest", ""))).name
+            if not manifest_name:
+                continue
+            manifest_path = self.settings.references_dir / manifest_name
+            keep.add(manifest_path)
+            try:
+                manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                continue
+            for key in ("video", "sequence"):
+                filename = Path(str(manifest.get(key, ""))).name
+                if filename:
+                    keep.add(self.settings.references_dir / filename)
+
+        generated = re.compile(
+            rf"^{re.escape(action_id)}-[0-9a-f]{{32}}"
+            r"\.(?:mp4|npz|current\.json)$"
+        )
+        for root in (self.settings.feed_dir, self.settings.references_dir):
+            for path in root.iterdir():
+                if path not in keep and generated.fullmatch(path.name):
+                    try:
+                        path.unlink()
+                    except OSError:
+                        # Cleanup must never invalidate a catalog entry already committed.
+                        pass
 
     @staticmethod
     def _run_ffmpeg(command: list[str], target: Path) -> None:
@@ -164,9 +245,7 @@ class FeedImporter:
             except subprocess.TimeoutExpired as exc:
                 raise VideoValidationError("视频处理超时，请压缩后重试") from exc
             except subprocess.CalledProcessError as exc:
-                raise VideoValidationError(
-                    "视频转码失败，请换用 MP4、MOV 或 WEBM 格式"
-                ) from exc
+                raise VideoValidationError("视频转码失败，请换用 MP4、MOV 或 WEBM 格式") from exc
             probe_video(pending)
             pending.replace(target)
         finally:
@@ -184,7 +263,9 @@ class FeedImporter:
                 str(source),
                 "-an",
                 "-vf",
-                "scale='min(1280,iw)':-2:flags=lanczos,fps=25",
+                "scale=w='min(1280,iw)':h='min(1280,ih)'"
+                ":force_original_aspect_ratio=decrease"
+                ":force_divisible_by=2:flags=lanczos,fps=25",
                 "-c:v",
                 "libx264",
                 "-preset",
@@ -275,14 +356,12 @@ class FeedImporter:
         return {
             "id": spec.action_id,
             "name": name,
-            "description": spec.description.strip()
-            or "播放视频，停在动作衔接、方向或发力顺序没看懂的时刻。",
+            "description": spec.description.strip() or "播放视频，停在动作衔接、方向或发力顺序没看懂的时刻。",
             "duration_hint": "上传 3–8 秒模仿",
             "cover_url": "",
             "reference_video_url": "",
             "reference_manifest": reference_manifest,
-            "feed_caption": spec.feed_caption.strip()
-            or f"{name} 到底怎么做？停在你没看懂的那一秒。",
+            "feed_caption": spec.feed_caption.strip() or f"{name} 到底怎么做？停在你没看懂的那一秒。",
             "creator": spec.creator.strip() or "自定义素材",
             "segment_label": f"{duration_seconds:.0f} 秒素材 · 任意暂停",
             "entry_copy": "定格学这一招",

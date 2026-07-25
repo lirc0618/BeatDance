@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import shutil
 from functools import lru_cache
 from pathlib import Path
@@ -20,6 +21,10 @@ class Settings(BaseSettings):
     min_video_seconds: float = 3.0
     max_upload_mb: int = 40
     max_feed_upload_mb: int = 200
+    max_feed_seconds: float = 600
+    max_feed_actions: int = 50
+    max_feed_storage_mb: int = 5000
+    max_concurrent_feed_imports: int = 1
     target_fps: float = 15.0
     pose_model_complexity: int = 1
     pose_min_detection_confidence: float = 0.5
@@ -27,6 +32,7 @@ class Settings(BaseSettings):
     min_pose_coverage: float = 0.65
     keep_original_video: bool = False
     admin_token: str = "change-me"
+    allow_insecure_admin_token: bool = False
 
     # 火山方舟 / 豆包。ARK_MODEL 填模型推理接入点 ID。
     ark_api_key: str | None = None
@@ -83,6 +89,10 @@ class Settings(BaseSettings):
         ):
             path.mkdir(parents=True, exist_ok=True)
 
+    @property
+    def admin_mutations_enabled(self) -> bool:
+        return self.admin_token != "change-me" or self.allow_insecure_admin_token
+
     def bootstrap_runtime_catalog(self) -> None:
         """Seed the persistent catalog and bundled feeds on first startup."""
 
@@ -101,6 +111,45 @@ class Settings(BaseSettings):
         attribution = self.seed_feed_dir / "ATTRIBUTION.md"
         if attribution.is_file() and not (self.feed_dir / attribution.name).exists():
             self._atomic_copy(attribution, self.feed_dir / attribution.name)
+        self._reconcile_generated_files(payload)
+
+    def _reconcile_generated_files(self, payload: dict) -> None:
+        """Remove interrupted and superseded imports after a clean startup."""
+
+        active: set[Path] = set()
+        for action in payload["actions"]:
+            feed_name = Path(str(action.get("feed_video_url", ""))).name
+            if feed_name:
+                active.add(self.feed_dir / feed_name)
+            manifest_name = Path(
+                str(
+                    action.get(
+                        "reference_manifest",
+                        f"{action['id']}.current.json",
+                    )
+                )
+            ).name
+            manifest_path = self.references_dir / manifest_name
+            active.add(manifest_path)
+            try:
+                manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                continue
+            for key in ("video", "sequence"):
+                filename = Path(str(manifest.get(key, ""))).name
+                if filename:
+                    active.add(self.references_dir / filename)
+
+        generated = re.compile(
+            r"^[a-z][a-z0-9_-]{0,63}-[0-9a-f]{32}"
+            r"\.(?:mp4|npz|current\.json)$"
+        )
+        for root in (self.feed_dir, self.references_dir):
+            for path in root.iterdir():
+                is_interrupted = path.name.startswith(".") and ".pending" in path.name
+                is_orphan = generated.fullmatch(path.name) and path not in active
+                if is_interrupted or is_orphan:
+                    path.unlink(missing_ok=True)
 
     @staticmethod
     def _atomic_copy(source: Path, target: Path) -> None:

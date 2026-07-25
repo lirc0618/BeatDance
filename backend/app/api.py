@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Annotated
 
 from fastapi import APIRouter, File, Form, Header, HTTPException, UploadFile, status
+from fastapi.concurrency import run_in_threadpool
 
 from .config import Settings
 from .schemas import (
@@ -16,7 +17,7 @@ from .schemas import (
     PauseInsightRequest,
 )
 from .services.analyzer import Analyzer, ReferenceNotReadyError
-from .services.feed_importer import FeedImporter, FeedImportSpec
+from .services.feed_importer import FeedImportBusyError, FeedImporter, FeedImportSpec
 from .services.video import VideoValidationError, probe_video, save_upload, validate_duration
 
 
@@ -24,6 +25,18 @@ def create_router(settings: Settings, analyzer: Analyzer) -> APIRouter:
     router = APIRouter()
     pause_coach = analyzer.pause_coach
     feed_importer = FeedImporter(settings, analyzer.registry)
+
+    def require_admin(token: str) -> None:
+        if not settings.admin_mutations_enabled:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="管理员写入已禁用：请配置非默认 ADMIN_TOKEN",
+            )
+        if token != settings.admin_token:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="管理员令牌无效",
+            )
 
     def action_summary(item: dict) -> ActionSummary:
         return ActionSummary(
@@ -72,11 +85,7 @@ def create_router(settings: Settings, analyzer: Analyzer) -> APIRouter:
         focus: Annotated[FocusKind, Form()] = "auto",
         x_admin_token: Annotated[str, Header()] = "",
     ) -> FeedImportResponse:
-        if x_admin_token != settings.admin_token:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="管理员令牌无效",
-            )
+        require_admin(x_admin_token)
         path: Path | None = None
         try:
             path = await save_upload(
@@ -84,7 +93,8 @@ def create_router(settings: Settings, analyzer: Analyzer) -> APIRouter:
                 settings.uploads_dir,
                 settings.max_feed_upload_mb,
             )
-            result = feed_importer.import_video(
+            result = await run_in_threadpool(
+                feed_importer.import_video,
                 path,
                 FeedImportSpec(
                     action_id=action_id,
@@ -106,6 +116,11 @@ def create_router(settings: Settings, analyzer: Analyzer) -> APIRouter:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         except (VideoValidationError, ValueError) as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
+        except FeedImportBusyError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=str(exc),
+            ) from exc
         except RuntimeError as exc:
             raise HTTPException(status_code=500, detail=str(exc)) from exc
         finally:
@@ -130,8 +145,7 @@ def create_router(settings: Settings, analyzer: Analyzer) -> APIRouter:
         video: Annotated[UploadFile, File()],
         x_admin_token: Annotated[str, Header()] = "",
     ) -> dict:
-        if x_admin_token != settings.admin_token:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="管理员令牌无效")
+        require_admin(x_admin_token)
         path: Path | None = None
         try:
             path = await save_upload(video, settings.uploads_dir, settings.max_upload_mb)

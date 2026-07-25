@@ -37,9 +37,7 @@ class Analyzer:
 
     def reference_manifest_path(self, action_id: str) -> Path:
         action = self.registry.get(action_id)
-        manifest_name = str(
-            action.get("reference_manifest", f"{action_id}.current.json")
-        )
+        manifest_name = str(action.get("reference_manifest", f"{action_id}.current.json"))
         if Path(manifest_name).name != manifest_name:
             raise ValueError("参考清单文件名无效")
         return self.settings.references_dir / manifest_name
@@ -51,14 +49,13 @@ class Analyzer:
                 payload = json.loads(manifest.read_text(encoding="utf-8"))
                 video_name = str(payload["video"])
                 sequence_name = str(payload["sequence"])
-                if (
-                    Path(video_name).name == video_name
-                    and Path(sequence_name).name == sequence_name
-                ):
-                    return (
+                if Path(video_name).name == video_name and Path(sequence_name).name == sequence_name:
+                    generation_paths = (
                         self.settings.references_dir / video_name,
                         self.settings.references_dir / sequence_name,
                     )
+                    if all(path.is_file() for path in generation_paths):
+                        return generation_paths
             except (KeyError, OSError, json.JSONDecodeError, TypeError):
                 pass
         return (
@@ -99,9 +96,7 @@ class Analyzer:
                 min_detection_confidence=self.settings.pose_min_detection_confidence,
                 min_tracking_confidence=self.settings.pose_min_tracking_confidence,
             )
-            pending = sequence_path.with_name(
-                f".{sequence_path.stem}-{uuid4().hex}.pending.npz"
-            )
+            pending = sequence_path.with_name(f".{sequence_path.stem}-{uuid4().hex}.pending.npz")
             try:
                 sequence.save(pending)
                 pending.replace(sequence_path)
@@ -130,9 +125,7 @@ class Analyzer:
         target_sequence = self.settings.references_dir / f"{action_id}-{nonce}.npz"
         manifest = self.reference_manifest_path(action_id)
         pending_video = target_video.with_name(f".{target_video.name}.pending.mp4")
-        pending_sequence = target_sequence.with_name(
-            f".{target_sequence.name}.pending.npz"
-        )
+        pending_sequence = target_sequence.with_name(f".{target_sequence.name}.pending.npz")
         pending_manifest = manifest.with_name(f".{manifest.name}-{nonce}.pending")
         try:
             pending_video.write_bytes(video_path.read_bytes())
@@ -183,8 +176,8 @@ class Analyzer:
         with self.reference_lock:
             if not self.reference_ready(action_id):
                 raise ReferenceNotReadyError(f"动作 {action_id} 尚未上传参考视频")
-            reference_video, reference_sequence, reference_source = (
-                self.analysis_reference(action_id, pause_insight)
+            reference_video, reference_sequence, reference_source = self.analysis_reference(
+                action_id, pause_insight
             )
             ref_normalized = normalize_pose(reference_sequence)
             normal = normalize_pose(candidate_sequence)
@@ -200,9 +193,7 @@ class Analyzer:
                 pose_feature_matrix(mirrored_normalized),
             ).normalized_cost
             use_mirror = mirrored_cost + 0.01 < normal_cost
-            selected_sequence = (
-                mirrored_sequence if use_mirror else candidate_sequence
-            )
+            selected_sequence = mirrored_sequence if use_mirror else candidate_sequence
             selected_normalized = mirrored_normalized if use_mirror else normal
 
             bundle = compare_poses(
@@ -215,9 +206,7 @@ class Analyzer:
             )
 
             analysis_id = uuid4().hex
-            visualization_path = (
-                self.settings.visualizations_dir / f"{analysis_id}.jpg"
-            )
+            visualization_path = self.settings.visualizations_dir / f"{analysis_id}.jpg"
             rendered = create_comparison_image(
                 reference_video=reference_video,
                 candidate_video=video_path,
@@ -247,7 +236,11 @@ class Analyzer:
                 improved=improved,
                 improvement_percent=round(percentage, 1),
                 message=(
-                    ("这次已经没有明显主导偏差，可以把完整动作加回来。" if bundle.diagnosis.status == "aligned" else f"这次关键偏差降低约 {percentage:.0f}% ，可以把完整动作加回来。")
+                    (
+                        "这次已经没有明显主导偏差，可以把完整动作加回来。"
+                        if bundle.diagnosis.status == "aligned"
+                        else f"这次关键偏差降低约 {percentage:.0f}% ，可以把完整动作加回来。"
+                    )
                     if improved
                     else "这次变化还不明显。继续只练当前卡点，再录一次。"
                 ),
@@ -269,17 +262,9 @@ class Analyzer:
             mirrored_input=use_mirror,
             trigger_source="feed_pause",
             source_timestamp_seconds=pause_insight.timestamp_seconds if pause_insight else None,
-            source_feed_duration_seconds=(
-                pause_insight.feed_duration_seconds
-                if pause_insight
-                else None
-            ),
-            source_context_start_seconds=(
-                pause_insight.context_start_seconds if pause_insight else None
-            ),
-            source_context_end_seconds=(
-                pause_insight.context_end_seconds if pause_insight else None
-            ),
+            source_feed_duration_seconds=(pause_insight.feed_duration_seconds if pause_insight else None),
+            source_context_start_seconds=(pause_insight.context_start_seconds if pause_insight else None),
+            source_context_end_seconds=(pause_insight.context_end_seconds if pause_insight else None),
             source_phase=pause_insight.phase if pause_insight else None,
             reference_source=reference_source,
             diagnosis=bundle.diagnosis,
