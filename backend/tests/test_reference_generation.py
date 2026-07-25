@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import numpy as np
+import pytest
 
 from app.config import Settings
 from app.services.analyzer import Analyzer
@@ -40,3 +41,19 @@ def test_reference_switches_with_one_atomic_generation_pointer(tmp_path, monkeyp
     # but readers continue using the last complete pair.
     (settings.references_dir / "groove_step-orphan.mp4").write_bytes(b"partial")
     assert analyzer.reference_paths("groove_step") == first_generation
+
+
+def test_reference_teaching_rejects_non_finite_feed_start(tmp_path):
+    settings = Settings(
+        data_dir=tmp_path / "data",
+        feed_dir=Path(__file__).parents[2] / "assets" / "samples" / "open_sources",
+    )
+    settings.ensure_directories()
+    analyzer = Analyzer(settings)
+
+    with pytest.raises(ValueError, match="必须是有限数字"):
+        analyzer.register_reference_for_teaching(
+            "groove_step",
+            tmp_path / "unused.mp4",
+            source_start_seconds=float("nan"),
+        )

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import math
 import threading
 from datetime import UTC, datetime
 from pathlib import Path
@@ -152,6 +153,8 @@ class Analyzer:
         source_start_seconds: float | None = None,
     ) -> tuple[PoseSequence, TeachingPlanSource | None]:
         if source_start_seconds is not None:
+            if not math.isfinite(source_start_seconds):
+                raise ValueError("参考片段在 Feed 中的起始时间必须是有限数字")
             if source_start_seconds < 0:
                 raise ValueError("参考片段在 Feed 中的起始时间不能为负数")
             source_duration = probe_video(video_path).duration_seconds
