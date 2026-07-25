@@ -48,7 +48,10 @@ make content-check
 .venv/bin/python scripts/validate_content_matrix.py --strict-sources
 ```
 
-当前 20 条记录已标记为 `permission_granted + local_allowed`。原始来源链接仍为空，因此普通结构校验通过并提示补充来源，严格来源校验仍会失败，直到逐条填写 `source_url`。
+当前 20 条记录已标记为 `permission_granted + local_allowed`，并由目录顶层的
+`permission_record` 记录项目方在 2026-07-25 的统一授权确认。直接授权不要求
+伪造公开来源 URL，因此严格校验接受这份记录，但仍提示逐条补充 `source_url`，
+便于后续审计与署名。
 
 ## 新增内容记录
 
@@ -68,3 +71,6 @@ make content-check
 `assets/tutorials/aini-mirror.mp4`。复制完成后将该相对路径写入 `local_asset`。
 运行时会自动把该路径转换为 `/media/tutorials/aini-mirror.mp4`，H5 和小程序
 无需再手工拼接媒体地址。
+
+当前 20 条记录均已生成本地有声视频。执行 `make tutorial-build` 可以从四条
+授权演示视频重新生成镜像、局部、慢速、定格和新手版。

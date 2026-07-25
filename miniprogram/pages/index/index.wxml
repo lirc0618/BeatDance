@@ -19,7 +19,7 @@
   <block wx:if="{{!insight}}">
     <view class="section-head">
       <view class="step-index">01</view>
-      <view><view class="section-title">先挑一个动作</view><view class="section-copy">播放视频，在没看懂的位置按下暂停。</view></view>
+      <view><view class="section-title">先刷一个想学的</view><view class="section-copy">听着原声播放，看到不会的地方就暂停。</view></view>
     </view>
     <block wx:for="{{actions}}" wx:key="id">
       <view class="feed-card">
@@ -50,10 +50,11 @@
       <view class="card-title">这招的专属拆法</view>
     </view>
     <block wx:for="{{insight.search_results}}" wx:key="id">
-      <view class="search-card" data-url="{{item.url}}" bindtap="copySearch">
+      <view class="search-card">
+        <video wx:if="{{item.local_asset}}" class="tutorial-video" src="{{item.url}}" controls object-fit="cover"></video>
         <view class="search-type">{{item.view_type}} · {{item.clip_seconds}}</view>
         <view class="card-title">{{item.title}}</view>
-        <view class="search-open">复制搜索链接 →</view>
+        <view wx:if="{{!item.local_asset}}" class="search-open" data-url="{{item.url}}" bindtap="copySearch">打开原视频 →</view>
       </view>
     </block>
     <button class="primary" bindtap="startPractice">拍一次，看我具体卡哪儿</button>

@@ -5,6 +5,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, File, Form, Header, HTTPException, UploadFile, status
 from fastapi.concurrency import run_in_threadpool
+from fastapi.responses import FileResponse
 
 from .config import Settings
 from .schemas import (
@@ -15,9 +16,11 @@ from .schemas import (
     HealthResponse,
     PauseInsight,
     PauseInsightRequest,
+    SampleLibraryItem,
 )
 from .services.analyzer import Analyzer, ReferenceNotReadyError
 from .services.feed_importer import FeedImportBusyError, FeedImporter, FeedImportSpec
+from .services.sample_library import SampleLibrary
 from .services.video import VideoValidationError, probe_video, save_upload, validate_duration
 
 
@@ -25,6 +28,7 @@ def create_router(settings: Settings, analyzer: Analyzer) -> APIRouter:
     router = APIRouter()
     pause_coach = analyzer.pause_coach
     feed_importer = FeedImporter(settings, analyzer.registry)
+    sample_library = SampleLibrary(settings.seed_feed_dir, analyzer.registry)
 
     def require_admin(token: str) -> None:
         if not settings.admin_mutations_enabled:
@@ -72,6 +76,49 @@ def create_router(settings: Settings, analyzer: Analyzer) -> APIRouter:
     @router.get("/actions", response_model=list[ActionSummary])
     async def list_actions() -> list[ActionSummary]:
         return [action_summary(item) for item in analyzer.registry.list()]
+
+    @router.get("/sample-library", response_model=list[SampleLibraryItem])
+    async def list_sample_library() -> list[SampleLibraryItem]:
+        return [SampleLibraryItem(**item) for item in sample_library.list()]
+
+    @router.get("/sample-library/{sample_id}/video", include_in_schema=False)
+    async def preview_sample(sample_id: str) -> FileResponse:
+        try:
+            return FileResponse(sample_library.video_path(sample_id))
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    @router.post(
+        "/sample-library/{sample_id}/import",
+        response_model=FeedImportResponse,
+    )
+    async def import_sample(
+        sample_id: str,
+        x_admin_token: Annotated[str, Header()] = "",
+    ) -> FeedImportResponse:
+        require_admin(x_admin_token)
+        try:
+            path, spec = sample_library.resolve(sample_id)
+            result = await run_in_threadpool(feed_importer.import_video, path, spec)
+            return FeedImportResponse(
+                created=result.created,
+                action=action_summary(result.action),
+                duration_seconds=result.duration_seconds,
+                pose_coverage=result.pose_coverage,
+            )
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except (VideoValidationError, ValueError) as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        except FeedImportBusyError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=str(exc),
+            ) from exc
 
     @router.post("/actions/import", response_model=FeedImportResponse)
     async def import_feed(

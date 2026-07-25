@@ -7,7 +7,7 @@ page {
 .container { padding: 30rpx 30rpx 72rpx; }
 
 .hero {
-  padding: 72rpx 0 62rpx;
+  padding: 38rpx 0 32rpx;
   border-bottom: 2rpx solid #2b2e26;
 }
 
@@ -19,9 +19,9 @@ page {
 }
 
 .hero-title {
-  margin-top: 34rpx;
-  font-size: 90rpx;
-  line-height: .93;
+  margin-top: 22rpx;
+  font-size: 62rpx;
+  line-height: .96;
   font-weight: 900;
   letter-spacing: -7rpx;
 }
@@ -31,15 +31,15 @@ page {
 .small-title { font-size: 68rpx; }
 
 .hero-copy {
-  margin-top: 40rpx;
+  margin-top: 24rpx;
   color: #b7b9ae;
-  font-size: 28rpx;
-  line-height: 1.75;
+  font-size: 24rpx;
+  line-height: 1.6;
 }
 
 .flow-strip {
-  margin-top: 52rpx;
-  padding: 28rpx 0;
+  margin-top: 30rpx;
+  padding: 20rpx 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -54,7 +54,7 @@ page {
 .flow-strip > text { color: #505348; }
 
 .section-head {
-  padding: 78rpx 0 30rpx;
+  padding: 42rpx 0 24rpx;
   display: flex;
   gap: 22rpx;
   align-items: flex-start;
@@ -261,10 +261,18 @@ page {
 
 .search-card {
   margin-bottom: 18rpx;
-  padding: 28rpx;
+  padding: 18rpx;
   border: 2rpx solid #2b2e26;
   border-radius: 26rpx;
   background: #171914;
+}
+
+.tutorial-video {
+  width: 100%;
+  height: 620rpx;
+  margin-bottom: 22rpx;
+  border-radius: 18rpx;
+  background: #000;
 }
 
 .search-type { margin-bottom: 12rpx; color: #d9ff43; font-size: 20rpx; }

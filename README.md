@@ -35,7 +35,14 @@ make dev
 
 ## 导入或替换任意测试视频
 
-四个内置动作只是首次启动的样例。服务运行后，可以继续导入本地视频：
+四个内置动作只是首次启动的样例。打开 H5 后点击首页的「拓展舞库」，可以：
+
+- 预览 13 条开放许可舞蹈素材并一键加入首页；
+- 上传本机 MP4、MOV 或 WEBM；
+- 自动完成转码、暂停参考、MediaPipe 骨架提取与动作注册。
+
+本地演示口令为 `change-me`；线上使用 `.env` 中配置的 `ADMIN_TOKEN`。也可以继续
+使用命令行导入：
 
 ```bash
 .venv/bin/python scripts/import_feed.py ./my-dance.mp4 \
@@ -88,8 +95,13 @@ make content-check
 .venv/bin/python scripts/validate_content_matrix.py --strict-sources
 ```
 
-当前教学视频已记录为 `permission_granted + local_allowed`。实际文件统一放在
-`assets/tutorials/`；尚未复制文件时可暂时留空 `local_asset`。
+当前 20 条教学视频已记录为 `permission_granted + local_allowed`，实际文件位于
+`assets/tutorials/`。每个动作包含镜像、局部、慢速、定格和新手版，均保留 AAC
+音轨；H5 与小程序会在推荐卡片中直接播放。需要从四条授权源视频重新生成时执行：
+
+```bash
+make tutorial-build
+```
 
 ## 本地完整流程验收
 

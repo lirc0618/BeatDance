@@ -53,6 +53,8 @@ ARK_MODEL=ep-xxxxxxxx
 
 本地教学视频随镜像复制到 `/app/assets/tutorials`，可通过
 `TUTORIAL_ASSETS_DIR` 覆盖。目录中已登记的文件由 `/media/tutorials/` 提供访问。
+开放许可素材库随镜像复制到 `/app/assets/samples/open_sources`，H5 可以预览并
+通过管理员口令一键加入 Feed。
 
 部署前必须在 `.env` 设置非默认的长随机 `ADMIN_TOKEN`。默认值 `change-me`
 会禁用 Feed 导入和参考视频更新接口，避免公网实例被任意写入。

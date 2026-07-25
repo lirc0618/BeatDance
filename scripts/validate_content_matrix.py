@@ -41,6 +41,15 @@ def validate(
     items = payload.get("tutorials")
     if not isinstance(items, list):
         return ["tutorials 必须是数组"], [], {}
+    permission_record = payload.get("permission_record", {})
+    permission_record_valid = (
+        isinstance(permission_record, dict)
+        and permission_record.get("scope") == "all_tutorials"
+        and permission_record.get("license_status") == "permission_granted"
+        and bool(str(permission_record.get("confirmed_by", "")).strip())
+        and bool(str(permission_record.get("confirmed_at", "")).strip())
+        and bool(str(permission_record.get("statement", "")).strip())
+    )
 
     errors: list[str] = []
     warnings: list[str] = []
@@ -89,8 +98,11 @@ def validate(
         if source_url and not _looks_like_http_url(source_url):
             errors.append(f"{tutorial_id}: source_url 不是有效 HTTP(S) 地址")
         if not source_url:
-            message = f"{tutorial_id}: 尚未登记原始来源链接"
-            (errors if strict_sources else warnings).append(message)
+            if license_status == "permission_granted" and permission_record_valid:
+                warnings.append(f"{tutorial_id}: 原始来源链接待补；已有项目授权记录")
+            else:
+                message = f"{tutorial_id}: 尚未登记原始来源链接"
+                (errors if strict_sources else warnings).append(message)
 
         if license_status == "unverified":
             message = f"{tutorial_id}: 许可状态尚未核验"
@@ -128,6 +140,7 @@ def validate(
         "metrics": dict(metric_counts),
         "views": dict(view_counts),
         "licenses": dict(license_counts),
+        "permission_record": permission_record_valid,
     }
     return errors, warnings, summary
 

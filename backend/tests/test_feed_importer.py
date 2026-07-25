@@ -316,6 +316,50 @@ def test_authenticated_http_import_publishes_the_action(tmp_path):
     assert not comparison_video.exists()
 
 
+def test_sample_library_lists_server_videos_and_imports_one_without_upload(tmp_path):
+    settings = runtime_settings(tmp_path)
+    settings.seed_feed_dir = (
+        Path(__file__).parents[2] / "assets" / "samples" / "open_sources"
+    )
+    app = FastAPI()
+    app.include_router(
+        create_router(settings, Analyzer(settings)),
+        prefix=settings.api_prefix,
+    )
+    client = TestClient(app)
+
+    library = client.get(f"{settings.api_prefix}/sample-library")
+
+    assert library.status_code == 200
+    assert len(library.json()) >= 10
+    assert all(item["available"] for item in library.json())
+    sample = next(item for item in library.json() if item["id"] == "breakdance_2_step")
+    assert sample["name"] == "Breaking 两步"
+    assert (
+        sample["preview_url"]
+        == "/api/v1/sample-library/breakdance_2_step/video"
+    )
+    assert sample["available"] is True
+    assert sample["imported"] is False
+    preview = client.get(sample["preview_url"])
+    assert preview.status_code == 200
+    assert preview.headers["content-type"] == "video/mp4"
+
+    imported = client.post(
+        f"{settings.api_prefix}/sample-library/breakdance_2_step/import",
+        headers={"X-Admin-Token": settings.admin_token},
+    )
+
+    assert imported.status_code == 200
+    assert imported.json()["created"] is True
+    assert imported.json()["action"]["id"] == "library_breakdance_2_step"
+    refreshed = client.get(f"{settings.api_prefix}/sample-library").json()
+    refreshed_sample = next(
+        item for item in refreshed if item["id"] == "breakdance_2_step"
+    )
+    assert refreshed_sample["imported"] is True
+
+
 def test_startup_removes_only_orphaned_generated_files(tmp_path):
     settings = runtime_settings(tmp_path)
     nonce = "a" * 32

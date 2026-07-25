@@ -1,4 +1,6 @@
 import json
+import subprocess
+from pathlib import Path
 
 import pytest
 
@@ -24,6 +26,36 @@ def test_catalog_records_local_permission() -> None:
     assert all(item["download_policy"] == "local_allowed" for item in items)
     assert all(item["license_status"] == "permission_granted" for item in items)
     assert all(item["license_name"] == "项目已获授权" for item in items)
+
+
+def test_all_tutorial_recommendations_have_local_video_and_audio() -> None:
+    grouped = load_tutorial_catalog()
+    root = Path(__file__).parents[2]
+
+    for item in [item for action_items in grouped.values() for item in action_items]:
+        local_asset = item["local_asset"]
+        assert local_asset == f"assets/tutorials/{item['id']}.mp4"
+        assert item["url"] == f"/media/tutorials/{item['id']}.mp4"
+        asset = root / local_asset
+        assert asset.is_file()
+        audio_probe = subprocess.run(
+            [
+                "ffprobe",
+                "-v",
+                "error",
+                "-select_streams",
+                "a:0",
+                "-show_entries",
+                "stream=codec_name",
+                "-of",
+                "default=nw=1:nk=1",
+                str(asset),
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        assert audio_probe.stdout.strip() == "aac"
 
 
 def test_profile_uses_external_tutorial_catalog() -> None:

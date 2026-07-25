@@ -57,6 +57,23 @@ class FeedImportResponse(BaseModel):
     pose_coverage: float = Field(ge=0, le=1)
 
 
+class SampleLibraryItem(BaseModel):
+    id: str
+    action_id: str
+    name: str
+    filename: str
+    description: str
+    creator: str
+    license_name: str
+    source_url: str
+    pause_at_seconds: float
+    focus: FocusKind
+    duration_label: str
+    preview_url: str
+    available: bool
+    imported: bool
+
+
 class PauseInsightRequest(BaseModel):
     timestamp_seconds: float = Field(ge=0)
 

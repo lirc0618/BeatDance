@@ -5,7 +5,7 @@ const state = {
   actions: [], action: null, file: null, focus: 'auto',
   sessionId: localStorage.getItem('freezeCoachSession') || crypto.randomUUID(),
   baselineId: null, pausedAt: null, feedDuration: null, pauseInsight: null,
-  actionSignature: '', actionsLoading: false
+  actionSignature: '', actionsLoading: false, library: [], libraryLoading: false
 };
 localStorage.setItem('freezeCoachSession', state.sessionId);
 
@@ -37,16 +37,100 @@ function formatTime(seconds) {
   return `${String(minutes).padStart(2, '0')}:${remainder}`;
 }
 
+function adminToken() {
+  const input = el('library-token');
+  const value = input.value.trim();
+  if (value) sessionStorage.setItem('duipaiAdminToken', value);
+  return value;
+}
+
+function libraryCard(item) {
+  const buttonCopy = item.imported ? '已经在首页' : (item.available ? '一键加入首页' : '素材待下载');
+  return `
+    <article class="library-card" data-sample-id="${escapeHtml(item.id)}">
+      <video src="${escapeHtml(mediaUrl(item.preview_url))}" playsinline controls preload="none"></video>
+      <div class="library-card-body">
+        <div class="library-meta">
+          <span>${escapeHtml(item.duration_label)} · ${escapeHtml(item.license_name)}</span>
+          <a href="${escapeHtml(safeUrl(item.source_url))}" target="_blank" rel="noopener noreferrer">来源 ↗</a>
+        </div>
+        <strong>${escapeHtml(item.name)}</strong>
+        <p>${escapeHtml(item.description)}</p>
+        <small>${escapeHtml(item.creator)}</small>
+        <button data-sample-id="${escapeHtml(item.id)}" ${item.imported || !item.available ? 'disabled' : ''}>${buttonCopy}</button>
+      </div>
+    </article>`;
+}
+
+function renderLibrary() {
+  el('library-list').innerHTML = state.library.map(libraryCard).join('');
+  document.querySelectorAll('.library-card button[data-sample-id]').forEach(button => {
+    button.addEventListener('click', () => importSample(button.dataset.sampleId, button));
+  });
+}
+
+async function loadLibrary() {
+  if (state.libraryLoading) return;
+  state.libraryLoading = true;
+  el('library-message').textContent = '正在翻舞库…';
+  try {
+    const response = await fetch(`${API}/sample-library`);
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.detail || '素材库加载失败');
+    state.library = payload;
+    renderLibrary();
+    el('library-message').textContent = `${payload.length} 条可选素材，先试听再决定。`;
+  } catch (error) {
+    el('library-message').textContent = error.message;
+  } finally {
+    state.libraryLoading = false;
+  }
+}
+
+async function importSample(sampleId, button) {
+  const token = adminToken();
+  if (!token) {
+    el('library-message').textContent = '先填管理员口令，本地演示默认是 change-me。';
+    el('library-token').focus();
+    return;
+  }
+  button.disabled = true;
+  button.textContent = '正在生成人体参考…';
+  el('library-message').textContent = '正在转码、截取参考并提取骨架，通常需要几秒。';
+  try {
+    const response = await fetch(`${API}/sample-library/${encodeURIComponent(sampleId)}/import`, {
+      method: 'POST',
+      headers: { 'X-Admin-Token': token }
+    });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.detail || '加入首页失败');
+    state.actionSignature = '';
+    await Promise.all([loadActions(), loadLibrary()]);
+    el('library-message').textContent = `“${payload.action.name}”已经加入首页，可以直接开刷。`;
+  } catch (error) {
+    button.disabled = false;
+    button.textContent = '重新加入';
+    el('library-message').textContent = error.message;
+  }
+}
+
 function searchCards(results) {
-  return results.map((item, index) => `
-    <a class="search-card" href="${escapeHtml(safeUrl(item.url) || '#')}" target="_blank" rel="noopener noreferrer">
-      <div class="rank">0${index + 1}</div>
-      <div>
+  return results.map((item, index) => {
+    const url = safeUrl(item.url);
+    const isLocalVideo = Boolean(item.local_asset)
+      || (url && new URL(url).pathname.startsWith('/media/tutorials/'));
+    return `
+    <article class="search-card ${isLocalVideo ? 'has-tutorial-video' : ''}">
+      ${isLocalVideo ? `<video class="tutorial-video" src="${escapeHtml(url)}" controls playsinline preload="metadata"></video>` : ''}
+      <div class="search-card-copy">
+        <div class="rank">0${index + 1}</div>
         <span>${escapeHtml(item.view_type)}${item.clip_seconds ? ` · ${escapeHtml(item.clip_seconds)}` : ''}</span>
         <strong>${escapeHtml(item.title)}</strong>
         <small>${escapeHtml(item.why_matched || '这条正好对症')}</small>
+        ${!isLocalVideo && url ? `<a class="search-link" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">打开原视频 ↗</a>` : ''}
       </div>
-    </a>`).join('');
+    </article>`;
+  }).join('');
 }
 
 function actionSignature(actions) {
@@ -111,6 +195,61 @@ async function loadActions() {
     });
   });
 }
+
+el('open-library').addEventListener('click', async () => {
+  el('sample-library').classList.remove('hidden');
+  el('open-library').setAttribute('aria-expanded', 'true');
+  await loadLibrary();
+  el('sample-library').scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+el('close-library').addEventListener('click', () => {
+  el('sample-library').classList.add('hidden');
+  el('open-library').setAttribute('aria-expanded', 'false');
+});
+
+const savedAdminToken = sessionStorage.getItem('duipaiAdminToken');
+el('library-token').value = savedAdminToken
+  || (['localhost', '127.0.0.1'].includes(location.hostname) ? 'change-me' : '');
+
+el('custom-import-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const token = adminToken();
+  const file = el('custom-video').files[0];
+  if (!token || !file) {
+    el('library-message').textContent = '需要管理员口令和一个视频文件。';
+    return;
+  }
+  const button = el('custom-import-button');
+  const form = new FormData();
+  form.append('video', file);
+  form.append('action_id', `user_${Date.now().toString(36)}`);
+  form.append('name', el('custom-name').value.trim());
+  form.append('focus', el('custom-focus').value);
+  const pauseAt = el('custom-pause-at').value;
+  if (pauseAt) form.append('pause_at_seconds', pauseAt);
+  button.disabled = true;
+  button.textContent = '正在加入，请别关页面…';
+  el('library-message').textContent = '正在处理本机视频，长视频会多等一会儿。';
+  try {
+    const response = await fetch(`${API}/actions/import`, {
+      method: 'POST',
+      headers: { 'X-Admin-Token': token },
+      body: form
+    });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.detail || '视频导入失败');
+    el('library-message').textContent = `“${payload.action.name}”已经加入首页。`;
+    event.target.reset();
+    state.actionSignature = '';
+    await loadActions();
+    el('library-message').textContent = `“${payload.action.name}”已经加入首页，可以直接开刷。`;
+  } catch (error) {
+    el('library-message').textContent = error.message;
+  } finally {
+    button.disabled = false;
+    button.textContent = '加入首页并生成分析参考';
+  }
+});
 
 async function requestPauseInsight(id) {
   const card = Array.from(document.querySelectorAll('.feed-card')).find(

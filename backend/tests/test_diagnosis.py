@@ -138,7 +138,8 @@ def test_card_point_search_returns_diverse_views():
     assert results[0].error_type == "timing"
     assert "正好治" in results[0].why_matched
     assert "、" not in results[0].why_matched
-    assert all(item.url.startswith("https://www.douyin.com/search/") for item in results)
+    assert all(item.url.startswith("/media/tutorials/") for item in results)
+    assert all(item.local_asset.startswith("assets/tutorials/") for item in results)
 
 
 def test_timing_focus_is_preserved_in_result():

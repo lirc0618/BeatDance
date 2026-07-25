@@ -39,6 +39,65 @@ test('Feed 列表会自动发现新导入的视频且不需要刷新页面', asy
   });
 });
 
+test('用户可以预览素材库并一键加入首页', async ({ page }) => {
+  let imported = false;
+  await page.route('**/api/v1/sample-library', async (route) => {
+    await route.fulfill({
+      json: [
+        {
+          id: 'breakdance_2_step',
+          action_id: 'library_breakdance_2_step',
+          name: 'Breaking 两步',
+          filename: 'breakdance_2_step.mp4',
+          description: '先把两步踩稳',
+          creator: 'VincaniTV',
+          license_name: 'CC BY 3.0',
+          source_url: 'https://example.com/source',
+          pause_at_seconds: 3,
+          focus: 'lower',
+          duration_label: '6 秒',
+          preview_url: '/api/v1/sample-library/breakdance_2_step/video',
+          available: true,
+          imported
+        }
+      ]
+    });
+  });
+  await page.route('**/api/v1/sample-library/breakdance_2_step/import', async (route) => {
+    imported = true;
+    await route.fulfill({
+      json: {
+        created: true,
+        duration_seconds: 6.1,
+        pose_coverage: 0.9,
+        action: {
+          id: 'library_breakdance_2_step',
+          name: 'Breaking 两步',
+          description: '先把两步踩稳',
+          duration_hint: '3–8 秒',
+          reference_video_url: '/media/references/library-breakdance.mp4',
+          feed_video_url: '/media/feed/library-breakdance.mp4',
+          reference_ready: true,
+          tutorial_count: 3
+        }
+      }
+    });
+  });
+
+  await page.goto('http://localhost:8000/app/?api=http://127.0.0.1:8000');
+  await page.locator('#open-library').click();
+
+  await expect(page.locator('#sample-library')).toBeVisible();
+  await expect(page.locator('.library-card')).toHaveCount(1);
+  await expect(page.locator('.library-card video')).toHaveAttribute(
+    'src',
+    'http://127.0.0.1:8000/api/v1/sample-library/breakdance_2_step/video'
+  );
+  await page.locator('.library-card button[data-sample-id="breakdance_2_step"]').click();
+  await expect(page.locator('#library-message')).toContainText('已经加入首页');
+  expect(imported).toBeTruthy();
+});
+
 test('用户暂停 Feed 后获得时刻解释，再完成首练和二练验证', async ({ page, request }) => {
   const createdIds = [];
   try {
@@ -83,6 +142,7 @@ test('用户暂停 Feed 后获得时刻解释，再完成首练和二练验证',
     await expect(page.locator('#pause-time')).toContainText('00:01.0');
     await expect(page.locator('#pause-phase')).not.toBeEmpty();
     await expect(page.locator('#pause-search-results .search-card')).toHaveCount(3);
+    await expect(page.locator('#pause-search-results .search-card video')).toHaveCount(3);
     await page.locator('#practice-button').click();
 
     await page.locator('#focus-chips button[data-focus="lower"]').click();
@@ -114,8 +174,13 @@ test('用户暂停 Feed 后获得时刻解释，再完成首练和二练验证',
     );
     const searchCards = page.locator('#search-results .search-card');
     await expect(searchCards).toHaveCount(3);
+    await expect(page.locator('#search-results .search-card video')).toHaveCount(3);
     for (let index = 0; index < 3; index += 1) {
-      await expect(searchCards.nth(index)).toHaveAttribute('href', /^https:\/\/www\.douyin\.com\/search\//);
+      await expect(searchCards.nth(index).locator('video')).toHaveAttribute(
+        'src',
+        /^http:\/\/127\.0\.0\.1:8000\/media\/tutorials\/.+\.mp4$/
+      );
+      await expect(searchCards.nth(index).locator('video')).not.toHaveAttribute('muted', '');
     }
     await expect(page.locator('#improvement')).toBeHidden();
 

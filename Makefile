@@ -1,7 +1,7 @@
 API ?= http://127.0.0.1:8000/api/v1
 ADMIN_TOKEN ?= change-me
 
-.PHONY: setup setup-h5 dev demo-seed accept up down logs test test-h5 lint content-check video-smoke zip
+.PHONY: setup setup-h5 dev demo-seed tutorial-build accept up down logs test test-h5 lint content-check video-smoke zip
 
 setup:
 	uv venv --python 3.11 .venv
@@ -22,6 +22,9 @@ demo-seed:
 	.venv/bin/python scripts/import_feed.py assets/samples/open_sources/科目三.MP4 --api "$(API)" --token "$(ADMIN_TOKEN)" --id arm_wave --name 科目三 --pause-at 14 --focus lower
 	.venv/bin/python scripts/import_feed.py assets/samples/open_sources/摇一摇.MP4 --api "$(API)" --token "$(ADMIN_TOKEN)" --id cross_step --name 摇一摇 --pause-at 7 --focus auto
 	.venv/bin/python scripts/import_feed.py assets/samples/open_sources/jumpstyle.MP4 --api "$(API)" --token "$(ADMIN_TOKEN)" --id two_step_demo --name Jumpstyle --pause-at 8 --focus lower
+
+tutorial-build:
+	.venv/bin/python scripts/build_tutorial_assets.py
 
 accept:
 	.venv/bin/python scripts/full_flow_acceptance.py --admin-token "$(ADMIN_TOKEN)"

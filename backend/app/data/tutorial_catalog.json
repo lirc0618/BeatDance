@@ -1,6 +1,13 @@
 {
   "version": 1,
   "notes": "教学视频已获得本地保存许可；原始来源链接仍应逐条补充，便于审计与署名。",
+  "permission_record": {
+    "scope": "all_tutorials",
+    "license_status": "permission_granted",
+    "confirmed_by": "project_owner",
+    "confirmed_at": "2026-07-25",
+    "statement": "项目方确认这 20 条教学记录已获得本地保存与演示许可。"
+  },
   "tutorials": [
     {
       "id": "aini-mirror",
@@ -24,16 +31,16 @@
       "license_name": "项目已获授权",
       "license_url": "",
       "download_policy": "local_allowed",
-      "local_asset": ""
+      "local_asset": "assets/tutorials/aini-mirror.mp4"
     },
     {
       "id": "aini-hands",
       "action_id": "groove_step",
-      "title": "手势慢放｜点到就收",
+      "title": "上身特写｜点到就收",
       "error_type": "trajectory",
       "body_part": "双手",
-      "description": "只看手，甜度别开过头。",
-      "view_type": "手势慢放",
+      "description": "画面收在上半身，只追手臂路线。",
+      "view_type": "上身特写",
       "creator": "@动作搜索",
       "clip_seconds": "9 秒",
       "tags": [
@@ -48,16 +55,16 @@
       "license_name": "项目已获授权",
       "license_url": "",
       "download_policy": "local_allowed",
-      "local_asset": ""
+      "local_asset": "assets/tutorials/aini-hands.mp4"
     },
     {
       "id": "aini-chorus",
       "action_id": "groove_step",
-      "title": "副歌口令｜手到、胯到",
+      "title": "0.85×副歌｜手到、胯到",
       "error_type": "timing",
       "body_part": "躯干",
-      "description": "跟口令走，不用数拍数到宕机。",
-      "view_type": "副歌口令",
+      "description": "副歌稍微降速，看清手胯先后。",
+      "view_type": "节奏慢放",
       "creator": "@动作搜索",
       "clip_seconds": "8 秒",
       "tags": [
@@ -72,16 +79,16 @@
       "license_name": "项目已获授权",
       "license_url": "",
       "download_policy": "local_allowed",
-      "local_asset": ""
+      "local_asset": "assets/tutorials/aini-chorus.mp4"
     },
     {
       "id": "aini-freeze",
       "action_id": "groove_step",
-      "title": "定点摆拍｜停住半拍",
+      "title": "收尾定格｜停住半拍",
       "error_type": "angle",
       "body_part": "双臂",
       "description": "先把收尾造型卡住。",
-      "view_type": "定点摆拍",
+      "view_type": "收尾定格",
       "creator": "@动作搜索",
       "clip_seconds": "7 秒",
       "tags": [
@@ -96,16 +103,16 @@
       "license_name": "项目已获授权",
       "license_url": "",
       "download_policy": "local_allowed",
-      "local_asset": ""
+      "local_asset": "assets/tutorials/aini-freeze.mp4"
     },
     {
       "id": "aini-easy",
       "action_id": "groove_step",
-      "title": "新手半身版｜先手后胯",
+      "title": "0.72×跟跳｜先手后胯",
       "error_type": "trajectory",
       "body_part": "双手",
-      "description": "先关掉脚步，只练上半身。",
-      "view_type": "新手半身版",
+      "description": "整段降速，留出反应时间再跟跳。",
+      "view_type": "慢速跟跳",
       "creator": "@动作搜索",
       "clip_seconds": "10 秒",
       "tags": [
@@ -121,16 +128,16 @@
       "license_name": "项目已获授权",
       "license_url": "",
       "download_policy": "local_allowed",
-      "local_asset": ""
+      "local_asset": "assets/tutorials/aini-easy.mp4"
     },
     {
       "id": "kemusan-feet",
       "action_id": "arm_wave",
-      "title": "脚步俯拍｜脚往哪儿藏不住",
+      "title": "脚步特写｜脚往哪儿藏不住",
       "error_type": "trajectory",
       "body_part": "双脚",
       "description": "只看落点，拒绝脚下玄学。",
-      "view_type": "脚步俯拍",
+      "view_type": "脚步特写",
       "creator": "@动作搜索",
       "clip_seconds": "10 秒",
       "tags": [
@@ -145,16 +152,16 @@
       "license_name": "项目已获授权",
       "license_url": "",
       "download_policy": "local_allowed",
-      "local_asset": ""
+      "local_asset": "assets/tutorials/kemusan-feet.mp4"
     },
     {
       "id": "kemusan-slow",
       "action_id": "arm_wave",
-      "title": "0.5×拆腿｜换边别排队",
+      "title": "0.55×拆腿｜换边别排队",
       "error_type": "timing",
       "body_part": "双腿",
       "description": "把腿和重心的先后拆开。",
-      "view_type": "0.5×拆腿",
+      "view_type": "0.55×慢放",
       "creator": "@动作搜索",
       "clip_seconds": "13 秒",
       "tags": [
@@ -169,16 +176,16 @@
       "license_name": "项目已获授权",
       "license_url": "",
       "download_policy": "local_allowed",
-      "local_asset": ""
+      "local_asset": "assets/tutorials/kemusan-slow.mp4"
     },
     {
       "id": "kemusan-beat",
       "action_id": "arm_wave",
-      "title": "重拍口令｜点、换、弹",
+      "title": "0.85×节拍｜点、换、弹",
       "error_type": "timing",
       "body_part": "双脚",
-      "description": "跟三个字走，少开脑内会议。",
-      "view_type": "重拍口令",
+      "description": "稍微放慢原节拍，看清点地和换边。",
+      "view_type": "节拍慢放",
       "creator": "@动作搜索",
       "clip_seconds": "8 秒",
       "tags": [
@@ -193,16 +200,16 @@
       "license_name": "项目已获授权",
       "license_url": "",
       "download_policy": "local_allowed",
-      "local_asset": ""
+      "local_asset": "assets/tutorials/kemusan-beat.mp4"
     },
     {
       "id": "kemusan-freeze",
       "action_id": "arm_wave",
-      "title": "落地定格｜别坐死",
+      "title": "尾帧定格｜别坐死",
       "error_type": "angle",
       "body_part": "双腿",
-      "description": "停住看膝髋有没有弹性。",
-      "view_type": "落地定格",
+      "description": "尾帧停住，看膝髋有没有弹性。",
+      "view_type": "关键帧定格",
       "creator": "@动作搜索",
       "clip_seconds": "8 秒",
       "tags": [
@@ -217,16 +224,16 @@
       "license_name": "项目已获授权",
       "license_url": "",
       "download_policy": "local_allowed",
-      "local_asset": ""
+      "local_asset": "assets/tutorials/kemusan-freeze.mp4"
     },
     {
       "id": "kemusan-easy",
       "action_id": "arm_wave",
-      "title": "扶墙简化｜只练换挡",
+      "title": "0.72×跟跳｜看清换挡",
       "error_type": "trajectory",
       "body_part": "髋部",
-      "description": "扶稳上身，单刷重心换边。",
-      "view_type": "扶墙简化",
+      "description": "整段降速，跟着练重心换边。",
+      "view_type": "慢速跟跳",
       "creator": "@动作搜索",
       "clip_seconds": "12 秒",
       "tags": [
@@ -242,7 +249,7 @@
       "license_name": "项目已获授权",
       "license_url": "",
       "download_policy": "local_allowed",
-      "local_asset": ""
+      "local_asset": "assets/tutorials/kemusan-easy.mp4"
     },
     {
       "id": "shake-upper",
@@ -266,16 +273,16 @@
       "license_name": "项目已获授权",
       "license_url": "",
       "download_policy": "local_allowed",
-      "local_asset": ""
+      "local_asset": "assets/tutorials/shake-upper.mp4"
     },
     {
       "id": "shake-beat",
       "action_id": "cross_step",
-      "title": "节奏口令｜摇、停、回中",
+      "title": "0.85×节奏｜摇、停、回中",
       "error_type": "timing",
       "body_part": "躯干",
-      "description": "三字口令，把惯性管住。",
-      "view_type": "节奏口令",
+      "description": "稍微放慢原节奏，看清惯性怎么收住。",
+      "view_type": "节奏慢放",
       "creator": "@动作搜索",
       "clip_seconds": "8 秒",
       "tags": [
@@ -289,7 +296,7 @@
       "license_name": "项目已获授权",
       "license_url": "",
       "download_policy": "local_allowed",
-      "local_asset": ""
+      "local_asset": "assets/tutorials/shake-beat.mp4"
     },
     {
       "id": "shake-mirror",
@@ -312,16 +319,16 @@
       "license_name": "项目已获授权",
       "license_url": "",
       "download_policy": "local_allowed",
-      "local_asset": ""
+      "local_asset": "assets/tutorials/shake-mirror.mp4"
     },
     {
       "id": "shake-freeze",
       "action_id": "cross_step",
-      "title": "回正定格｜惯性到此为止",
+      "title": "尾帧定格｜惯性到此为止",
       "error_type": "angle",
       "body_part": "躯干",
-      "description": "停住检查身体有没有回中。",
-      "view_type": "回正定格",
+      "description": "尾帧停住，检查身体有没有回中。",
+      "view_type": "关键帧定格",
       "creator": "@动作搜索",
       "clip_seconds": "7 秒",
       "tags": [
@@ -335,16 +342,16 @@
       "license_name": "项目已获授权",
       "license_url": "",
       "download_policy": "local_allowed",
-      "local_asset": ""
+      "local_asset": "assets/tutorials/shake-freeze.mp4"
     },
     {
       "id": "shake-easy",
       "action_id": "cross_step",
-      "title": "坐姿练肩｜先把肩摇明白",
+      "title": "0.72×跟摇｜先把路线看明白",
       "error_type": "trajectory",
       "body_part": "双肩",
-      "description": "固定下半身，只练肩膀路线。",
-      "view_type": "坐姿练肩",
+      "description": "整段降速，留出反应时间跟肩胯路线。",
+      "view_type": "慢速跟跳",
       "creator": "@动作搜索",
       "clip_seconds": "9 秒",
       "tags": [
@@ -360,7 +367,7 @@
       "license_name": "项目已获授权",
       "license_url": "",
       "download_policy": "local_allowed",
-      "local_asset": ""
+      "local_asset": "assets/tutorials/shake-easy.mp4"
     },
     {
       "id": "jumpstyle-feet",
@@ -384,16 +391,16 @@
       "license_name": "项目已获授权",
       "license_url": "",
       "download_policy": "local_allowed",
-      "local_asset": ""
+      "local_asset": "assets/tutorials/jumpstyle-feet.mp4"
     },
     {
       "id": "jumpstyle-slow",
       "action_id": "two_step_demo",
-      "title": "超慢换腿｜前后脚秒切",
+      "title": "0.55×换腿｜前后脚秒切",
       "error_type": "timing",
       "body_part": "双腿",
       "description": "把换腿那一下掰开看。",
-      "view_type": "超慢换腿",
+      "view_type": "0.55×慢放",
       "creator": "@动作搜索",
       "clip_seconds": "12 秒",
       "tags": [
@@ -408,16 +415,16 @@
       "license_name": "项目已获授权",
       "license_url": "",
       "download_policy": "local_allowed",
-      "local_asset": ""
+      "local_asset": "assets/tutorials/jumpstyle-slow.mp4"
     },
     {
       "id": "jumpstyle-beat",
       "action_id": "two_step_demo",
-      "title": "落地节拍｜轻落、快弹",
+      "title": "0.85×落地｜轻落、快弹",
       "error_type": "trajectory",
       "body_part": "双腿",
-      "description": "听落点，不背论文。",
-      "view_type": "落地节拍",
+      "description": "稍微放慢原节拍，看清踢、落、弹。",
+      "view_type": "节拍慢放",
       "creator": "@动作搜索",
       "clip_seconds": "9 秒",
       "tags": [
@@ -432,16 +439,16 @@
       "license_name": "项目已获授权",
       "license_url": "",
       "download_policy": "local_allowed",
-      "local_asset": ""
+      "local_asset": "assets/tutorials/jumpstyle-beat.mp4"
     },
     {
       "id": "jumpstyle-freeze",
       "action_id": "two_step_demo",
-      "title": "膝盖定格｜落地别锁死",
+      "title": "尾帧定格｜落地别锁死",
       "error_type": "angle",
       "body_part": "双腿",
-      "description": "停住看膝盖有没有留弹性。",
-      "view_type": "膝盖定格",
+      "description": "尾帧停住，看膝盖有没有留弹性。",
+      "view_type": "关键帧定格",
       "creator": "@动作搜索",
       "clip_seconds": "8 秒",
       "tags": [
@@ -456,16 +463,16 @@
       "license_name": "项目已获授权",
       "license_url": "",
       "download_policy": "local_allowed",
-      "local_asset": ""
+      "local_asset": "assets/tutorials/jumpstyle-freeze.mp4"
     },
     {
       "id": "jumpstyle-easy",
       "action_id": "two_step_demo",
-      "title": "原地简化｜先练踢落弹",
+      "title": "0.72×跟跳｜先练踢落弹",
       "error_type": "trajectory",
       "body_part": "双腿",
-      "description": "不往前跑，先把脚下循环练顺。",
-      "view_type": "原地简化",
+      "description": "整段降速，把脚下循环看清再跟跳。",
+      "view_type": "慢速跟跳",
       "creator": "@动作搜索",
       "clip_seconds": "11 秒",
       "tags": [
@@ -481,7 +488,7 @@
       "license_name": "项目已获授权",
       "license_url": "",
       "download_policy": "local_allowed",
-      "local_asset": ""
+      "local_asset": "assets/tutorials/jumpstyle-easy.mp4"
     }
   ]
 }

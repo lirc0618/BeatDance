@@ -31,9 +31,52 @@
     <section id="step-actions" class="panel">
       <div class="panel-title">
         <span>01</span>
-        <div><h2>先挑一个动作</h2><p>播放视频，在没看懂的位置按下暂停。</p></div>
+        <div><h2>先刷一个想学的</h2><p>听着原声播放，看到不会的地方就暂停。</p></div>
         <small><b id="action-count">0</b> 条可学素材</small>
       </div>
+      <div class="feed-toolbar">
+        <div>
+          <strong>首页没有你想学的？</strong>
+          <span>从开放素材库一键加入，或上传你刚刷到的视频。</span>
+        </div>
+        <button id="open-library" class="toolbar-button">＋ 拓展舞库</button>
+      </div>
+      <section id="sample-library" class="library-drawer hidden" aria-label="舞蹈素材库">
+        <div class="library-head">
+          <div>
+            <span>VIDEO LAB · 随时换舞</span>
+            <h3>挑一条，直接塞进首页</h3>
+            <p>先预览，再一键生成可暂停、可分析的动作卡片。</p>
+          </div>
+          <button id="close-library" aria-label="关闭素材库">×</button>
+        </div>
+        <div class="library-access">
+          <label>
+            <span>管理员口令</span>
+            <input id="library-token" type="password" autocomplete="off" placeholder="本地演示默认 change-me" />
+          </label>
+          <small>口令只保存在当前标签页；线上环境请使用部署时配置的口令。</small>
+        </div>
+        <div id="library-message" class="library-message" aria-live="polite"></div>
+        <div id="library-list" class="library-grid"></div>
+        <details class="custom-import">
+          <summary>找不到？上传本机视频</summary>
+          <form id="custom-import-form">
+            <label><span>动作名称</span><input id="custom-name" required maxlength="40" placeholder="例如：我的锁舞片段" /></label>
+            <label><span>哪一秒最清楚（可不填）</span><input id="custom-pause-at" type="number" min="0" step="0.1" placeholder="默认取视频中点" /></label>
+            <label><span>主要难点</span>
+              <select id="custom-focus">
+                <option value="auto">AI 自己看</option>
+                <option value="upper">上半身</option>
+                <option value="lower">脚步</option>
+                <option value="timing">节奏</option>
+              </select>
+            </label>
+            <label class="custom-file"><span>选择视频</span><input id="custom-video" type="file" accept="video/*" required /></label>
+            <button id="custom-import-button" class="primary" type="submit">加入首页并生成分析参考</button>
+          </form>
+        </details>
+      </section>
       <div id="action-list" class="feed-grid"></div>
     </section>
 
