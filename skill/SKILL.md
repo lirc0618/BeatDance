@@ -1,8 +1,10 @@
 # 对拍（BeatDance）Skill
 
-## 1. Skill 名称
+## 1. Skill 标识
 
 `freeze-frame-search-coach`
+
+这是为兼容已有调用保留的机器标识；产品中文名为“对拍”，英文名为“BeatDance”。
 
 ## 2. 目标
 

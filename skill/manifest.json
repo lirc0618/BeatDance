@@ -1,5 +1,5 @@
 {
-  "name": "beatdance",
+  "name": "freeze-frame-search-coach",
   "display_name": "对拍（BeatDance）",
   "version": "0.2.0",
   "description": "从 Feed 暂停触发，定位短动作卡点，按失败状态召回多视角拆解并进行二次验证。",
