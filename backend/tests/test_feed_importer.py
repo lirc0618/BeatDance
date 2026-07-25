@@ -3,6 +3,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
+import httpx
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -13,6 +14,7 @@ from app.services.analyzer import Analyzer
 from app.services.diagnosis import ActionRegistry
 from app.services.feed_importer import FeedImporter, FeedImportSpec
 from app.services.pause_coach import PauseCoach
+from app.services.teaching_plans import QwenTeachingPlanGenerator
 from app.services.video import VideoValidationError, probe_video
 
 
@@ -245,9 +247,12 @@ def test_authenticated_http_import_publishes_the_action(tmp_path):
     settings.admin_token = "replace-with-a-long-random-secret"
     assert settings.admin_mutations_enabled is False
     settings.admin_token = "test-secret-that-is-long-enough"
+    analyzer = Analyzer(settings)
+    teaching_requests: list[str] = []
+    analyzer.teaching_plans.prepare = lambda source: teaching_requests.append(source.action_id)
     app = FastAPI()
     app.include_router(
-        create_router(settings, Analyzer(settings)),
+        create_router(settings, analyzer),
         prefix=settings.api_prefix,
     )
     client = TestClient(app)
@@ -365,6 +370,7 @@ def test_authenticated_http_import_publishes_the_action(tmp_path):
     )
     assert client.delete(f"{settings.api_prefix}/results/{analyzed_payload['id']}").status_code == 200
     assert not comparison_video.exists()
+    assert teaching_requests == ["http_move"]
 
 
 def test_http_import_schedules_reference_teaching_after_publish(tmp_path):
@@ -397,6 +403,71 @@ def test_http_import_schedules_reference_teaching_after_publish(tmp_path):
 
     assert response.status_code == 200
     assert scheduled == ["teaching_ready"]
+
+
+def test_reference_upload_schedules_teaching_and_updates_its_source_hash(tmp_path):
+    settings = runtime_settings(tmp_path)
+    analyzer = Analyzer(settings)
+    scheduled: list[str] = []
+    analyzer.teaching_plans.prepare = lambda source: scheduled.append(source.action_id)
+    app = FastAPI()
+    app.include_router(create_router(settings, analyzer), prefix=settings.api_prefix)
+    client = TestClient(app)
+    source = (
+        Path(__file__).parents[2]
+        / "assets"
+        / "samples"
+        / "open_sources"
+        / "simple_step.mp4"
+    )
+
+    with source.open("rb") as handle:
+        response = client.post(
+            f"{settings.api_prefix}/actions/groove_step/reference",
+            files={"video": ("reference.mp4", handle, "video/mp4")},
+            headers={"X-Admin-Token": settings.admin_token},
+        )
+
+    assert response.status_code == 200
+    assert scheduled == ["groove_step"]
+    assert analyzer.registry.get("groove_step")["teaching_source_hash"]
+
+
+def test_qwen_http_timeout_does_not_change_successful_import_response(tmp_path):
+    settings = runtime_settings(tmp_path)
+    settings.dashscope_api_key = "test-qwen-key"
+    settings.qwen_send_images = False
+
+    def timeout(request: httpx.Request) -> httpx.Response:
+        raise httpx.ReadTimeout("simulated timeout", request=request)
+
+    analyzer = Analyzer(settings)
+    analyzer.teaching_plans.generator = QwenTeachingPlanGenerator(
+        settings,
+        transport=httpx.MockTransport(timeout),
+    )
+    app = FastAPI()
+    app.include_router(create_router(settings, analyzer), prefix=settings.api_prefix)
+    client = TestClient(app)
+    source = (
+        Path(__file__).parents[2]
+        / "assets"
+        / "samples"
+        / "open_sources"
+        / "simple_step.mp4"
+    )
+
+    with source.open("rb") as handle:
+        response = client.post(
+            f"{settings.api_prefix}/actions/import",
+            data={"action_id": "timeout_safe", "name": "超时仍可用"},
+            files={"video": ("move.mp4", handle, "video/mp4")},
+            headers={"X-Admin-Token": settings.admin_token},
+        )
+
+    assert response.status_code == 200
+    assert analyzer.registry.get("timeout_safe")["name"] == "超时仍可用"
+    assert analyzer.teaching_plans.store.load("timeout_safe") is None
 
 
 def test_sample_library_lists_server_videos_and_imports_one_without_upload(tmp_path):

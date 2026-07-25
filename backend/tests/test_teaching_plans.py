@@ -1,4 +1,5 @@
 import json
+import threading
 from pathlib import Path
 
 import httpx
@@ -39,6 +40,45 @@ def teaching_source(tmp_path: Path, source_hash: str = "source-v1") -> TeachingP
     )
 
 
+def generated_plan(source: TeachingPlanSource) -> TeachingPlan:
+    return TeachingPlan(
+        action_id=source.action_id,
+        source_hash=source.source_hash,
+        source_start_seconds=source.source_start_seconds,
+        source_end_seconds=source.source_end_seconds,
+        overall_summary="先拆手势，再接完整动作。",
+        segments=[
+            TeachingSegment(
+                start_seconds=8.5,
+                end_seconds=10.0,
+                title="手势进入",
+                description="双手先到胸前。",
+                mnemonic="先收，再开。",
+                pitfall="不要提前甩手。",
+                priority="优先",
+                suggested_focus="hands",
+                metric="timing",
+                body_part="双手",
+            ),
+            TeachingSegment(
+                start_seconds=10.0,
+                end_seconds=11.5,
+                title="手势打开",
+                description="双手向两侧展开。",
+                mnemonic="打开后停住。",
+                pitfall="掌心方向不要翻反。",
+                priority="建议",
+                suggested_focus="hands",
+                metric="trajectory",
+                body_part="双手",
+            ),
+        ],
+        warmups=["活动手腕"],
+        practice_plan="每段三遍，再连起来。",
+        provenance=TeachingPlanProvenance(generator="test", model="stub"),
+    )
+
+
 class RecordingGenerator:
     configured = True
 
@@ -47,42 +87,7 @@ class RecordingGenerator:
 
     def generate(self, source: TeachingPlanSource) -> TeachingPlan:
         self.calls += 1
-        return TeachingPlan(
-            action_id=source.action_id,
-            source_hash=source.source_hash,
-            source_start_seconds=source.source_start_seconds,
-            source_end_seconds=source.source_end_seconds,
-            overall_summary="先拆手势，再接完整动作。",
-            segments=[
-                TeachingSegment(
-                    start_seconds=8.5,
-                    end_seconds=10.0,
-                    title="手势进入",
-                    description="双手先到胸前。",
-                    mnemonic="先收，再开。",
-                    pitfall="不要提前甩手。",
-                    priority="优先",
-                    suggested_focus="hands",
-                    metric="timing",
-                    body_part="双手",
-                ),
-                TeachingSegment(
-                    start_seconds=10.0,
-                    end_seconds=11.5,
-                    title="手势打开",
-                    description="双手向两侧展开。",
-                    mnemonic="打开后停住。",
-                    pitfall="掌心方向不要翻反。",
-                    priority="建议",
-                    suggested_focus="hands",
-                    metric="trajectory",
-                    body_part="双手",
-                ),
-            ],
-            warmups=["活动手腕"],
-            practice_plan="每段三遍，再连起来。",
-            provenance=TeachingPlanProvenance(generator="test", model="stub"),
-        )
+        return generated_plan(source)
 
 
 class FailingGenerator:
@@ -90,6 +95,37 @@ class FailingGenerator:
 
     def generate(self, source: TeachingPlanSource) -> TeachingPlan:
         raise TimeoutError("qwen timeout")
+
+
+class BlockingGenerator(RecordingGenerator):
+    def __init__(self) -> None:
+        super().__init__()
+        self.first_entered = threading.Event()
+        self.second_entered = threading.Event()
+        self.release = threading.Event()
+
+    def generate(self, source: TeachingPlanSource) -> TeachingPlan:
+        self.calls += 1
+        if self.calls == 1:
+            self.first_entered.set()
+        else:
+            self.second_entered.set()
+        self.release.wait(timeout=2)
+        return generated_plan(source)
+
+
+class ReplacementGenerator:
+    configured = True
+
+    def __init__(self) -> None:
+        self.first_entered = threading.Event()
+        self.release_first = threading.Event()
+
+    def generate(self, source: TeachingPlanSource) -> TeachingPlan:
+        if source.source_hash == "source-v1":
+            self.first_entered.set()
+            self.release_first.wait(timeout=2)
+        return generated_plan(source)
 
 
 def test_plan_is_cached_and_selected_by_feed_timestamp(tmp_path: Path) -> None:
@@ -104,11 +140,18 @@ def test_plan_is_cached_and_selected_by_feed_timestamp(tmp_path: Path) -> None:
         10.5,
         expected_source_hash=source.source_hash,
     )
+    boundary = service.segment_for(
+        source.action_id,
+        10.0,
+        expected_source_hash=source.source_hash,
+    )
 
     assert first == second
     assert generator.calls == 1
     assert selected is not None
     assert selected.title == "手势打开"
+    assert boundary is not None
+    assert boundary.title == "手势打开"
 
 
 def test_generation_failure_falls_back_without_using_a_stale_plan(tmp_path: Path) -> None:
@@ -126,6 +169,48 @@ def test_generation_failure_falls_back_without_using_a_stale_plan(tmp_path: Path
 
     assert result is None
     assert selected is None
+
+
+def test_concurrent_requests_for_the_same_reference_use_single_flight(tmp_path: Path) -> None:
+    generator = BlockingGenerator()
+    service = TeachingPlanService(TeachingPlanStore(tmp_path / "plans"), generator)
+    source = teaching_source(tmp_path)
+    first = threading.Thread(target=service.prepare, args=(source,))
+    second = threading.Thread(target=service.prepare, args=(source,))
+
+    first.start()
+    assert generator.first_entered.wait(timeout=1)
+    second.start()
+    duplicate_started = generator.second_entered.wait(timeout=0.3)
+    generator.release.set()
+    first.join(timeout=2)
+    second.join(timeout=2)
+
+    assert duplicate_started is False
+    assert generator.calls == 1
+
+
+def test_new_reference_cannot_be_overwritten_by_an_older_background_task(
+    tmp_path: Path,
+) -> None:
+    generator = ReplacementGenerator()
+    store = TeachingPlanStore(tmp_path / "plans")
+    service = TeachingPlanService(store, generator)
+    old_source = teaching_source(tmp_path, source_hash="source-v1")
+    new_source = teaching_source(tmp_path, source_hash="source-v2")
+    first = threading.Thread(target=service.prepare, args=(old_source,))
+    second = threading.Thread(target=service.prepare, args=(new_source,))
+
+    first.start()
+    assert generator.first_entered.wait(timeout=1)
+    second.start()
+    generator.release_first.set()
+    first.join(timeout=2)
+    second.join(timeout=2)
+
+    stored = store.load(old_source.action_id)
+    assert stored is not None
+    assert stored.source_hash == "source-v2"
 
 
 def test_qwen_generator_normalizes_model_output_to_feed_timestamps(tmp_path: Path) -> None:
@@ -243,3 +328,22 @@ def test_invalid_qwen_json_is_rejected_without_storing_a_plan(tmp_path: Path) ->
 
     assert result is None
     assert store.load(source.action_id) is None
+
+
+def test_teaching_plan_storage_does_not_change_five_presets_or_tutorial_counts(
+    tmp_path: Path,
+) -> None:
+    root = Path(__file__).parents[2]
+    registry = ActionRegistry(root / "backend" / "app" / "data" / "actions.json")
+    before = [(action["id"], len(action["tutorials"])) for action in registry.list()]
+    service = TeachingPlanService(
+        TeachingPlanStore(tmp_path / "plans"),
+        RecordingGenerator(),
+    )
+
+    service.prepare(teaching_source(tmp_path))
+    after = [(action["id"], len(action["tutorials"])) for action in registry.list()]
+
+    assert after == before
+    assert len(after) == 5
+    assert all(tutorial_count == 5 for _, tutorial_count in after)

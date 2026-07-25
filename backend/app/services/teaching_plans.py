@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import base64
+import hashlib
 import json
 import logging
 import re
+import threading
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Protocol
@@ -37,6 +39,31 @@ class TeachingPlanSource:
     source_start_seconds: float
     source_end_seconds: float
     default_focus: FocusKind = "auto"
+
+
+def build_teaching_plan_source(
+    *,
+    action_id: str,
+    action_name: str,
+    reference_video: Path,
+    pose: PoseSequence,
+    source_start_seconds: float,
+    default_focus: FocusKind,
+) -> TeachingPlanSource:
+    digest = hashlib.sha256()
+    with reference_video.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return TeachingPlanSource(
+        action_id=action_id,
+        action_name=action_name,
+        reference_video=reference_video,
+        pose=pose,
+        source_hash=digest.hexdigest(),
+        source_start_seconds=source_start_seconds,
+        source_end_seconds=source_start_seconds + pose.duration_seconds,
+        default_focus=default_focus,
+    )
 
 
 class TeachingPlanGenerator(Protocol):
@@ -161,24 +188,32 @@ class QwenTeachingPlanGenerator:
         cap = cv2.VideoCapture(str(path))
         if not cap.isOpened():
             return []
-        frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
-        picks = min(self.settings.qwen_max_frames, frame_count)
-        indices = np.linspace(0, max(frame_count - 1, 0), picks, dtype=int) if picks else []
-        urls: list[str] = []
-        for index in indices:
-            cap.set(cv2.CAP_PROP_POS_FRAMES, int(index))
-            ok, frame = cap.read()
-            if not ok:
-                continue
-            height, width = frame.shape[:2]
-            if width > 480:
-                frame = cv2.resize(frame, (480, round(height * 480 / width)))
-            encoded, buffer = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 82])
-            if encoded:
-                payload = base64.b64encode(buffer.tobytes()).decode("ascii")
-                urls.append(f"data:image/jpeg;base64,{payload}")
-        cap.release()
-        return urls
+        try:
+            frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
+            picks = min(self.settings.qwen_max_frames, frame_count)
+            indices = (
+                np.linspace(0, max(frame_count - 1, 0), picks, dtype=int) if picks else []
+            )
+            urls: list[str] = []
+            for index in indices:
+                cap.set(cv2.CAP_PROP_POS_FRAMES, int(index))
+                ok, frame = cap.read()
+                if not ok:
+                    continue
+                height, width = frame.shape[:2]
+                if width > 480:
+                    frame = cv2.resize(frame, (480, round(height * 480 / width)))
+                encoded, buffer = cv2.imencode(
+                    ".jpg",
+                    frame,
+                    [cv2.IMWRITE_JPEG_QUALITY, 82],
+                )
+                if encoded:
+                    payload = base64.b64encode(buffer.tobytes()).decode("ascii")
+                    urls.append(f"data:image/jpeg;base64,{payload}")
+            return urls
+        finally:
+            cap.release()
 
     def _parse(self, content: str, source: TeachingPlanSource) -> TeachingPlan:
         cleaned = content.strip()
@@ -284,24 +319,48 @@ class TeachingPlanService:
     def __init__(self, store: TeachingPlanStore, generator: TeachingPlanGenerator):
         self.store = store
         self.generator = generator
+        self._state_lock = threading.Lock()
+        self._action_locks: dict[str, threading.Lock] = {}
+        self._latest_hashes: dict[str, str] = {}
 
     def prepare(self, source: TeachingPlanSource) -> TeachingPlan | None:
-        current = self.store.load(source.action_id)
-        if current and current.source_hash == source.source_hash:
-            return current
-        if not self.generator.configured:
-            return None
-        try:
-            plan = self.generator.generate(source)
-        except Exception:
-            logger.warning(
-                "Teaching plan generation failed for %s",
-                source.action_id,
-                exc_info=True,
-            )
-            return None
-        self.store.save(plan)
-        return plan
+        with self._state_lock:
+            self._latest_hashes[source.action_id] = source.source_hash
+            action_lock = self._action_locks.setdefault(source.action_id, threading.Lock())
+        with action_lock:
+            with self._state_lock:
+                if self._latest_hashes.get(source.action_id) != source.source_hash:
+                    return None
+            current = self.store.load(source.action_id)
+            if current and current.source_hash == source.source_hash:
+                return current
+            if not self.generator.configured:
+                return None
+            try:
+                plan = self.generator.generate(source)
+                self._validate_plan(plan, source)
+                with self._state_lock:
+                    if self._latest_hashes.get(source.action_id) != source.source_hash:
+                        return None
+                self.store.save(plan)
+                return plan
+            except Exception:
+                logger.warning(
+                    "Teaching plan generation failed for %s",
+                    source.action_id,
+                    exc_info=True,
+                )
+                return None
+
+    @staticmethod
+    def _validate_plan(plan: TeachingPlan, source: TeachingPlanSource) -> None:
+        if plan.action_id != source.action_id or plan.source_hash != source.source_hash:
+            raise ValueError("教学计划与参考素材不匹配")
+        if (
+            plan.source_start_seconds != source.source_start_seconds
+            or plan.source_end_seconds != source.source_end_seconds
+        ):
+            raise ValueError("教学计划时间范围与参考素材不匹配")
 
     def segment_for(
         self,
@@ -315,11 +374,11 @@ class TeachingPlanService:
             return None
         if expected_source_hash is None or plan.source_hash != expected_source_hash:
             return None
-        return next(
-            (
-                segment
-                for segment in plan.segments
-                if segment.start_seconds <= timestamp_seconds <= segment.end_seconds
-            ),
-            None,
-        )
+        for index, segment in enumerate(plan.segments):
+            is_last = index == len(plan.segments) - 1
+            if segment.start_seconds <= timestamp_seconds and (
+                timestamp_seconds < segment.end_seconds
+                or (is_last and timestamp_seconds <= segment.end_seconds)
+            ):
+                return segment
+        return None

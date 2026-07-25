@@ -237,6 +237,7 @@ def create_router(settings: Settings, analyzer: Analyzer) -> APIRouter:
     @router.post("/actions/{action_id}/reference")
     async def upload_reference(
         action_id: str,
+        background_tasks: BackgroundTasks,
         video: Annotated[UploadFile, File()],
         x_admin_token: Annotated[str, Header()] = "",
     ) -> dict:
@@ -246,7 +247,11 @@ def create_router(settings: Settings, analyzer: Analyzer) -> APIRouter:
             path = await save_upload(video, settings.uploads_dir, settings.max_upload_mb)
             metadata = probe_video(path)
             validate_duration(metadata, settings.min_video_seconds, settings.max_video_seconds)
-            pose = analyzer.register_reference(action_id, path)
+            pose, teaching_source = analyzer.register_reference_for_teaching(action_id, path)
+            background_tasks.add_task(
+                analyzer.teaching_plans.prepare,
+                teaching_source,
+            )
             return {"ok": True, "action_id": action_id, "pose_coverage": pose.coverage}
         except KeyError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc

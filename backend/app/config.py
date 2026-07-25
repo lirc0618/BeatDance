@@ -8,6 +8,7 @@ from functools import lru_cache
 from pathlib import Path
 from uuid import uuid4
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from .file_lock import catalog_transaction
@@ -52,9 +53,9 @@ class Settings(BaseSettings):
     dashscope_api_key: str | None = None
     qwen_model: str = "qwen3.7-plus"
     qwen_base_url: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
-    qwen_timeout_seconds: float = 30.0
+    qwen_timeout_seconds: float = Field(default=30.0, ge=1.0, le=120.0)
     qwen_send_images: bool = True
-    qwen_max_frames: int = 12
+    qwen_max_frames: int = Field(default=12, ge=1, le=24)
 
     # 抖音开放平台视频搜索。可直接填短期 ACCESS_TOKEN，或配置 key/secret 自动换取。
     douyin_access_token: str | None = None

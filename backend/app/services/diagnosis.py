@@ -122,6 +122,15 @@ class ActionRegistry:
                 raise KeyError(f"未知动作：{action_id}")
             return with_coaching_profile(self.actions[action_id])
 
+    def raw(self, action_id: str) -> dict[str, Any]:
+        """Return the persisted action without derived coaching-profile fields."""
+
+        with self.lock:
+            self._reload_if_changed()
+            if action_id not in self.actions:
+                raise KeyError(f"未知动作：{action_id}")
+            return dict(self.actions[action_id])
+
     def replace_action(self, action: dict[str, Any]) -> bool:
         """Atomically append or replace one action and refresh live readers."""
 

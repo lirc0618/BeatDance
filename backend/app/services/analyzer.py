@@ -4,6 +4,7 @@ import json
 import threading
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import cast
 from uuid import uuid4
 
 from ..config import Settings
@@ -21,7 +22,9 @@ from .storage import ResultStore
 from .teaching_plans import (
     QwenTeachingPlanGenerator,
     TeachingPlanService,
+    TeachingPlanSource,
     TeachingPlanStore,
+    build_teaching_plan_source,
 )
 
 
@@ -138,8 +141,46 @@ class Analyzer:
         return video, sequence, "feed_pause_context"
 
     def register_reference(self, action_id: str, video_path: Path) -> PoseSequence:
+        pose, _ = self.register_reference_for_teaching(action_id, video_path)
+        return pose
+
+    def register_reference_for_teaching(
+        self,
+        action_id: str,
+        video_path: Path,
+    ) -> tuple[PoseSequence, TeachingPlanSource]:
         with catalog_transaction(self.settings.data_dir):
-            return self._register_reference(action_id, video_path)
+            pose = self._register_reference(action_id, video_path)
+            reference_video, _ = self.reference_paths(action_id)
+            action = self.registry.get(action_id)
+            guides = action.get("pause_guides", [])
+            default_focus = str(guides[0].get("suggested_focus", "auto")) if guides else "auto"
+            if default_focus not in {
+                "auto",
+                "hands",
+                "arms",
+                "torso",
+                "lower",
+                "timing",
+                "upper",
+            }:
+                default_focus = "auto"
+            source = build_teaching_plan_source(
+                action_id=action_id,
+                action_name=action["name"],
+                reference_video=reference_video,
+                pose=pose,
+                source_start_seconds=0.0,
+                default_focus=cast(FocusKind, default_focus),
+            )
+            if self.registry.path.resolve() != self.settings.built_in_action_registry_path.resolve():
+                self.registry.replace_action(
+                    {
+                        **self.registry.raw(action_id),
+                        "teaching_source_hash": source.source_hash,
+                    }
+                )
+            return pose, source
 
     def _register_reference(self, action_id: str, video_path: Path) -> PoseSequence:
         self.registry.get(action_id)
