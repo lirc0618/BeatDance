@@ -49,9 +49,18 @@ make mobile
 ```
 
 该命令会自动启动或复用本地后端，等待健康检查通过，再创建 Cloudflare Quick
-Tunnel。终端会输出一个 `https://*.trycloudflare.com` 地址；手机无需和电脑连接
-同一 Wi-Fi，直接打开该地址或其 `/app/` 路径即可体验。Quick Tunnel 每次启动的
-地址都会变化，按 `Ctrl+C` 会关闭隧道，并停止本命令启动的后端进程。
+Tunnel。它会实际检查公网 API 和 H5 页面，只有两项都通过后才输出手机访问地址。
+手机无需和电脑连接同一 Wi-Fi。Quick Tunnel 每次启动的地址都会变化，按
+`Ctrl+C` 会关闭隧道，并停止本命令启动的后端进程。
+
+如果 macOS 正在使用 Clash Verge 全局代理，部分节点会阻止 Cloudflare Tunnel
+新建连接。启动器会自动检测该状态，只在 Tunnel 注册的几秒内临时选择 `DIRECT`，
+注册成功后立即恢复原代理节点。不会修改订阅、规则或持久配置。若不希望启用此兼容
+逻辑，可以执行：
+
+```bash
+MOBILE_CLASH_DIRECT=never make mobile
+```
 
 手机端使用「拓展舞库」时，管理员口令需要手动填写 `change-me`。如果 `8000`
 端口已被其他程序占用，可以改用：

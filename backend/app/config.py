@@ -164,6 +164,29 @@ class Settings(BaseSettings):
             active_ids.remove("library_breakdance_2_step")
             active_ids.add("jazz_demo")
             catalog_changed = True
+        partially_migrated_jazz = any(
+            action.get("id") == "jazz_demo"
+            and (
+                Path(str(action.get("reference_manifest", ""))).name.startswith(
+                    "library_breakdance_2_step-"
+                )
+                or Path(str(action.get("feed_video_url", ""))).name.startswith(
+                    "library_breakdance_2_step-"
+                )
+            )
+            for action in payload["actions"]
+        )
+        if partially_migrated_jazz:
+            payload = {
+                **payload,
+                "actions": [
+                    built_in_by_id["jazz_demo"]
+                    if action.get("id") == "jazz_demo"
+                    else action
+                    for action in payload["actions"]
+                ],
+            }
+            catalog_changed = True
         missing = [
             action
             for action in built_in["actions"]

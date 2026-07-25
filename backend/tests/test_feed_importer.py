@@ -524,3 +524,45 @@ def test_upgrade_replaces_the_legacy_fifth_feed_with_jazz_without_overwriting_ot
         for action in raw["actions"]
     )
     assert Analyzer(settings).reference_ready("jazz_demo") is True
+
+
+def test_startup_repairs_a_partially_migrated_jazz_action(tmp_path):
+    samples = Path(__file__).parents[2] / "assets" / "samples" / "open_sources"
+    references = Path(__file__).parents[2] / "assets" / "references"
+    settings = Settings(
+        data_dir=tmp_path / "data",
+        feed_dir=tmp_path / "feeds",
+        seed_feed_dir=samples,
+        seed_reference_dir=references,
+    )
+    settings.ensure_directories()
+    built_in = json.loads(settings.built_in_action_registry_path.read_text(encoding="utf-8"))
+    legacy_manifest = "library_breakdance_2_step-deadbeef.current.json"
+    legacy_feed = "/media/feed/library_breakdance_2_step-deadbeef.mp4"
+    partially_migrated = {
+        **built_in,
+        "actions": [
+            {
+                **action,
+                "reference_manifest": legacy_manifest,
+                "reference_video_url": "",
+                "feed_video_url": legacy_feed,
+            }
+            if action["id"] == "jazz_demo"
+            else action
+            for action in built_in["actions"]
+        ],
+    }
+    runtime_registry = settings.data_dir / "actions.json"
+    runtime_registry.write_text(
+        json.dumps(partially_migrated, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+    settings.bootstrap_runtime_catalog()
+
+    jazz = ActionRegistry(settings.action_registry_path).get("jazz_demo")
+    assert jazz["reference_manifest"] == "jazz_demo.current.json"
+    assert jazz["reference_video_url"] == "/media/references/jazz_demo.mp4"
+    assert jazz["feed_video_url"] == "/media/feed/爵士.MP4"
+    assert Analyzer(settings).reference_ready("jazz_demo") is True
