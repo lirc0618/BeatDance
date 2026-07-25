@@ -8,7 +8,11 @@ function formatTime(seconds) {
 }
 
 Page({
-  data: { actions: [], loading: true, error: '', insight: null, selectedAction: null },
+  data: {
+    actions: [], loading: true, error: '', insight: null, selectedAction: null,
+    relatedOpen: false, relatedLoading: false, relatedStatus: '',
+    relatedQuery: '', relatedVideos: [], relatedLaunches: []
+  },
   onLoad() {
     this.feedTimes = {};
     this.actionSignature = '';
@@ -96,6 +100,8 @@ Page({
         ...item,
         url: mediaUrl(item.url)
       }));
+      insight.has_local_tutorials = insight.search_results.length > 0
+        && insight.search_results.every(item => Boolean(item.local_asset));
       this.setData({ insight, selectedAction: action });
     } catch (error) {
       this.setData({ error: error.message });
@@ -116,5 +122,50 @@ Page({
     const url = event.currentTarget.dataset.url;
     if (!url) return;
     wx.setClipboardData({ data: url });
+  },
+  async searchRelated() {
+    const { insight, selectedAction } = this.data;
+    const first = insight.search_results?.[0] || {};
+    const metric = ['timing', 'trajectory', 'angle'].includes(first.error_type)
+      ? first.error_type
+      : 'trajectory';
+    this.setData({
+      relatedOpen: true,
+      relatedLoading: true,
+      relatedStatus: '正在按你的卡点翻相关教学…',
+      relatedQuery: '',
+      relatedVideos: [],
+      relatedLaunches: []
+    });
+    try {
+      const payload = await request(
+        `/actions/${selectedAction.id}/related-videos?metric=${metric}&body_part=${encodeURIComponent(first.body_part || '')}&limit=6`
+      );
+      this.setData({
+        relatedStatus: payload.message,
+        relatedQuery: payload.query,
+        relatedVideos: payload.videos || [],
+        relatedLaunches: payload.launches || []
+      });
+    } catch (error) {
+      this.setData({ relatedStatus: error.message });
+    } finally {
+      this.setData({ relatedLoading: false });
+    }
+  },
+  closeRelated() {
+    this.setData({ relatedOpen: false });
+  },
+  copyExternal(event) {
+    const url = event.currentTarget.dataset.url;
+    if (!url) return;
+    wx.setClipboardData({
+      data: url,
+      success() {
+        wx.showToast({ title: '链接已复制', icon: 'none' });
+      }
+    });
+  },
+  noop() {
   }
 });

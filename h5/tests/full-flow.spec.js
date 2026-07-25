@@ -104,6 +104,39 @@ test('用户可以预览素材库并一键加入首页', async ({ page }) => {
 test('用户暂停 Feed 后获得时刻解释，再完成首练和二练验证', async ({ page, request }) => {
   const createdIds = [];
   try {
+    await page.route('**/api/v1/actions/groove_step/related-videos?**', async (route) => {
+      await route.fulfill({
+        json: {
+          query: '爱你 手臂 动作路线 局部拆解 慢动作 教学',
+          provider: 'douyin',
+          configured: true,
+          message: '搜到 1 条外部教学视频。',
+          videos: [
+            {
+              id: 'related-1',
+              title: '爱你手势舞背面慢动作',
+              cover_url: 'https://example.com/aini-cover.jpg',
+              creator: '舞蹈课代表',
+              url: 'https://www.douyin.com/video/123',
+              like_count: 9527,
+              platform: 'douyin'
+            }
+          ],
+          launches: [
+            {
+              platform: 'douyin',
+              label: '去抖音搜同款',
+              url: 'https://www.douyin.com/search/test'
+            },
+            {
+              platform: 'bilibili',
+              label: '去 B 站看教程',
+              url: 'https://search.bilibili.com/all?keyword=test'
+            }
+          ]
+        }
+      });
+    });
     await page.goto('http://localhost:8000/app/?api=http://127.0.0.1:8000');
 
     const actionButtons = page.locator('.feed-card button');
@@ -146,6 +179,26 @@ test('用户暂停 Feed 后获得时刻解释，再完成首练和二练验证',
     await expect(page.locator('#pause-phase')).not.toBeEmpty();
     await expect(page.locator('#pause-search-results .search-card')).toHaveCount(3);
     await expect(page.locator('#pause-search-results .search-card video')).toHaveCount(3);
+    await expect(page.locator('#step-insight .search-head')).toContainText('AI 即时拆解');
+    await page.locator('#pause-related-button').click();
+    await expect(page.locator('#related-video-dialog')).toBeVisible();
+    await expect(page.locator('#related-video-dialog')).toHaveAttribute(
+      'aria-labelledby',
+      'related-dialog-title'
+    );
+    await expect(page.locator('#related-status')).toHaveAttribute('aria-live', 'polite');
+    await expect(page.locator('#related-query')).toContainText('爱你 手臂');
+    await expect(page.locator('#external-video-results .external-video-card')).toHaveCount(1);
+    await expect(page.locator('#external-video-results')).toContainText('爱你手势舞背面慢动作');
+    await expect(page.locator('#external-video-results')).toContainText('舞蹈课代表');
+    await expect(page.locator('#related-launches a')).toHaveCount(2);
+    await page.locator('#related-close').click();
+    await page.evaluate(() => {
+      renderTutorialSource('pause', [{ local_asset: '' }]);
+    });
+    await expect(page.locator('#pause-tutorial-source')).toContainText(
+      '不是当前视频生成'
+    );
     await page.locator('#practice-button').click();
 
     await page.locator('#focus-chips button[data-focus="lower"]').click();
@@ -186,6 +239,8 @@ test('用户暂停 Feed 后获得时刻解释，再完成首练和二练验证',
       await expect(searchCards.nth(index).locator('video')).not.toHaveAttribute('muted', '');
     }
     await expect(page.locator('#improvement')).toBeHidden();
+    await expect(page.locator('#result .search-head')).toContainText('AI 即时拆解');
+    await expect(page.locator('#result-related-button')).toBeVisible();
 
     await page.locator('#retry-button').click();
     await page.locator('#video-input').setInputFiles(correctedAttempt);

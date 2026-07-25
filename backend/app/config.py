@@ -45,6 +45,17 @@ class Settings(BaseSettings):
     ark_timeout_seconds: float = 8.0
     ark_send_images: bool = True
 
+    # 抖音开放平台视频搜索。可直接填短期 ACCESS_TOKEN，或配置 key/secret 自动换取。
+    douyin_access_token: str | None = None
+    douyin_client_key: str | None = None
+    douyin_client_secret: str | None = None
+    douyin_token_url: str = "https://open.douyin.com/oauth/client_token/"
+    douyin_search_url: str = "https://open.douyin.com/dy_open_api/v2/search/video/"
+    douyin_device_id: int = 20260725
+    douyin_timeout_seconds: float = 8.0
+    douyin_search_cache_seconds: float = 120.0
+    douyin_search_max_per_minute: int = 30
+
     public_base_url: str = ""
     cors_origins: str = "*"
 

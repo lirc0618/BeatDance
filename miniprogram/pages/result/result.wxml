@@ -27,8 +27,8 @@
   </view>
 
   <view class="search-title">
-    <view class="section-label cyan">还没懂？换个视角</view>
-    <view class="card-title">三条对症拆法</view>
+    <view class="section-label cyan">{{hasLocalTutorials ? 'AI 即时拆解 · 取自当前视频' : '搜索方向 · 不是当前视频生成'}}</view>
+    <view class="card-title">{{hasLocalTutorials ? '三条对症拆法' : '先看该找哪种视角'}}</view>
   </view>
 
   <block wx:for="{{result.diagnosis.search_results}}" wx:key="id">
@@ -40,10 +40,38 @@
       <view wx:if="{{!item.local_asset}}" class="search-open" data-url="{{item.url}}" bindtap="openTutorial">打开原视频 ›</view>
     </view>
   </block>
+  <button class="related-cta" bindtap="searchRelated">搜外部相关视频 ↗</button>
 
   <view class="card" wx:if="{{result.improvement}}"><view class="card-title">{{result.improvement.message}}</view></view>
   <block wx:for="{{result.warnings}}" wx:key="*this"><view class="warning">小提醒：{{item}}</view></block>
 
   <button class="primary" bindtap="retry">{{retryText}}</button>
   <button class="ghost" bindtap="restart">回到 Feed 换一招</button>
+
+  <view wx:if="{{relatedOpen}}" class="related-mask" bindtap="closeRelated">
+    <view class="related-sheet" catchtap="noop">
+      <view class="related-head">
+        <view><view class="section-label cyan">RELATED VIDEO SEARCH</view><view class="card-title">外面有没有人讲明白？</view></view>
+        <view class="related-close" bindtap="closeRelated">×</view>
+      </view>
+      <view class="related-status">{{relatedStatus}}</view>
+      <view wx:if="{{relatedQuery}}" class="related-query">这次搜：{{relatedQuery}}</view>
+      <block wx:for="{{relatedVideos}}" wx:key="id">
+        <view class="related-video">
+          <image wx:if="{{item.cover_url}}" src="{{item.cover_url}}" mode="aspectFill"></image>
+          <view class="related-video-copy">
+            <view class="search-type">抖音 · {{item.like_count}} 赞</view>
+            <view class="related-video-title">{{item.title}}</view>
+            <view class="creator">{{item.creator}}</view>
+            <view class="search-open" data-url="{{item.url}}" bindtap="copyExternal">复制原视频链接 →</view>
+          </view>
+        </view>
+      </block>
+      <view wx:if="{{!relatedLoading && !relatedVideos.length}}" class="related-empty">没有直接返回卡片，下面的精准搜索入口照样能用。</view>
+      <block wx:for="{{relatedLaunches}}" wx:key="platform">
+        <button class="related-launch" data-url="{{item.url}}" bindtap="copyExternal">{{item.label}}</button>
+      </block>
+      <view class="related-note">微信内不能直接打开外部网页，点击后复制链接。</view>
+    </view>
+  </view>
 </view>

@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import APIRouter, File, Form, Header, HTTPException, UploadFile, status
+from fastapi import APIRouter, File, Form, Header, HTTPException, Query, UploadFile, status
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse
 
@@ -11,14 +11,17 @@ from .config import Settings
 from .schemas import (
     ActionSummary,
     AnalysisResult,
+    ExternalVideoSearchResponse,
     FeedImportResponse,
     FocusKind,
     HealthResponse,
+    MetricKind,
     PauseInsight,
     PauseInsightRequest,
     SampleLibraryItem,
 )
 from .services.analyzer import Analyzer, ReferenceNotReadyError
+from .services.external_video_search import ExternalVideoSearch
 from .services.feed_importer import FeedImportBusyError, FeedImporter, FeedImportSpec
 from .services.sample_library import SampleLibrary
 from .services.video import VideoValidationError, probe_video, save_upload, validate_duration
@@ -29,6 +32,7 @@ def create_router(settings: Settings, analyzer: Analyzer) -> APIRouter:
     pause_coach = analyzer.pause_coach
     feed_importer = FeedImporter(settings, analyzer.registry)
     sample_library = SampleLibrary(settings.seed_feed_dir, analyzer.registry)
+    external_video_search = ExternalVideoSearch(settings)
 
     def require_admin(token: str) -> None:
         if not settings.admin_mutations_enabled:
@@ -185,6 +189,27 @@ def create_router(settings: Settings, analyzer: Analyzer) -> APIRouter:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         except ValueError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    @router.get(
+        "/actions/{action_id}/related-videos",
+        response_model=ExternalVideoSearchResponse,
+    )
+    async def related_videos(
+        action_id: str,
+        metric: MetricKind = "trajectory",
+        body_part: Annotated[str, Query(max_length=40)] = "",
+        limit: Annotated[int, Query(ge=1, le=10)] = 6,
+    ) -> ExternalVideoSearchResponse:
+        try:
+            action = analyzer.registry.get(action_id)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        return await external_video_search.search(
+            action_name=action["name"],
+            metric=metric,
+            body_part=body_part,
+            limit=limit,
+        )
 
     @router.post("/actions/{action_id}/reference")
     async def upload_reference(

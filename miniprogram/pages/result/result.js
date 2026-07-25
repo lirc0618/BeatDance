@@ -5,6 +5,9 @@ Page({
     result: null, comparisonUrl: '', comparisonVideoUrl: '',
     resultBadge: '一句话判定', displayMetrics: [],
     retryText: '练一次，再验证',
+    hasLocalTutorials: false,
+    relatedOpen: false, relatedLoading: false, relatedStatus: '',
+    relatedQuery: '', relatedVideos: [], relatedLaunches: [],
     metricLabels: { timing: '出手时间', trajectory: '走的路线', angle: '摆的造型' }
   },
   async onLoad(options) {
@@ -22,6 +25,8 @@ Page({
     }));
     this.setData({
       result,
+      hasLocalTutorials: result.diagnosis.search_results.length > 0
+        && result.diagnosis.search_results.every(item => Boolean(item.local_asset)),
       displayMetrics: result.diagnosis.metrics.filter(
         item => item.kind === result.diagnosis.primary_metric
       ),
@@ -51,6 +56,47 @@ Page({
         });
       }
     });
+  },
+  async searchRelated() {
+    const { diagnosis } = this.data.result;
+    this.setData({
+      relatedOpen: true,
+      relatedLoading: true,
+      relatedStatus: '正在按你的卡点翻相关教学…',
+      relatedQuery: '',
+      relatedVideos: [],
+      relatedLaunches: []
+    });
+    try {
+      const payload = await request(
+        `/actions/${this.data.result.action_id}/related-videos?metric=${diagnosis.primary_metric}&body_part=${encodeURIComponent(diagnosis.body_part || '')}&limit=6`
+      );
+      this.setData({
+        relatedStatus: payload.message,
+        relatedQuery: payload.query,
+        relatedVideos: payload.videos || [],
+        relatedLaunches: payload.launches || []
+      });
+    } catch (error) {
+      this.setData({ relatedStatus: error.message });
+    } finally {
+      this.setData({ relatedLoading: false });
+    }
+  },
+  closeRelated() {
+    this.setData({ relatedOpen: false });
+  },
+  copyExternal(event) {
+    const url = event.currentTarget.dataset.url;
+    if (!url) return;
+    wx.setClipboardData({
+      data: url,
+      success() {
+        wx.showToast({ title: '链接已复制', icon: 'none' });
+      }
+    });
+  },
+  noop() {
   },
   restart() { wx.reLaunch({ url: '/pages/index/index' }); }
 });

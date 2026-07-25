@@ -93,6 +93,31 @@ class PauseInsight(BaseModel):
     search_results: list[Tutorial] = Field(default_factory=list)
 
 
+class ExternalVideo(BaseModel):
+    id: str
+    title: str
+    cover_url: str = ""
+    creator: str = ""
+    url: str
+    like_count: int = Field(default=0, ge=0)
+    platform: Literal["douyin"] = "douyin"
+
+
+class SearchLaunch(BaseModel):
+    platform: Literal["douyin", "bilibili"]
+    label: str
+    url: str
+
+
+class ExternalVideoSearchResponse(BaseModel):
+    query: str
+    provider: Literal["douyin", "platform_search"]
+    configured: bool
+    videos: list[ExternalVideo] = Field(default_factory=list)
+    launches: list[SearchLaunch] = Field(default_factory=list)
+    message: str
+
+
 class MetricDetail(BaseModel):
     kind: MetricKind
     score: float = Field(ge=0)

@@ -278,3 +278,92 @@ page {
 .search-type { margin-bottom: 12rpx; color: #d9ff43; font-size: 20rpx; }
 .why { margin-top: 14rpx; color: #777a70; font-size: 20rpx; line-height: 1.5; }
 .search-open { margin-top: 20rpx; color: #d9ff43; font-size: 21rpx; }
+
+.related-cta {
+  width: 100%;
+  min-height: 86rpx;
+  margin: 12rpx 0 4rpx;
+  border: 2rpx solid #d9ff43;
+  border-radius: 20rpx;
+  color: #d9ff43;
+  background: rgba(217,255,67,.06);
+  font-size: 23rpx;
+  font-weight: 850;
+}
+
+.related-mask {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  padding: 40rpx 24rpx;
+  display: flex;
+  align-items: flex-end;
+  background: rgba(4,5,3,.78);
+}
+
+.related-sheet {
+  width: 100%;
+  max-height: 84vh;
+  overflow-y: auto;
+  padding: 32rpx;
+  border: 2rpx solid #3c4035;
+  border-radius: 34rpx;
+  background: #11130f;
+}
+
+.related-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 24rpx;
+}
+
+.related-close {
+  width: 64rpx;
+  height: 64rpx;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2rpx solid #2b2e26;
+  border-radius: 50%;
+  font-size: 40rpx;
+}
+
+.related-status { margin-top: 30rpx; color: #c5c8bc; font-size: 23rpx; }
+
+.related-query {
+  margin-top: 14rpx;
+  padding: 18rpx;
+  border: 2rpx solid #2b2e26;
+  border-radius: 16rpx;
+  color: #92958a;
+  background: #0b0c09;
+  font-size: 19rpx;
+  line-height: 1.5;
+}
+
+.related-video {
+  margin-top: 18rpx;
+  overflow: hidden;
+  display: flex;
+  border: 2rpx solid #2b2e26;
+  border-radius: 22rpx;
+  background: #171914;
+}
+
+.related-video image { width: 200rpx; min-height: 240rpx; flex: none; }
+.related-video-copy { min-width: 0; padding: 22rpx; }
+.related-video-title { font-size: 26rpx; font-weight: 800; line-height: 1.45; }
+.related-empty { padding: 35rpx 12rpx; color: #92958a; font-size: 22rpx; text-align: center; }
+
+.related-launch {
+  margin-top: 14rpx;
+  border: 2rpx solid #2b2e26;
+  border-radius: 18rpx;
+  color: #f3f3e9;
+  background: #171914;
+  font-size: 22rpx;
+  font-weight: 800;
+}
+
+.related-note { margin-top: 18rpx; color: #66695f; font-size: 18rpx; line-height: 1.5; }

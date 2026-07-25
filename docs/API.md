@@ -33,6 +33,19 @@ JSON 请求：
 运动观察、采样帧数、可能难点，以及按“背面跟练、慢速分拍、局部特写”排列
 的三种搜索结果。
 
+## GET /actions/{action_id}/related-videos
+
+查询参数：
+
+- `metric`：`timing | trajectory | angle`；
+- `body_part`：诊断出的身体部位；
+- `limit`：真实视频卡片数量，范围 1–10。
+
+该接口与本地教学矩阵独立。未配置抖音权限时，返回按本次卡点生成的抖音和 B 站
+搜索入口；配置 `DOUYIN_ACCESS_TOKEN` 或 `DOUYIN_CLIENT_KEY` /
+`DOUYIN_CLIENT_SECRET` 后，使用抖音开放平台视频搜索接口返回真实视频卡片。
+外部接口失败会返回 `provider=platform_search`，不影响分析主流程。
+
 ## POST /actions/import
 
 使用管理员令牌导入新 Feed，或用同一个 `action_id` 替换已有 Feed。

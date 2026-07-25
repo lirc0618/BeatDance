@@ -5,7 +5,8 @@ const state = {
   actions: [], action: null, file: null, focus: 'auto',
   sessionId: localStorage.getItem('freezeCoachSession') || crypto.randomUUID(),
   baselineId: null, pausedAt: null, feedDuration: null, pauseInsight: null,
-  actionSignature: '', actionsLoading: false, library: [], libraryLoading: false
+  actionSignature: '', actionsLoading: false, library: [], libraryLoading: false,
+  relatedMetric: 'trajectory', relatedBodyPart: ''
 };
 localStorage.setItem('freezeCoachSession', state.sessionId);
 
@@ -131,6 +132,80 @@ function searchCards(results) {
       </div>
     </article>`;
   }).join('');
+}
+
+function relatedVideoCards(videos) {
+  return videos.map((item) => {
+    const videoUrl = safeUrl(item.url);
+    const coverUrl = safeUrl(item.cover_url);
+    if (!videoUrl) return '';
+    return `
+      <article class="external-video-card">
+        ${coverUrl
+          ? `<img src="${escapeHtml(coverUrl)}" alt="" loading="lazy" />`
+          : '<div class="external-cover-placeholder">▶</div>'}
+        <div>
+          <span>抖音 · ${Number(item.like_count || 0).toLocaleString('zh-CN')} 赞</span>
+          <strong>${escapeHtml(item.title)}</strong>
+          <small>${escapeHtml(item.creator || '抖音创作者')}</small>
+          <a href="${escapeHtml(videoUrl)}" target="_blank" rel="noopener noreferrer">去原平台看 ↗</a>
+        </div>
+      </article>`;
+  }).join('');
+}
+
+function relatedLaunches(launches) {
+  return launches.map((item) => {
+    const url = safeUrl(item.url);
+    return url
+      ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(item.label)} ↗</a>`
+      : '';
+  }).join('');
+}
+
+function renderTutorialSource(prefix, results) {
+  const localCount = results.filter(item => Boolean(item.local_asset)).length;
+  if (localCount === results.length && localCount > 0) {
+    el(`${prefix}-tutorial-source`).textContent = 'AI 即时拆解 · 取自当前视频';
+    el(`${prefix}-tutorial-title`).textContent =
+      prefix === 'pause' ? '同源慢放、镜像和局部' : '三条对症拆法';
+  } else {
+    el(`${prefix}-tutorial-source`).textContent = '搜索方向 · 不是当前视频生成';
+    el(`${prefix}-tutorial-title`).textContent = '先看该找哪种视角';
+  }
+}
+
+async function openRelatedVideos() {
+  if (!state.action) return;
+  const dialog = el('related-video-dialog');
+  el('related-status').textContent = '正在按你的卡点翻相关教学…';
+  el('related-query').textContent = '';
+  el('external-video-results').innerHTML = '<div class="related-loading">搜索中 ···</div>';
+  el('related-launches').innerHTML = '';
+  if (!dialog.open) dialog.showModal();
+
+  const params = new URLSearchParams({
+    metric: state.relatedMetric,
+    body_part: state.relatedBodyPart,
+    limit: '6'
+  });
+  try {
+    const response = await fetch(
+      `${API}/actions/${encodeURIComponent(state.action.id)}/related-videos?${params}`
+    );
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.detail || '相关视频搜索失败');
+    el('related-status').textContent = payload.message;
+    el('related-query').textContent = `这次搜：${payload.query}`;
+    el('external-video-results').innerHTML = payload.videos.length
+      ? relatedVideoCards(payload.videos)
+      : '<div class="related-empty">接口暂时没返回视频卡片，下面两个精准搜索入口照样能用。</div>';
+    el('related-launches').innerHTML = relatedLaunches(payload.launches);
+  } catch (error) {
+    el('related-status').textContent = error.message;
+    el('external-video-results').innerHTML =
+      '<div class="related-empty">外部搜索开小差了，关掉窗口后可以继续当前练习。</div>';
+  }
 }
 
 function actionSignature(actions) {
@@ -281,6 +356,11 @@ async function requestPauseInsight(id) {
 
 function renderPauseInsight(insight) {
   state.pauseInsight = insight;
+  const firstMatch = insight.search_results?.[0];
+  state.relatedMetric = ['timing', 'trajectory', 'angle'].includes(firstMatch?.error_type)
+    ? firstMatch.error_type
+    : 'trajectory';
+  state.relatedBodyPart = firstMatch?.body_part || '';
   const preview = el('pause-preview');
   preview.src = mediaUrl(state.action.feed_video_url || state.action.reference_video_url);
   preview.addEventListener('loadedmetadata', () => {
@@ -293,6 +373,7 @@ function renderPauseInsight(insight) {
   el('pause-stuck').textContent = insight.likely_stuck_at;
   el('pause-watch').textContent = insight.watch_for;
   el('pause-search-results').innerHTML = searchCards(insight.search_results);
+  renderTutorialSource('pause', insight.search_results);
   show('step-insight');
 }
 
@@ -350,6 +431,8 @@ async function analyze() {
 
 function renderResult(result) {
   const d = result.diagnosis;
+  state.relatedMetric = d.primary_metric;
+  state.relatedBodyPart = d.body_part || '';
   el('result-title').textContent = d.primary_error;
   document.querySelector('.result-kicker').textContent = d.status === 'aligned'
     ? '这把可以'
@@ -385,6 +468,7 @@ function renderResult(result) {
 
   const searchResults = d.search_results || (d.tutorial ? [d.tutorial] : []);
   el('search-results').innerHTML = searchCards(searchResults);
+  renderTutorialSource('result', searchResults);
 
   el('improvement').classList.toggle('hidden', !result.improvement);
   if (result.improvement) el('improvement').textContent = result.improvement.message;
@@ -394,6 +478,12 @@ function renderResult(result) {
 }
 
 el('analyze-button').addEventListener('click', analyze);
+el('pause-related-button').addEventListener('click', openRelatedVideos);
+el('result-related-button').addEventListener('click', openRelatedVideos);
+el('related-close').addEventListener('click', () => el('related-video-dialog').close());
+el('related-video-dialog').addEventListener('click', (event) => {
+  if (event.target === el('related-video-dialog')) el('related-video-dialog').close();
+});
 el('practice-button').addEventListener('click', selectAction);
 el('insight-back').addEventListener('click', () => show('step-actions'));
 el('change-action').addEventListener('click', () => { state.baselineId = null; show('step-actions'); });

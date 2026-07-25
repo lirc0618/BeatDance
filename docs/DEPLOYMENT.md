@@ -51,6 +51,19 @@ ARK_MODEL=ep-xxxxxxxx
 
 当前代码调用兼容 Chat Completions 的 `/chat/completions`。建议使用支持视觉理解的豆包模型接入点；系统会发送关键帧对比图与结构化诊断进行核验。API 失败会回退到规则模板。
 
+## 外部相关视频搜索
+
+不配置凭证时，相关视频窗口仍会生成精准检索词并打开抖音、B 站搜索。若应用已获
+抖音开放平台视频垂搜权限，可配置：
+
+```env
+DOUYIN_CLIENT_KEY=...
+DOUYIN_CLIENT_SECRET=...
+```
+
+服务端会自动换取并短时缓存 client token。调试阶段也可仅配置
+`DOUYIN_ACCESS_TOKEN`；外部请求失败会自动降级，不影响主分析流程。
+
 本地教学视频随镜像复制到 `/app/assets/tutorials`，可通过
 `TUTORIAL_ASSETS_DIR` 覆盖。目录中已登记的文件由 `/media/tutorials/` 提供访问。
 开放许可素材库随镜像复制到 `/app/assets/samples/open_sources`，H5 可以预览并

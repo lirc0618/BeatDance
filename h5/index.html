@@ -97,9 +97,10 @@
       </div>
       <div class="search-head">
         <div>
-          <span>先换个角度看</span>
-          <h3>这招的专属拆法</h3>
+          <span id="pause-tutorial-source">AI 即时拆解 · 取自当前视频</span>
+          <h3 id="pause-tutorial-title">同源慢放、镜像和局部</h3>
         </div>
+        <button id="pause-related-button" class="related-button" type="button">搜外部相关视频 ↗</button>
       </div>
       <div id="pause-search-results" class="search-results"></div>
       <button id="practice-button" class="primary">拍一次，看我具体卡哪儿</button>
@@ -153,9 +154,10 @@
 
       <div class="search-head">
         <div>
-          <span>还没懂？换个视角</span>
-          <h3>三条对症拆法</h3>
+          <span id="result-tutorial-source">AI 即时拆解 · 取自当前视频</span>
+          <h3 id="result-tutorial-title">三条对症拆法</h3>
         </div>
+        <button id="result-related-button" class="related-button" type="button">搜外部相关视频 ↗</button>
       </div>
       <div id="search-results" class="search-results"></div>
 
@@ -171,6 +173,20 @@
       <a id="video-attribution" href="/media/feed/ATTRIBUTION.md" target="_blank" rel="noopener noreferrer">素材来源与许可 ↗</a>
     </section>
   </main>
+  <dialog id="related-video-dialog" class="related-dialog" aria-labelledby="related-dialog-title">
+    <div class="related-dialog-head">
+      <div>
+        <span>RELATED VIDEO SEARCH</span>
+        <h2 id="related-dialog-title">外面有没有人把这招讲明白？</h2>
+      </div>
+      <button id="related-close" class="dialog-close" type="button" aria-label="关闭">×</button>
+    </div>
+    <p id="related-status" class="related-status" role="status" aria-live="polite">正在翻相关教学…</p>
+    <div id="related-query" class="related-query"></div>
+    <div id="external-video-results" class="external-video-results"></div>
+    <div id="related-launches" class="related-launches"></div>
+    <small class="related-note">外部结果只展示标题和入口；点击后到原平台观看。</small>
+  </dialog>
   <script src="./app.js"></script>
 </body>
 </html>

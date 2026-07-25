@@ -986,6 +986,21 @@ p { margin-top: 0; }
   letter-spacing: -.03em;
 }
 
+.related-button {
+  min-height: 39px;
+  padding: 0 14px;
+  border: 1px solid rgba(217,255,67,.55);
+  border-radius: 10px;
+  color: var(--acid);
+  background: rgba(217,255,67,.06);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.related-button:hover { background: rgba(217,255,67,.12); }
+
 .search-head code {
   max-width: 45%;
   color: var(--muted);
@@ -1018,6 +1033,186 @@ p { margin-top: 0; }
 .search-card:hover {
   transform: translateY(-3px);
   border-color: var(--acid);
+}
+
+.related-dialog {
+  width: min(760px, calc(100% - 28px));
+  max-height: min(820px, calc(100dvh - 28px));
+  overflow: auto;
+  padding: 25px;
+  border: 1px solid #3c4035;
+  border-radius: 24px;
+  color: var(--ink);
+  background: #11130f;
+  box-shadow: 0 40px 120px rgba(0,0,0,.72);
+}
+
+.related-dialog::backdrop {
+  background: rgba(4,5,3,.78);
+  backdrop-filter: blur(8px);
+}
+
+.related-dialog-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.related-dialog-head span {
+  color: var(--acid);
+  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .12em;
+}
+
+.related-dialog-head h2 {
+  margin: 8px 0 0;
+  font-size: clamp(23px, 4vw, 34px);
+  line-height: 1.1;
+  letter-spacing: -.04em;
+}
+
+.dialog-close {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--ink);
+  background: var(--surface-2);
+  cursor: pointer;
+  font-size: 22px;
+}
+
+.related-status {
+  margin: 22px 0 9px;
+  color: #c5c8bc;
+  font-size: 13px;
+}
+
+.related-query {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  color: var(--muted);
+  background: #0b0c09;
+  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.external-video-results {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.external-video-card {
+  min-width: 0;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 108px 1fr;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-2);
+}
+
+.external-video-card img,
+.external-cover-placeholder {
+  width: 108px;
+  height: 100%;
+  min-height: 145px;
+  object-fit: cover;
+  background: #080906;
+}
+
+.external-cover-placeholder {
+  display: grid;
+  place-items: center;
+  color: var(--acid);
+  font-size: 25px;
+}
+
+.external-video-card > div:last-child {
+  min-width: 0;
+  padding: 13px;
+  display: flex;
+  flex-direction: column;
+}
+
+.external-video-card span,
+.external-video-card small {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.external-video-card strong {
+  margin: 8px 0;
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 1.45;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.external-video-card a {
+  margin-top: auto;
+  color: var(--acid);
+  font-size: 10px;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.related-loading,
+.related-empty {
+  grid-column: 1 / -1;
+  padding: 26px 18px;
+  border: 1px dashed #414439;
+  border-radius: 13px;
+  color: var(--muted);
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.related-launches {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 9px;
+}
+
+.related-launches a {
+  min-height: 44px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  color: var(--ink);
+  background: var(--surface-2);
+  font-size: 11px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.related-launches a:first-child {
+  border-color: var(--acid);
+  color: var(--bg);
+  background: var(--acid);
+}
+
+.related-note {
+  display: block;
+  margin-top: 12px;
+  color: #66695f;
+  font-size: 9px;
+  line-height: 1.5;
 }
 
 .tutorial-video {
@@ -1226,6 +1421,17 @@ p { margin-top: 0; }
     margin-top: 8px;
     text-align: left;
   }
+
+  .related-button {
+    width: 100%;
+    margin-top: 12px;
+  }
+
+  .related-dialog { padding: 18px; }
+
+  .external-video-results { grid-template-columns: 1fr; }
+
+  .related-launches { grid-template-columns: 1fr; }
 
   .search-results,
   .metric-grid { grid-template-columns: 1fr; }
