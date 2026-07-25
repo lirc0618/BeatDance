@@ -939,6 +939,8 @@ h1, h2, h3, p { margin-top: 0; }
 .beat-node.miss { color: var(--red); transform: translateY(-4px); }
 .beat-node.miss i { border-radius: 4px; transform: rotate(45deg); }
 .result-grid { margin-top: 15px; align-items: start; }
+.result-visuals { display: grid; gap: 12px; }
+.baseline-replay { padding: 11px; border: 1px solid rgba(38,217,255,.2); border-radius: 17px; background: rgba(38,217,255,.035); }
 .analysis-replay > span { display: block; margin-bottom: 9px; color: var(--muted); font-size: 9px; }
 .comparison-video, .comparison { width: 100%; border: 1px solid var(--line); border-radius: 17px; background: #000; }
 .comparison { margin-top: 10px; }
@@ -1022,6 +1024,16 @@ h1, h2, h3, p { margin-top: 0; }
   .system-status span { display: none; }
   .mission-progress > i { width: 14px; margin: 0 4px; }
   .mission-step { gap: 3px; font-size: 9px; }
+  .hero-copy > p,
+  .section-heading p,
+  .mission-heading small,
+  .feed-body > p,
+  .lock-brief > p,
+  .selected-feed p,
+  .privacy p { font-size: 12px; }
+  .focus-control button,
+  .related-button,
+  .ghost { min-height: 44px; font-size: 12px; }
   .hero { min-height: auto; display: block; padding-top: 22px; }
   .hero-copy { padding: 35px 0 10px; }
   .hero h1 { font-size: clamp(43px,13vw,62px); line-height: .97; }

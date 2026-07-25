@@ -7,7 +7,7 @@ const state = {
   baselineId: null, pausedAt: null, feedDuration: null, pauseInsight: null,
   actionSignature: '', actionsLoading: false, library: [], libraryLoading: false,
   relatedMetric: 'trajectory', relatedBodyPart: '', scanTimer: null,
-  lastResultWasRetry: false
+  lastResultWasRetry: false, baselineReplayUrl: ''
 };
 localStorage.setItem('freezeCoachSession', state.sessionId);
 
@@ -56,8 +56,11 @@ function show(id) {
   const phase = currentPhase(id);
   document.querySelectorAll('.mission-step').forEach(step => {
     const phases = ['lock', 'challenge', 'decode', 'rematch'];
-    step.classList.toggle('active', step.dataset.phase === phase);
+    const active = step.dataset.phase === phase;
+    step.classList.toggle('active', active);
     step.classList.toggle('done', phases.indexOf(step.dataset.phase) < phases.indexOf(phase));
+    if (active) step.setAttribute('aria-current', 'step');
+    else step.removeAttribute('aria-current');
   });
   document.body.classList.toggle('flow-active', id !== 'step-actions');
   requestAnimationFrame(() => window.scrollTo({ top: id === 'step-actions' ? 0 : 54, behavior: 'auto' }));
@@ -399,8 +402,10 @@ async function requestPauseInsight(id) {
   state.action = state.actions.find(item => item.id === id);
   state.pausedAt = pausedAt;
   state.feedDuration = duration;
-  el('loading-copy').textContent = '回看这一秒 → 找到谁先乱了 → 翻译成人话';
-  show('loading');
+  const button = card.querySelector('button');
+  const buttonCopy = button.textContent;
+  button.disabled = true;
+  button.textContent = '正在锁定这一拍…';
   try {
     const response = await fetch(`${API}/actions/${id}/pause-insight`, {
       method: 'POST',
@@ -409,8 +414,12 @@ async function requestPauseInsight(id) {
     });
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.detail || '暂停点分析失败');
+    button.disabled = false;
+    button.textContent = buttonCopy;
     renderPauseInsight(payload);
   } catch (error) {
+    button.disabled = false;
+    button.textContent = buttonCopy;
     alert(error.message);
     show('step-actions');
   }
@@ -525,10 +534,13 @@ function renderResult(result, wasRetry = false) {
       <strong>${escapeHtml(item.human_value)}</strong>
       <div class="metric-track"><i style="width:${Math.round(item.normalized_score * 100)}%"></i></div>
     </div>`).join('');
-  const missIndex = ({ timing: 1, trajectory: 2, angle: 3 })[d.primary_metric] ?? 2;
+  const lockedPercent = Number.isFinite(state.pausedAt) && state.feedDuration > 0
+    ? Math.max(0, Math.min(1, state.pausedAt / state.feedDuration))
+    : 0.5;
+  const missIndex = Math.round(lockedPercent * 3);
   document.querySelectorAll('#result-beat-lane .beat-node').forEach((node, index) => {
     node.classList.remove('miss', 'great', 'perfect');
-    if (index === missIndex) {
+    if (judgement !== 'CLEAR' && index === missIndex) {
       node.classList.add('miss');
       node.querySelector('span').textContent = 'MISS';
     } else {
@@ -536,14 +548,29 @@ function renderResult(result, wasRetry = false) {
       node.querySelector('span').textContent = index === 0 ? 'PERFECT' : 'GREAT';
     }
   });
+  el('result-lane-summary').textContent = judgement === 'CLEAR'
+    ? '这一拍已全线通过'
+    : `卡点在动作 ${Math.round(lockedPercent * 100)}% 处`;
 
   const comparisonVideo = el('comparison-video');
   const comparisonVideoWrap = el('comparison-video-wrap');
+  const baselineVideo = el('baseline-comparison-video');
+  const baselineVideoWrap = el('baseline-comparison-wrap');
+  if (result.improvement && state.baselineReplayUrl) {
+    baselineVideo.src = state.baselineReplayUrl;
+    baselineVideoWrap.classList.remove('hidden');
+  } else {
+    baselineVideo.pause();
+    baselineVideo.removeAttribute('src');
+    baselineVideoWrap.classList.add('hidden');
+  }
   if (result.comparison_video_url) {
-    comparisonVideo.src = mediaUrl(result.comparison_video_url);
+    const replayUrl = mediaUrl(result.comparison_video_url);
+    comparisonVideo.src = replayUrl;
     el('analysis-replay-label').textContent =
-      `匿名骨架回放 · ${result.duration_seconds.toFixed(1)} 秒 · ${result.analyzed_frame_count} 帧 · 红色是卡点`;
+      `${result.improvement ? '再练' : '本局'}匿名骨架 · ${result.duration_seconds.toFixed(1)} 秒 · ${result.analyzed_frame_count} 帧`;
     comparisonVideoWrap.classList.remove('hidden');
+    if (!state.baselineId) state.baselineReplayUrl = replayUrl;
   } else {
     comparisonVideo.pause();
     comparisonVideo.removeAttribute('src');
@@ -576,8 +603,16 @@ el('related-video-dialog').addEventListener('click', (event) => {
 });
 el('practice-button').addEventListener('click', selectAction);
 el('insight-back').addEventListener('click', () => show('step-actions'));
-el('change-action').addEventListener('click', () => { state.baselineId = null; show('step-actions'); });
-el('restart-button').addEventListener('click', () => { state.baselineId = null; show('step-actions'); });
+el('change-action').addEventListener('click', () => {
+  state.baselineId = null;
+  state.baselineReplayUrl = '';
+  show('step-actions');
+});
+el('restart-button').addEventListener('click', () => {
+  state.baselineId = null;
+  state.baselineReplayUrl = '';
+  show('step-actions');
+});
 el('retry-button').addEventListener('click', () => {
   state.file = null;
   el('video-input').value = '';

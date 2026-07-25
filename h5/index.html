@@ -258,7 +258,7 @@
           <div class="scan-target"></div>
         </div>
         <div class="scan-copy">
-          <p id="loading-copy">正在捕捉动作轨迹</p>
+          <p id="loading-copy" role="status" aria-live="polite">正在捕捉动作轨迹</p>
           <div class="scan-steps">
             <div class="scan-step active"><i>01</i><span>捕捉动作轨迹</span><b></b></div>
             <div class="scan-step"><i>02</i><span>对齐你的节奏</span><b></b></div>
@@ -281,7 +281,7 @@
       </div>
 
       <div id="result-beat-lane" class="beat-lane result-lane">
-        <div class="lane-labels"><span>动作开始</span><b>只突出一个 Miss</b><span>动作完成</span></div>
+        <div class="lane-labels"><span>动作开始</span><b id="result-lane-summary">只突出一个最大偏差</b><span>动作完成</span></div>
         <div class="judgement-track">
           <div class="beat-node perfect"><i></i><span>PERFECT</span></div>
           <div class="beat-node great"><i></i><span>GREAT</span></div>
@@ -292,8 +292,12 @@
 
       <div class="result-grid">
         <div class="result-visuals">
+          <div id="baseline-comparison-wrap" class="analysis-replay baseline-replay hidden">
+            <span>首练匿名骨架 · 对照刚才这一把</span>
+            <video id="baseline-comparison-video" class="comparison-video" controls playsinline loop muted></video>
+          </div>
           <div id="comparison-video-wrap" class="analysis-replay hidden">
-            <span id="analysis-replay-label">双色骨架回放 · 青色标准 / 品红用户</span>
+            <span id="analysis-replay-label">匿名骨架回放 · 红色标记本局卡点</span>
             <video id="comparison-video" class="comparison-video" controls playsinline loop muted></video>
           </div>
           <img id="comparison-image" class="comparison hidden" alt="参考动作与用户动作对比" />

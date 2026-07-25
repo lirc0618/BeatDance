@@ -222,6 +222,7 @@ test('用户暂停 Feed 后获得时刻解释，再完成首练和二练验证',
     expect(firstPayload.source_phase).toBeTruthy();
     expect(firstPayload.reference_source).toBe('feed_pause_context');
     await expect(page.locator('#result')).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator('.mission-step[data-phase="decode"]')).toHaveClass(/active/);
     await expect(page.locator('#result .boss-stage')).toBeVisible();
     await expect(page.locator('#result-judgement')).not.toBeEmpty();
     await expect(page.locator('#result-beat-lane .beat-node')).toHaveCount(4);
@@ -261,8 +262,17 @@ test('用户暂停 Feed 后获得时刻解释，再完成首练和二练验证',
     const retryResponse = await retryResponsePromise;
     createdIds.push((await retryResponse.json()).id);
     await expect(page.locator('#result')).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator('.mission-step[data-phase="rematch"]')).toHaveClass(/active/);
     await expect(page.locator('#improvement')).toBeVisible();
     await expect(page.locator('#improvement')).toContainText('卡壳点顺了');
+    await expect(page.locator('#result-judgement')).toHaveText('CLEAR');
+    await expect(page.locator('#result-beat-lane .beat-node.miss')).toHaveCount(0);
+    await expect(page.locator('#result-lane-summary')).toContainText('全线通过');
+    await expect(page.locator('#baseline-comparison-wrap')).toBeVisible();
+    await expect(page.locator('#baseline-comparison-video')).toHaveAttribute(
+      'src',
+      /^http:\/\/127\.0\.0\.1:8000\/media\/comparison-videos\//
+    );
   } finally {
     for (const analysisId of createdIds) {
       const response = await request.delete(`http://127.0.0.1:8000/api/v1/results/${analysisId}`);
