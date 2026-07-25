@@ -9,18 +9,41 @@ from .config import Settings
 from .schemas import (
     ActionSummary,
     AnalysisResult,
+    FeedImportResponse,
     FocusKind,
     HealthResponse,
     PauseInsight,
     PauseInsightRequest,
 )
 from .services.analyzer import Analyzer, ReferenceNotReadyError
+from .services.feed_importer import FeedImporter, FeedImportSpec
 from .services.video import VideoValidationError, probe_video, save_upload, validate_duration
 
 
 def create_router(settings: Settings, analyzer: Analyzer) -> APIRouter:
     router = APIRouter()
     pause_coach = analyzer.pause_coach
+    feed_importer = FeedImporter(settings, analyzer.registry)
+
+    def action_summary(item: dict) -> ActionSummary:
+        return ActionSummary(
+            id=item["id"],
+            name=item["name"],
+            description=item["description"],
+            duration_hint=item.get("duration_hint", "3–8 秒"),
+            cover_url=item.get("cover_url", ""),
+            reference_video_url=analyzer.reference_video_url(item["id"]),
+            feed_video_url=item.get(
+                "feed_video_url",
+                item.get("reference_video_url", ""),
+            ),
+            feed_caption=item.get("feed_caption", ""),
+            creator=item.get("creator", ""),
+            segment_label=item.get("segment_label", ""),
+            entry_copy=item.get("entry_copy", "定格学这一招"),
+            reference_ready=analyzer.reference_ready(item["id"]),
+            tutorial_count=len(item.get("tutorials", [])),
+        )
 
     @router.get("/health", response_model=HealthResponse)
     async def health() -> HealthResponse:
@@ -35,24 +58,59 @@ def create_router(settings: Settings, analyzer: Analyzer) -> APIRouter:
 
     @router.get("/actions", response_model=list[ActionSummary])
     async def list_actions() -> list[ActionSummary]:
-        return [
-            ActionSummary(
-                id=item["id"],
-                name=item["name"],
-                description=item["description"],
-                duration_hint=item.get("duration_hint", "3–8 秒"),
-                cover_url=item.get("cover_url", ""),
-                reference_video_url=analyzer.reference_video_url(item["id"]),
-                feed_video_url=item.get("feed_video_url", item.get("reference_video_url", "")),
-                feed_caption=item.get("feed_caption", ""),
-                creator=item.get("creator", ""),
-                segment_label=item.get("segment_label", ""),
-                entry_copy=item.get("entry_copy", "定格学这一招"),
-                reference_ready=analyzer.reference_ready(item["id"]),
-                tutorial_count=len(item.get("tutorials", [])),
+        return [action_summary(item) for item in analyzer.registry.list()]
+
+    @router.post("/actions/import", response_model=FeedImportResponse)
+    async def import_feed(
+        video: Annotated[UploadFile, File()],
+        action_id: Annotated[str, Form()],
+        name: Annotated[str, Form()],
+        pause_at_seconds: Annotated[float | None, Form()] = None,
+        description: Annotated[str, Form()] = "",
+        feed_caption: Annotated[str, Form()] = "",
+        creator: Annotated[str, Form()] = "自定义素材",
+        focus: Annotated[FocusKind, Form()] = "auto",
+        x_admin_token: Annotated[str, Header()] = "",
+    ) -> FeedImportResponse:
+        if x_admin_token != settings.admin_token:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="管理员令牌无效",
             )
-            for item in analyzer.registry.list()
-        ]
+        path: Path | None = None
+        try:
+            path = await save_upload(
+                video,
+                settings.uploads_dir,
+                settings.max_feed_upload_mb,
+            )
+            result = feed_importer.import_video(
+                path,
+                FeedImportSpec(
+                    action_id=action_id,
+                    name=name,
+                    pause_at_seconds=pause_at_seconds,
+                    description=description,
+                    feed_caption=feed_caption,
+                    creator=creator,
+                    focus=focus,
+                ),
+            )
+            return FeedImportResponse(
+                created=result.created,
+                action=action_summary(result.action),
+                duration_seconds=result.duration_seconds,
+                pose_coverage=result.pose_coverage,
+            )
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except (VideoValidationError, ValueError) as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        except RuntimeError as exc:
+            raise HTTPException(status_code=500, detail=str(exc)) from exc
+        finally:
+            if path:
+                path.unlink(missing_ok=True)
 
     @router.post("/actions/{action_id}/pause-insight", response_model=PauseInsight)
     async def explain_pause(action_id: str, payload: PauseInsightRequest) -> PauseInsight:

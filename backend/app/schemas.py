@@ -40,6 +40,13 @@ class ActionSummary(BaseModel):
     tutorial_count: int = 0
 
 
+class FeedImportResponse(BaseModel):
+    created: bool
+    action: ActionSummary
+    duration_seconds: float
+    pose_coverage: float = Field(ge=0, le=1)
+
+
 class PauseInsightRequest(BaseModel):
     timestamp_seconds: float = Field(ge=0)
 

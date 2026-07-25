@@ -32,6 +32,31 @@ make dev
 - H5：`http://localhost:8000/app/`
 - API：`http://localhost:8000/docs`
 
+## 导入或替换任意测试视频
+
+三个内置动作只是首次启动的样例。服务运行后，可以导入任意数量的本地视频：
+
+```bash
+.venv/bin/python scripts/import_feed.py ./my-dance.mp4 \
+  --id my_dance \
+  --name "我的动作" \
+  --pause-at 6.5 \
+  --creator "素材作者" \
+  --focus auto
+```
+
+导入命令会自动完成 H.264 转码、持久化 Feed、生成通用暂停引导、截取参考片段、
+提取 MediaPipe 骨架并注册到动作清单；无需修改 JSON 或重启服务。同一个
+`--id` 再导入会安全替换该动作，其他 ID 会继续追加。`--pause-at` 应选择人物
+全身清晰、动作有代表性的秒数；省略时使用视频中点。
+
+默认约束：
+
+- Feed 至少 3 秒、不超过 200 MB；
+- 参考点附近需要单人全身清晰；
+- 数据保存在 `data/actions.json`、`data/feeds/` 和 `data/references/`；
+- Docker 使用 `/data` 持久卷，容器重启不会丢失已导入动作。
+
 ## 本地完整流程验收
 
 先在一个终端启动服务：
@@ -53,7 +78,7 @@ make setup-h5
 make accept
 ```
 
-验收覆盖三条长 Feed 的真实暂停时间点、前后上下文、动作阶段解释、时长/无人
+验收覆盖三条内置 Feed 的真实暂停时间点、前后上下文、动作阶段解释、时长/无人
 画面拒绝、参考更新保护、首练诊断、Top-3 多样化搜索、对比图、豆包未配置
 降级、二练改善、镜像校正、结果删除，以及三个动作各连续 5 次的稳定性和
 耗时。同源开放样例能验证产品链路，但不能替代真人同机位错误样本标定。
@@ -79,7 +104,7 @@ cp .env.example .env
 docker compose up --build -d
 ```
 
-注册三个参考片段：
+内置样例首次启动后仍需注册三个参考片段：
 
 ```bash
 python scripts/register_reference.py \
@@ -90,6 +115,9 @@ python scripts/register_reference.py \
 ```
 
 依次配置 `arm_wave`、`groove_step`、`cross_step`。
+
+之后可直接从宿主机运行 `scripts/import_feed.py` 向 Docker API 追加或替换
+任意动作，文件与动作清单都会写入持久卷。
 
 ## 核心 API 变化
 

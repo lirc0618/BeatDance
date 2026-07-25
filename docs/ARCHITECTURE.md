@@ -48,6 +48,7 @@ v1 在诊断后只返回一个教学项；v2 增加了明确的视觉搜索层�
 HTTPS 域名
 └── Docker / FastAPI
     ├── /api/v1/actions
+    ├── /api/v1/actions/import
     ├── /api/v1/actions/{id}/pause-insight
     ├── /api/v1/analyze
     ├── /app/                 H5
@@ -55,4 +56,7 @@ HTTPS 域名
     ├── /media/references/    同源短诊断参考
     ├── /media/visualizations/
     └── /data/
+        ├── actions.json       可动态扩展的动作清单
+        ├── feeds/             导入的持久化 Feed
+        └── references/        不可变参考代际
 ```

@@ -132,13 +132,16 @@ def main() -> int:
         health.raise_for_status()
         health_data = health.json()
         assert health_data["status"] == "ok"
-        assert health_data["reference_actions_ready"] == health_data["total_actions"] == 3, health_data
+        assert health_data["total_actions"] >= 3, health_data
+        assert (
+            health_data["reference_actions_ready"] == health_data["total_actions"]
+        ), health_data
         doubao_configured = health_data["doubao_configured"]
 
         actions = client.get(f"{api}/actions")
         actions.raise_for_status()
         action_data = actions.json()
-        assert len(action_data) == 3
+        assert len(action_data) >= 3
         assert all(action["reference_ready"] for action in action_data)
         assert all(action["feed_video_url"].startswith("/media/feed/") for action in action_data)
 
@@ -217,7 +220,11 @@ def main() -> int:
         assert response.status_code == 422, response.text
         health_after_rejected_reference = client.get(f"{api}/health")
         health_after_rejected_reference.raise_for_status()
-        assert health_after_rejected_reference.json()["reference_actions_ready"] == 3
+        health_after_rejection = health_after_rejected_reference.json()
+        assert (
+            health_after_rejection["reference_actions_ready"]
+            == health_after_rejection["total_actions"]
+        )
 
         first_results = {}
         timings: dict[str, list[float]] = {action_id: [] for action_id in SAMPLES}
@@ -337,11 +344,11 @@ def main() -> int:
         assert any("镜像" in warning for warning in mirrored["warnings"])
 
     cleanup_created_results(api, strict=True)
-    print("PASS: 三个 Feed 动作均已配置参考视频")
-    print("PASS: 三条长 Feed 均可按暂停时刻返回上下文和三种拆解")
+    print("PASS: 三个内置 Feed 动作均已配置参考视频")
+    print("PASS: 三条内置 Feed 均可按暂停时刻返回上下文和三种拆解")
     print("PASS: 时长和无人画面校验返回可读错误")
     print("PASS: 非法参考上传被拒绝且不破坏已有参考")
-    print("PASS: 三个动作均返回诊断、三种拆法和对比图")
+    print("PASS: 三个内置动作均返回诊断、三种拆法和对比图")
     if doubao_configured:
         print("PASS: 豆包已配置时诊断主链正常")
     else:

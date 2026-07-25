@@ -53,6 +53,7 @@ async function loadActions() {
   const response = await fetch(`${API}/actions`);
   if (!response.ok) throw new Error('无法加载 Feed 片段');
   state.actions = await response.json();
+  el('action-count').textContent = String(state.actions.length);
   el('action-list').innerHTML = state.actions.map((action, index) => `
     <article class="feed-card" data-id="${escapeHtml(action.id)}">
       <div class="feed-visual visual-${index + 1} ${action.reference_ready ? 'has-video' : 'placeholder'}">

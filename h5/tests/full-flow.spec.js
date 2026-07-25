@@ -11,13 +11,16 @@ test('用户暂停 Feed 后获得时刻解释，再完成首练和二练验证',
     await page.goto('http://localhost:8000/app/?api=http://127.0.0.1:8000');
 
     const actionButtons = page.locator('.feed-card button');
-    await expect(actionButtons).toHaveCount(3);
-    await expect(page.locator('.feed-card .feed-video')).toHaveCount(3);
+    await expect(page.locator('.feed-card[data-id="groove_step"]')).toHaveCount(1);
+    const actionCount = await actionButtons.count();
+    expect(actionCount).toBeGreaterThanOrEqual(3);
+    await expect(page.locator('.feed-card .feed-video')).toHaveCount(actionCount);
+    await expect(page.locator('#action-count')).toHaveText(String(actionCount));
     await expect(page.locator('#video-attribution')).toHaveAttribute(
       'href',
       'http://127.0.0.1:8000/media/feed/ATTRIBUTION.md'
     );
-    for (let index = 0; index < 3; index += 1) {
+    for (let index = 0; index < actionCount; index += 1) {
       await expect(actionButtons.nth(index)).toBeDisabled();
     }
 

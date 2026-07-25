@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import json
+import threading
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 from urllib.parse import quote
+from uuid import uuid4
 
 import numpy as np
 
@@ -68,16 +70,52 @@ def _tutorial_result(action: dict[str, Any], item: dict[str, Any], reason: str) 
 class ActionRegistry:
     def __init__(self, path: Path):
         self.path = path
-        self.data = json.loads(path.read_text(encoding="utf-8"))
-        self.actions = {item["id"]: item for item in self.data["actions"]}
+        self.lock = threading.RLock()
+        self.reload()
+
+    def reload(self) -> None:
+        data = json.loads(self.path.read_text(encoding="utf-8"))
+        actions = {item["id"]: item for item in data["actions"]}
+        with self.lock:
+            self.data = data
+            self.actions = actions
 
     def list(self) -> list[dict[str, Any]]:
-        return list(self.actions.values())
+        with self.lock:
+            return list(self.actions.values())
 
     def get(self, action_id: str) -> dict[str, Any]:
-        if action_id not in self.actions:
-            raise KeyError(f"未知动作：{action_id}")
-        return self.actions[action_id]
+        with self.lock:
+            if action_id not in self.actions:
+                raise KeyError(f"未知动作：{action_id}")
+            return self.actions[action_id]
+
+    def replace_action(self, action: dict[str, Any]) -> bool:
+        """Atomically append or replace one action and refresh live readers."""
+
+        with self.lock:
+            created = action["id"] not in self.actions
+            items = [
+                action if item["id"] == action["id"] else item
+                for item in self.data["actions"]
+            ]
+            if created:
+                items.append(action)
+            payload = {**self.data, "actions": items}
+            pending = self.path.with_name(
+                f".{self.path.name}-{uuid4().hex}.pending"
+            )
+            try:
+                pending.write_text(
+                    json.dumps(payload, ensure_ascii=False, indent=2),
+                    encoding="utf-8",
+                )
+                pending.replace(self.path)
+            finally:
+                pending.unlink(missing_ok=True)
+            self.data = payload
+            self.actions = {item["id"]: item for item in items}
+            return created
 
     def search_tutorials(
         self,

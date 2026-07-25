@@ -35,8 +35,17 @@ class Analyzer:
         self.doubao = DoubaoService(settings)
         self.reference_lock = threading.RLock()
 
+    def reference_manifest_path(self, action_id: str) -> Path:
+        action = self.registry.get(action_id)
+        manifest_name = str(
+            action.get("reference_manifest", f"{action_id}.current.json")
+        )
+        if Path(manifest_name).name != manifest_name:
+            raise ValueError("参考清单文件名无效")
+        return self.settings.references_dir / manifest_name
+
     def reference_paths(self, action_id: str) -> tuple[Path, Path]:
-        manifest = self.settings.references_dir / f"{action_id}.current.json"
+        manifest = self.reference_manifest_path(action_id)
         if manifest.exists():
             try:
                 payload = json.loads(manifest.read_text(encoding="utf-8"))
@@ -119,7 +128,7 @@ class Analyzer:
         nonce = uuid4().hex
         target_video = self.settings.references_dir / f"{action_id}-{nonce}.mp4"
         target_sequence = self.settings.references_dir / f"{action_id}-{nonce}.npz"
-        manifest = self.settings.references_dir / f"{action_id}.current.json"
+        manifest = self.reference_manifest_path(action_id)
         pending_video = target_video.with_name(f".{target_video.name}.pending.mp4")
         pending_sequence = target_sequence.with_name(
             f".{target_sequence.name}.pending.npz"

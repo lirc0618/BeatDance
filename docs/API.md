@@ -33,6 +33,23 @@ JSON 请求：
 运动观察、采样帧数、可能难点，以及按“背面跟练、慢速分拍、局部特写”排列
 的三种搜索结果。
 
+## POST /actions/import
+
+使用管理员令牌导入新 Feed，或用同一个 `action_id` 替换已有 Feed。
+
+`multipart/form-data`：
+
+- `video`：至少 3 秒、默认不超过 200 MB；
+- `action_id`：小写字母开头，可含数字、下划线或连字符；
+- `name`：动作显示名称；
+- `pause_at_seconds`：可选，用于抽取清晰参考片段；默认视频中点；
+- `description`、`feed_caption`、`creator`：可选文案；
+- `focus`：`auto | upper | lower | timing`；
+- Header `X-Admin-Token`：管理员令牌。
+
+系统自动转码、抽取参考、提取骨架并原子更新动作清单。响应中的 `created=true`
+表示新增，`false` 表示替换。成功后 `/actions` 和 Feed 页面立即更新，无需重启。
+
 ## POST /analyze
 
 `multipart/form-data`：
