@@ -66,3 +66,5 @@ make content-check
 
 本地教学视频建议统一放在 `assets/tutorials/`，并以目录记录的 `id` 命名，例如
 `assets/tutorials/aini-mirror.mp4`。复制完成后将该相对路径写入 `local_asset`。
+运行时会自动把该路径转换为 `/media/tutorials/aini-mirror.mp4`，H5 和小程序
+无需再手工拼接媒体地址。

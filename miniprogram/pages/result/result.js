@@ -16,6 +16,10 @@ Page({
     if (!result.diagnosis.search_results && result.diagnosis.tutorial) {
       result.diagnosis.search_results = [result.diagnosis.tutorial];
     }
+    result.diagnosis.search_results = (result.diagnosis.search_results || []).map(item => ({
+      ...item,
+      url: mediaUrl(item.url)
+    }));
     this.setData({
       result,
       displayMetrics: result.diagnosis.metrics.filter(
@@ -39,7 +43,12 @@ Page({
     wx.setClipboardData({
       data: url,
       success() {
-        wx.showToast({ title: '链接已复制，请在抖音打开', icon: 'none' });
+        wx.showToast({
+          title: url.includes('/media/tutorials/')
+            ? '教学视频链接已复制'
+            : '链接已复制，请在抖音打开',
+          icon: 'none'
+        });
       }
     });
   },

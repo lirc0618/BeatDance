@@ -35,6 +35,11 @@ app.mount(
     name="comparison-videos",
 )
 app.mount("/media/references", StaticFiles(directory=settings.references_dir), name="references")
+app.mount(
+    "/media/tutorials",
+    StaticFiles(directory=settings.tutorial_assets_dir),
+    name="tutorials",
+)
 
 
 @app.get("/media/feed/{filename}", include_in_schema=False)

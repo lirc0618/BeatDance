@@ -14,6 +14,7 @@ RUN pip install -r /app/requirements.txt
 COPY backend/app /app/app
 COPY h5 /app/h5
 RUN mkdir -p /app/assets/samples/open_sources
+COPY assets/tutorials /app/assets/tutorials
 COPY assets/samples/open_sources/six_step_tutorial.mp4 /app/assets/samples/open_sources/
 COPY assets/samples/open_sources/arm_movements_veil.mp4 /app/assets/samples/open_sources/
 COPY assets/samples/open_sources/tendu_tutorial.mp4 /app/assets/samples/open_sources/

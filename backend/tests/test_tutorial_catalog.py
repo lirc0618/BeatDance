@@ -67,3 +67,28 @@ def test_local_asset_must_use_the_tutorial_id_and_directory(tmp_path) -> None:
 
     with pytest.raises(ValueError, match="assets/tutorials/aini-mirror.mp4"):
         load_tutorial_catalog(catalog_path)
+
+
+def test_local_asset_becomes_a_public_tutorial_video_url(tmp_path) -> None:
+    catalog = {
+        "tutorials": [
+            {
+                "id": "aini-mirror",
+                "action_id": "groove_step",
+                "title": "镜像跟跳",
+                "error_type": "timing",
+                "body_part": "双手",
+                "view_type": "镜像跟跳",
+                "download_policy": "local_allowed",
+                "license_status": "permission_granted",
+                "local_asset": "assets/tutorials/aini-mirror.mp4",
+                "url": "",
+            }
+        ]
+    }
+    catalog_path = tmp_path / "tutorial_catalog.json"
+    catalog_path.write_text(json.dumps(catalog, ensure_ascii=False), encoding="utf-8")
+
+    grouped = load_tutorial_catalog(catalog_path)
+
+    assert grouped["groove_step"][0]["url"] == "/media/tutorials/aini-mirror.mp4"

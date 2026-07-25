@@ -92,6 +92,10 @@ Page({
           timestamp_seconds: action.pausedAt
         }
       });
+      insight.search_results = (insight.search_results || []).map(item => ({
+        ...item,
+        url: mediaUrl(item.url)
+      }));
       this.setData({ insight, selectedAction: action });
     } catch (error) {
       this.setData({ error: error.message });

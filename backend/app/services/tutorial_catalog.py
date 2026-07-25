@@ -94,6 +94,9 @@ def load_tutorial_catalog(path: Path | None = None) -> dict[str, list[dict[str, 
                 raise ValueError(f"tutorial_catalog 存在重复 id：{tutorial_id}")
             seen_ids.add(tutorial_id)
 
+            if str(item.get("local_asset", "")).strip():
+                item["url"] = f"/media/tutorials/{tutorial_id}.mp4"
+
             action_id = str(item.pop("action_id"))
             grouped.setdefault(action_id, []).append(item)
 

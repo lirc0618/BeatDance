@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     h5_dir: Path = Path("/app/h5")
     feed_dir: Path = Path("/data/feeds")
     seed_feed_dir: Path = Path("/app/assets/samples/open_sources")
+    tutorial_assets_dir: Path = Path("assets/tutorials")
     max_video_seconds: float = 8.0
     min_video_seconds: float = 3.0
     max_upload_mb: int = 40
@@ -93,6 +94,7 @@ class Settings(BaseSettings):
             self.visualizations_dir,
             self.comparison_videos_dir,
             self.pause_contexts_dir,
+            self.tutorial_assets_dir,
         ):
             path.mkdir(parents=True, exist_ok=True)
 

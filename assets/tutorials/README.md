@@ -18,3 +18,6 @@ assets/tutorials/jumpstyle-feet.mp4
 
 文件就位后，将相对项目根目录的路径写入对应记录的 `local_asset`。文件尚未
 准备时保留空字符串；不要填写不存在的路径。
+
+服务端会把已登记文件映射为 `/media/tutorials/<tutorial-id>.mp4`，H5 与
+小程序直接使用接口返回的 `url` 即可。

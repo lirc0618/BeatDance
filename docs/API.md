@@ -92,12 +92,16 @@ JSON 请求：
         "license_status": "permission_granted",
         "license_name": "项目已获授权",
         "download_policy": "local_allowed",
-        "local_asset": ""
+        "local_asset": "assets/tutorials/aini-mirror.mp4",
+        "url": "/media/tutorials/aini-mirror.mp4"
       }
     ]
   }
 }
 ```
+
+当 `local_asset` 为空时，`url` 也保持目录中配置的外部链接或空字符串；当本地
+文件按教学记录 ID 登记后，服务端会自动返回 `/media/tutorials/<id>.mp4`。
 
 其他端点保持：
 
