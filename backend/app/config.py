@@ -1,0 +1,75 @@
+from __future__ import annotations
+
+from functools import lru_cache
+from pathlib import Path
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    app_name: str = "定格教练·卡点搜索 API"
+    api_prefix: str = "/api/v1"
+    data_dir: Path = Path("/data")
+    h5_dir: Path = Path("/app/h5")
+    max_video_seconds: float = 8.0
+    min_video_seconds: float = 3.0
+    max_upload_mb: int = 40
+    target_fps: float = 15.0
+    pose_model_complexity: int = 1
+    pose_min_detection_confidence: float = 0.5
+    pose_min_tracking_confidence: float = 0.5
+    min_pose_coverage: float = 0.65
+    keep_original_video: bool = False
+    admin_token: str = "change-me"
+
+    # 火山方舟 / 豆包。ARK_MODEL 填模型推理接入点 ID。
+    ark_api_key: str | None = None
+    ark_model: str | None = None
+    ark_base_url: str = "https://ark.cn-beijing.volces.com/api/v3"
+    ark_timeout_seconds: float = 30.0
+    ark_send_images: bool = True
+
+    public_base_url: str = ""
+    cors_origins: str = "*"
+
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+
+    @property
+    def uploads_dir(self) -> Path:
+        return self.data_dir / "uploads"
+
+    @property
+    def references_dir(self) -> Path:
+        return self.data_dir / "references"
+
+    @property
+    def results_dir(self) -> Path:
+        return self.data_dir / "results"
+
+    @property
+    def visualizations_dir(self) -> Path:
+        return self.data_dir / "visualizations"
+
+    @property
+    def action_registry_path(self) -> Path:
+        override = self.data_dir / "actions.json"
+        if override.exists():
+            return override
+        return Path(__file__).parent / "data" / "actions.json"
+
+    def ensure_directories(self) -> None:
+        for path in (
+            self.data_dir,
+            self.uploads_dir,
+            self.references_dir,
+            self.results_dir,
+            self.visualizations_dir,
+        ):
+            path.mkdir(parents=True, exist_ok=True)
+
+
+@lru_cache
+def get_settings() -> Settings:
+    settings = Settings()
+    settings.ensure_directories()
+    return settings

@@ -1,0 +1,241 @@
+{
+  "actions": [
+    {
+      "id": "groove_step",
+      "name": "基础律动步·重心切换",
+      "description": "从 Feed 中定格脚步与重心切换的 4 秒片段。",
+      "duration_hint": "4–6 秒，正面全身",
+      "cover_url": "",
+      "reference_video_url": "/media/references/groove_step.mp4",
+      "feed_caption": "这个律动看起来简单，为什么一跟就像在赶拍？",
+      "creator": "@动作拆解实验室",
+      "segment_label": "00:07–00:12 · 脚步卡点",
+      "entry_copy": "定格学这一招",
+      "tutorials": [
+        {
+          "id": "groove-timing-back",
+          "title": "背面四拍：只看脚什么时候落",
+          "url": "",
+          "error_type": "timing",
+          "body_part": "右腿",
+          "description": "去掉手部，用背面视角看清右脚进入和回位时机。",
+          "view_type": "背面跟练",
+          "creator": "@小步老师",
+          "clip_seconds": "12 秒",
+          "tags": ["lower", "timing", "beginner"]
+        },
+        {
+          "id": "groove-timing-slow",
+          "title": "0.5 倍分拍：重心先到，脚再落",
+          "url": "",
+          "error_type": "timing",
+          "body_part": "左腿",
+          "description": "把重心切换拆成四拍，避免脚步提前抢拍。",
+          "view_type": "慢速分拍",
+          "creator": "@跟拍不赶拍",
+          "clip_seconds": "15 秒",
+          "tags": ["lower", "timing"]
+        },
+        {
+          "id": "groove-path-floor",
+          "title": "脚步特写：两个落点不要踩成一条线",
+          "url": "",
+          "error_type": "trajectory",
+          "body_part": "左腿",
+          "description": "俯拍地贴标记，展示交替落点的真实路线。",
+          "view_type": "局部特写",
+          "creator": "@脚步显微镜",
+          "clip_seconds": "10 秒",
+          "tags": ["lower", "trajectory"]
+        },
+        {
+          "id": "groove-angle-freeze",
+          "title": "关键定格：膝髋到底要压到哪里",
+          "url": "",
+          "error_type": "angle",
+          "body_part": "右膝",
+          "description": "在重拍处定格两秒，对齐膝、髋和躯干幅度。",
+          "view_type": "关键帧定格",
+          "creator": "@定格两秒",
+          "clip_seconds": "11 秒",
+          "tags": ["lower", "angle"]
+        },
+        {
+          "id": "groove-full-beginner",
+          "title": "新手版：先脚后手的完整跟练",
+          "url": "",
+          "error_type": "timing",
+          "body_part": "躯干",
+          "description": "保留原动作节奏，但降低上肢复杂度。",
+          "view_type": "新手简化",
+          "creator": "@零基础律动",
+          "clip_seconds": "18 秒",
+          "tags": ["upper", "lower", "beginner"]
+        }
+      ],
+      "diagnosis": {
+        "thresholds": {"timing_seconds": 0.55, "trajectory": 0.55, "angle_degrees": 55.0},
+        "weights": {"timing": 1.05, "trajectory": 1.0, "angle": 0.95},
+        "aligned_threshold": 0.22
+      }
+    },
+    {
+      "id": "arm_wave",
+      "name": "手臂波浪·肩肘腕传递",
+      "description": "定格手臂波浪中最难看清的肩、肘、腕启动顺序。",
+      "duration_hint": "3–5 秒，上半身清晰",
+      "cover_url": "",
+      "reference_video_url": "/media/references/arm_wave.mp4",
+      "feed_caption": "不是手甩过去，是一节一节把波浪送过去。",
+      "creator": "@动作拆解实验室",
+      "segment_label": "00:03–00:07 · 手部卡点",
+      "entry_copy": "定格看手怎么走",
+      "tutorials": [
+        {
+          "id": "wave-timing-count",
+          "title": "三拍启动：肩、肘、腕不要一起动",
+          "url": "",
+          "error_type": "timing",
+          "body_part": "右臂",
+          "description": "每个关节只占一拍，听清启动顺序。",
+          "view_type": "慢速分拍",
+          "creator": "@波浪拆成三拍",
+          "clip_seconds": "14 秒",
+          "tags": ["upper", "timing"]
+        },
+        {
+          "id": "wave-path-close",
+          "title": "手腕特写：弧线不是直线推过去",
+          "url": "",
+          "error_type": "trajectory",
+          "body_part": "右臂",
+          "description": "局部特写展示手腕最高点和下落弧线。",
+          "view_type": "局部特写",
+          "creator": "@手腕路线图",
+          "clip_seconds": "9 秒",
+          "tags": ["upper", "trajectory"]
+        },
+        {
+          "id": "wave-angle-elbow",
+          "title": "肘部定格：波峰要先立起来",
+          "url": "",
+          "error_type": "angle",
+          "body_part": "右肘",
+          "description": "在肘部最高点定格，确认幅度后再继续传递。",
+          "view_type": "关键帧定格",
+          "creator": "@一帧学会",
+          "clip_seconds": "10 秒",
+          "tags": ["upper", "angle"]
+        },
+        {
+          "id": "wave-back-mirror",
+          "title": "镜像背面版：直接跟右手",
+          "url": "",
+          "error_type": "trajectory",
+          "body_part": "左臂",
+          "description": "背面镜像降低左右转换成本。",
+          "view_type": "背面跟练",
+          "creator": "@不用脑转左右",
+          "clip_seconds": "13 秒",
+          "tags": ["upper", "beginner"]
+        },
+        {
+          "id": "wave-beginner-one-arm",
+          "title": "单臂新手版：先学会半边波浪",
+          "url": "",
+          "error_type": "timing",
+          "body_part": "右臂",
+          "description": "去掉另一只手，只练单侧传递。",
+          "view_type": "新手简化",
+          "creator": "@半边先会",
+          "clip_seconds": "16 秒",
+          "tags": ["upper", "timing", "beginner"]
+        }
+      ],
+      "diagnosis": {
+        "thresholds": {"timing_seconds": 0.55, "trajectory": 0.55, "angle_degrees": 55.0},
+        "weights": {"timing": 1.05, "trajectory": 1.0, "angle": 0.95},
+        "aligned_threshold": 0.22
+      }
+    },
+    {
+      "id": "cross_step",
+      "name": "交叉步·落点与回位",
+      "description": "定格交叉脚落点、躯干方向和回位先后。",
+      "duration_hint": "5–8 秒，固定正面机位",
+      "cover_url": "",
+      "reference_video_url": "/media/references/cross_step.mp4",
+      "feed_caption": "交叉步不是把腿绞在一起，关键是落点和回位。",
+      "creator": "@动作拆解实验室",
+      "segment_label": "00:12–00:18 · 脚步卡点",
+      "entry_copy": "定格看落点",
+      "tutorials": [
+        {
+          "id": "cross-timing-back",
+          "title": "背面分拍：交叉、停、回位",
+          "url": "",
+          "error_type": "timing",
+          "body_part": "左腿",
+          "description": "背面视角展示交叉进入和回位的先后。",
+          "view_type": "背面跟练",
+          "creator": "@三步不打结",
+          "clip_seconds": "14 秒",
+          "tags": ["lower", "timing"]
+        },
+        {
+          "id": "cross-path-sticker",
+          "title": "地贴特写：前脚落在哪里才不打结",
+          "url": "",
+          "error_type": "trajectory",
+          "body_part": "右腿",
+          "description": "用地面两个标记固定交叉和回位落点。",
+          "view_type": "局部特写",
+          "creator": "@地贴学脚步",
+          "clip_seconds": "11 秒",
+          "tags": ["lower", "trajectory"]
+        },
+        {
+          "id": "cross-angle-hip",
+          "title": "髋部定格：腿交叉，身体不要一起拧",
+          "url": "",
+          "error_type": "angle",
+          "body_part": "左髋",
+          "description": "锁住髋部方向，再加入交叉脚。",
+          "view_type": "关键帧定格",
+          "creator": "@髋不乱转",
+          "clip_seconds": "10 秒",
+          "tags": ["lower", "angle"]
+        },
+        {
+          "id": "cross-slow-count",
+          "title": "0.5 倍口令版：一交叉、二回位",
+          "url": "",
+          "error_type": "timing",
+          "body_part": "右腿",
+          "description": "用口令把动作压缩成两个明确节点。",
+          "view_type": "慢速分拍",
+          "creator": "@跟着口令走",
+          "clip_seconds": "13 秒",
+          "tags": ["lower", "timing", "beginner"]
+        },
+        {
+          "id": "cross-simple",
+          "title": "新手版：先不加手的交叉步",
+          "url": "",
+          "error_type": "trajectory",
+          "body_part": "左腿",
+          "description": "去掉上肢动作，只练脚步路线。",
+          "view_type": "新手简化",
+          "creator": "@先把脚学会",
+          "clip_seconds": "17 秒",
+          "tags": ["lower", "beginner"]
+        }
+      ],
+      "diagnosis": {
+        "thresholds": {"timing_seconds": 0.55, "trajectory": 0.55, "angle_degrees": 55.0},
+        "weights": {"timing": 1.05, "trajectory": 1.0, "angle": 0.95},
+        "aligned_threshold": 0.22
+      }
+    }
+  ]
+}

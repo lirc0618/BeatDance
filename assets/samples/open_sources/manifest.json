@@ -1,0 +1,38 @@
+[
+  {
+    "sample_id": "breakdance_6_step",
+    "commons_filename": "6-step example.webm",
+    "source_page": "https://commons.wikimedia.org/wiki/File:6-step_example.webm",
+    "author": "Neil Sweeney",
+    "license_name": "CC BY 3.0",
+    "license_url": "https://creativecommons.org/licenses/by/3.0/",
+    "description": "4 秒 breakdance 六步动作；适合测试全身快速动作和地面姿态。",
+    "expected_duration_seconds": 4.0,
+    "download_url": "https://commons.wikimedia.org/wiki/Special:Redirect/file/6-step%20example.webm",
+    "local_file": "breakdance_6_step.mp4"
+  },
+  {
+    "sample_id": "breakdance_2_step",
+    "commons_filename": "Demonstration of a 2-step.webm",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Demonstration_of_a_2-step.webm",
+    "author": "VincaniTV",
+    "license_name": "CC BY 3.0",
+    "license_url": "https://creativecommons.org/licenses/by/3.0/",
+    "description": "6.1 秒 breakdance 两步示范；适合测试节奏与脚步轨迹。",
+    "expected_duration_seconds": 6.1,
+    "download_url": "https://commons.wikimedia.org/wiki/Special:Redirect/file/Demonstration%20of%20a%202-step.webm",
+    "local_file": "breakdance_2_step.mp4"
+  },
+  {
+    "sample_id": "simple_step",
+    "commons_filename": "Simple step demo.ogv",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Simple_step_demo.ogv",
+    "author": "Secarver7",
+    "license_name": "CC BY 3.0",
+    "license_url": "https://creativecommons.org/licenses/by/3.0/",
+    "description": "3.8 秒简单踏步；适合测试普通站立动作与短视频边界。",
+    "expected_duration_seconds": 3.8,
+    "download_url": "https://commons.wikimedia.org/wiki/Special:Redirect/file/Simple%20step%20demo.ogv",
+    "local_file": "simple_step.mp4"
+  }
+]

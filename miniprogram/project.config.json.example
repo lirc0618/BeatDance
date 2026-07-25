@@ -1,0 +1,9 @@
+{
+  "description": "定格教练微信小程序",
+  "packOptions": {"ignore": []},
+  "setting": {"urlCheck": false, "es6": true, "enhance": true, "minified": true},
+  "compileType": "miniprogram",
+  "appid": "YOUR_WECHAT_APPID",
+  "projectname": "dingge-coach",
+  "miniprogramRoot": "./"
+}

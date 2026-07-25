@@ -1,0 +1,114 @@
+from __future__ import annotations
+
+import shutil
+from pathlib import Path
+
+from fastapi import APIRouter, File, Form, Header, HTTPException, UploadFile, status
+
+from .config import Settings
+from .schemas import ActionSummary, AnalysisResult, FocusKind, HealthResponse
+from .services.analyzer import Analyzer, ReferenceNotReadyError
+from .services.video import VideoValidationError, probe_video, save_upload, validate_duration
+
+
+def create_router(settings: Settings, analyzer: Analyzer) -> APIRouter:
+    router = APIRouter()
+
+    @router.get("/health", response_model=HealthResponse)
+    async def health() -> HealthResponse:
+        actions = analyzer.registry.list()
+        ready = sum(analyzer.reference_ready(item["id"]) for item in actions)
+        return HealthResponse(
+            status="ok",
+            reference_actions_ready=ready,
+            total_actions=len(actions),
+            doubao_configured=analyzer.doubao.configured,
+        )
+
+    @router.get("/actions", response_model=list[ActionSummary])
+    async def list_actions() -> list[ActionSummary]:
+        return [
+            ActionSummary(
+                id=item["id"],
+                name=item["name"],
+                description=item["description"],
+                duration_hint=item.get("duration_hint", "3–8 秒"),
+                cover_url=item.get("cover_url", ""),
+                reference_video_url=item.get("reference_video_url", ""),
+                feed_caption=item.get("feed_caption", ""),
+                creator=item.get("creator", ""),
+                segment_label=item.get("segment_label", ""),
+                entry_copy=item.get("entry_copy", "定格学这一招"),
+                reference_ready=analyzer.reference_ready(item["id"]),
+                tutorial_count=len(item.get("tutorials", [])),
+            )
+            for item in analyzer.registry.list()
+        ]
+
+    @router.post("/actions/{action_id}/reference")
+    async def upload_reference(
+        action_id: str,
+        video: UploadFile = File(...),
+        x_admin_token: str = Header(default=""),
+    ) -> dict:
+        if x_admin_token != settings.admin_token:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="管理员令牌无效")
+        path: Path | None = None
+        try:
+            path = await save_upload(video, settings.uploads_dir, settings.max_upload_mb)
+            metadata = probe_video(path)
+            validate_duration(metadata, settings.min_video_seconds, settings.max_video_seconds)
+            pose = analyzer.register_reference(action_id, path)
+            return {"ok": True, "action_id": action_id, "pose_coverage": pose.coverage}
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except (VideoValidationError, ValueError) as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        finally:
+            if path:
+                path.unlink(missing_ok=True)
+
+    @router.post("/analyze", response_model=AnalysisResult)
+    async def analyze_video(
+        video: UploadFile = File(...),
+        action_id: str = Form(...),
+        session_id: str = Form(...),
+        baseline_analysis_id: str | None = Form(default=None),
+        focus: FocusKind = Form(default="auto"),
+    ) -> AnalysisResult:
+        path: Path | None = None
+        try:
+            path = await save_upload(video, settings.uploads_dir, settings.max_upload_mb)
+            metadata = probe_video(path)
+            validate_duration(metadata, settings.min_video_seconds, settings.max_video_seconds)
+            result = await analyzer.analyze(action_id, session_id, path, baseline_analysis_id, focus=focus)
+            return result
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except ReferenceNotReadyError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=f"找不到首次分析记录：{exc}") from exc
+        except (VideoValidationError, ValueError) as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        except Exception as exc:  # 保证比赛 Demo 返回可读错误，生产环境应接入 Sentry。
+            raise HTTPException(status_code=500, detail=f"分析失败：{type(exc).__name__}: {exc}") from exc
+        finally:
+            if path and not settings.keep_original_video:
+                path.unlink(missing_ok=True)
+
+    @router.get("/results/{analysis_id}", response_model=AnalysisResult)
+    async def get_result(analysis_id: str) -> AnalysisResult:
+        try:
+            return analyzer.store.load(analysis_id)
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="分析记录不存在") from exc
+
+    @router.delete("/results/{analysis_id}")
+    async def delete_result(analysis_id: str) -> dict:
+        analyzer.store.delete(analysis_id)
+        image = settings.visualizations_dir / f"{analysis_id}.jpg"
+        image.unlink(missing_ok=True)
+        return {"ok": True}
+
+    return router

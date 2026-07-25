@@ -1,0 +1,44 @@
+<view class="container" wx:if="{{result}}">
+  <view class="hero">
+    <view class="badge">{{resultBadge}}</view>
+    <view class="big-result">{{result.diagnosis.primary_error}}</view>
+    <view class="feedback">{{result.diagnosis.vlm_summary || result.diagnosis.priority_feedback}}</view>
+  </view>
+
+  <image wx:if="{{comparisonUrl}}" class="comparison" src="{{comparisonUrl}}" mode="widthFix"></image>
+
+  <view class="metric-row">
+    <block wx:for="{{result.diagnosis.metrics}}" wx:key="kind">
+      <view class="metric">
+        <view class="metric-label">{{metricLabels[item.kind]}} · {{item.body_part}}</view>
+        <view class="metric-value">{{item.human_value}}</view>
+      </view>
+    </block>
+  </view>
+
+  <view class="card card-gap">
+    <view class="section-label">先练这一件事</view>
+    <view class="card-title">{{result.diagnosis.drill}}</view>
+  </view>
+
+  <view class="search-title">
+    <view class="section-label cyan">动作片段搜索</view>
+    <view class="card-title">为你找到 3 种更合适的拆法</view>
+    <view class="query">{{result.diagnosis.search_query}}</view>
+  </view>
+
+  <block wx:for="{{result.diagnosis.search_results}}" wx:key="id">
+    <view class="search-card">
+      <view class="search-type">{{item.view_type}}<text wx:if="{{item.clip_seconds}}"> · {{item.clip_seconds}}</text></view>
+      <view class="card-title">{{item.title}}</view>
+      <view class="card-copy">{{item.description}}</view>
+      <view class="why">{{item.why_matched}}<text wx:if="{{item.creator}}"> · {{item.creator}}</text></view>
+    </view>
+  </block>
+
+  <view class="card" wx:if="{{result.improvement}}"><view class="card-title">{{result.improvement.message}}</view></view>
+  <block wx:for="{{result.warnings}}" wx:key="*this"><view class="warning">提示：{{item}}</view></block>
+
+  <button class="primary" bindtap="retry">{{retryText}}</button>
+  <button class="ghost" bindtap="restart">回到 Feed 换一招</button>
+</view>

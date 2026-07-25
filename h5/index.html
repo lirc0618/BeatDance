@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>定格教练 · 卡点搜索</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <div class="badge">Feed 定格 · 动作卡点搜索</div>
+      <h1>定格教练</h1>
+      <p>刷到一个没看懂的动作，停在那一秒。AI 先找出你卡在哪里，再搜索最适合你的背面、慢速或局部拆解。</p>
+    </header>
+
+    <section id="step-actions" class="panel">
+      <div class="panel-title">
+        <span>1</span>
+        <div><h2>在 Feed 里定格一招</h2><p>以下为比赛用的 3 个受控片段。</p></div>
+      </div>
+      <div id="action-list" class="feed-grid"></div>
+    </section>
+
+    <section id="step-upload" class="panel hidden">
+      <div class="panel-title">
+        <span>2</span>
+        <div><h2>你卡在哪里？</h2><p>先表达关注点，再上传 3–8 秒模仿。</p></div>
+      </div>
+      <div class="selected-feed" id="selected-action"></div>
+      <div id="focus-chips" class="focus-chips">
+        <button data-focus="auto" class="active">我也说不清</button>
+        <button data-focus="upper">手部没看懂</button>
+        <button data-focus="lower">脚步没看懂</button>
+        <button data-focus="timing">总跟不上拍</button>
+      </div>
+      <label class="upload-box">
+        <input id="video-input" type="file" accept="video/*" />
+        <strong id="upload-title">上传你的模仿</strong>
+        <small id="upload-hint">3–8 秒，单人、固定机位</small>
+      </label>
+      <video id="video-preview" class="preview hidden" controls playsinline></video>
+      <button id="analyze-button" class="primary" disabled>找出我卡在哪</button>
+      <button id="change-action" class="ghost">返回 Feed</button>
+    </section>
+
+    <section id="loading" class="panel hidden loading">
+      <div class="spinner"></div>
+      <h2>正在搜索你的卡点</h2>
+      <p id="loading-copy">动作对齐 → 找到关键差异 → 召回最合适的拆解</p>
+    </section>
+
+    <section id="result" class="panel hidden">
+      <div class="result-kicker">你不是不会，只是卡在这一处</div>
+      <h2 id="result-title"></h2>
+      <p id="result-feedback" class="lead"></p>
+      <img id="comparison-image" class="comparison hidden" alt="参考动作与用户动作对比" />
+
+      <div class="metric-grid" id="metric-grid"></div>
+
+      <div class="advice-card">
+        <span>先练这一件事</span>
+        <strong id="drill"></strong>
+      </div>
+
+      <div class="search-head">
+        <div>
+          <span>动作片段搜索</span>
+          <h3>为你找到 3 种更合适的拆法</h3>
+        </div>
+        <code id="search-query"></code>
+      </div>
+      <div id="search-results" class="search-results"></div>
+
+      <div id="improvement" class="improvement hidden"></div>
+      <div id="warnings" class="warnings"></div>
+
+      <button id="retry-button" class="primary">练一次，再验证</button>
+      <button id="restart-button" class="ghost">回到 Feed 换一招</button>
+    </section>
+
+    <section class="privacy">
+      <strong>产品边界</strong>
+      <p>它不是整支舞评分工具。只处理从 Feed 定格出的短动作卡点；原视频默认分析后删除，不做人脸身份识别。</p>
+    </section>
+  </main>
+  <script src="./app.js"></script>
+</body>
+</html>

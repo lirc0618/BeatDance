@@ -1,0 +1,24 @@
+<view class="container">
+  <view class="hero">
+    <view class="badge">{{segment || actionName}}</view>
+    <view class="hero-title small-title">你卡在哪里？</view>
+    <view class="hero-copy">{{caption}}</view>
+  </view>
+
+  <view class="focus-row">
+    <block wx:for="{{focusOptions}}" wx:key="id">
+      <view class="focus-chip {{focus === item.id ? 'active' : ''}}" data-focus="{{item.id}}" bindtap="selectFocus">{{item.label}}</view>
+    </block>
+  </view>
+
+  <view class="card" bindtap="chooseVideo">
+    <view class="card-title">{{filePath ? '已选择模仿视频' : '从相册上传你的模仿'}}</view>
+    <view class="card-copy">{{filePath ? filePath : '3–8 秒、单人、固定机位。只分析动作，不识别身份。'}}</view>
+  </view>
+
+  <video wx:if="{{filePath}}" src="{{filePath}}" controls object-fit="contain" class="video-preview"></video>
+  <button class="primary" disabled="{{!filePath || analyzing}}" loading="{{analyzing}}" bindtap="analyze">{{analyzing ? '正在搜索卡点…' : '找出我卡在哪'}}</button>
+  <button class="ghost" bindtap="chooseVideo">重新选择</button>
+
+  <view class="hint upload-hint">动作对齐 → 定位关键差异 → 按失败状态召回背面、慢速或局部拆解。</view>
+</view>

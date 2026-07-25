@@ -1,0 +1,13 @@
+{
+  "name": "freeze-frame-search-coach",
+  "display_name": "定格教练·卡点搜索",
+  "version": "0.2.0",
+  "description": "从 Feed 暂停触发，定位短动作卡点，按失败状态召回多视角拆解并进行二次验证。",
+  "entrypoints": {
+    "list_feed_clips": "GET /api/v1/actions",
+    "register_reference": "POST /api/v1/actions/{action_id}/reference",
+    "analyze_and_search": "POST /api/v1/analyze",
+    "get_result": "GET /api/v1/results/{analysis_id}",
+    "delete_result": "DELETE /api/v1/results/{analysis_id}"
+  }
+}

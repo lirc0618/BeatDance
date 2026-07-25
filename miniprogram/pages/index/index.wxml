@@ -1,0 +1,27 @@
+<view class="container">
+  <view class="hero">
+    <view class="badge">Feed 定格 · 动作卡点搜索</view>
+    <view class="hero-title">定格教练</view>
+    <view class="hero-copy">刷到一个没看懂的动作，停在那一秒。AI 找出你卡在哪里，再搜索最适合你的拆解。</view>
+  </view>
+
+  <view wx:if="{{loading}}" class="card"><view class="card-copy">正在加载 Feed 片段…</view></view>
+  <view wx:if="{{error}}" class="card"><view class="warning">{{error}}</view><button class="ghost" bindtap="loadActions">重试</button></view>
+
+  <block wx:for="{{actions}}" wx:key="id">
+    <view class="feed-card">
+      <view class="feed-visual">
+        <view class="feed-segment">{{item.segment_label}}</view>
+        <view class="pause">Ⅱ</view>
+      </view>
+      <view class="feed-body">
+        <view class="creator">{{item.creator}}</view>
+        <view class="feed-title">{{item.feed_caption || item.name}}</view>
+        <view class="card-copy">{{item.description}}</view>
+        <button class="feed-cta" disabled="{{!item.reference_ready}}" data-id="{{item.id}}" bindtap="chooseAction">{{item.reference_ready ? item.entry_copy : '待配置参考片段'}}</button>
+      </view>
+    </view>
+  </block>
+
+  <view class="hint">第一版用 3 个受控片段模拟“抖音 Feed 暂停”，不做整支舞评分。</view>
+</view>

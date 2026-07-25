@@ -1,0 +1,10 @@
+.env
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.DS_Store
+project.private.config.json
+project.config.json
+/data/
+evaluation.csv

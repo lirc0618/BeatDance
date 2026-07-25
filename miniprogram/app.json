@@ -1,0 +1,15 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/upload/upload",
+    "pages/result/result"
+  ],
+  "window": {
+    "navigationBarTitleText": "定格教练·卡点搜索",
+    "navigationBarBackgroundColor": "#08090d",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#08090d"
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}
