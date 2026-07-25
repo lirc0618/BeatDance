@@ -7,10 +7,10 @@ from app.services.diagnosis import ActionRegistry
 
 def test_featured_dances_each_have_their_own_coaching_language_and_views():
     expected_views = {
-        "groove_step": {"镜像跟跳", "手势慢放", "副歌口令", "定点摆拍", "新手半身版"},
-        "arm_wave": {"脚步俯拍", "0.5×拆腿", "重拍口令", "落地定格", "扶墙简化"},
-        "cross_step": {"上身特写", "节奏口令", "镜像跟摇", "回正定格", "坐姿练肩"},
-        "two_step_demo": {"脚下特写", "超慢换腿", "落地节拍", "膝盖定格", "原地简化"},
+        "groove_step": {"镜像跟跳", "上身特写", "节奏慢放", "收尾定格", "慢速跟跳"},
+        "arm_wave": {"脚步特写", "0.55×慢放", "节拍慢放", "关键帧定格", "慢速跟跳"},
+        "cross_step": {"上身特写", "节奏慢放", "镜像跟摇", "关键帧定格", "慢速跟跳"},
+        "two_step_demo": {"脚下特写", "0.55×慢放", "节拍慢放", "关键帧定格", "慢速跟跳"},
     }
     stuck_lines: set[str] = set()
 
@@ -60,10 +60,10 @@ def test_existing_catalog_entries_gain_the_named_profile_when_read(tmp_path):
     assert action["pause_guides"][0]["likely_stuck_at"] == "手先营业，胯晚点上线。"
     assert {item["view_type"] for item in action["tutorials"]} == {
         "镜像跟跳",
-        "手势慢放",
-        "副歌口令",
-        "定点摆拍",
-        "新手半身版",
+        "上身特写",
+        "节奏慢放",
+        "收尾定格",
+        "慢速跟跳",
     }
 
 

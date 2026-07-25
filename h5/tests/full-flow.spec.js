@@ -5,11 +5,13 @@ const projectRoot = path.resolve(__dirname, '..', '..');
 const wrongAttempt = path.join(projectRoot, 'assets/samples/open_sources/arm_movements_reference.mp4');
 const correctedAttempt = path.join(projectRoot, 'assets/samples/open_sources/breakdance_6_step.mp4');
 
-test('Feed 列表会自动发现新导入的视频且不需要刷新页面', async ({ page }) => {
+test('Feed 列表会自动发现新导入的视频且不需要刷新页面', async ({ page, request }) => {
+  const response = await request.get('http://127.0.0.1:8000/api/v1/actions');
+  expect(response.ok()).toBeTruthy();
+  const baseActions = await response.json();
   let requestCount = 0;
   await page.route('**/api/v1/actions', async (route) => {
-    const response = await route.fetch();
-    const actions = await response.json();
+    const actions = structuredClone(baseActions);
     requestCount += 1;
     if (requestCount > 1) {
       actions.push({
@@ -28,7 +30,7 @@ test('Feed 列表会自动发现新导入的视频且不需要刷新页面', asy
         tutorial_count: 3
       });
     }
-    await route.fulfill({ response, json: actions });
+    await route.fulfill({ json: actions });
   });
 
   await page.goto('http://localhost:8000/app/?api=http://127.0.0.1:8000');
