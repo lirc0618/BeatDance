@@ -2,8 +2,8 @@
   <view class="hero" wx:if="{{!insight}}">
     <view class="badge">AI ACTION SEARCH · 01</view>
     <view class="hero-title">
-      <view>不会的动作，</view>
-      <view class="accent">停在这一秒。</view>
+      <view>刷到抖舞来对拍，</view>
+      <view class="accent">全场卡点不带歪</view>
     </view>
     <view class="hero-copy">不用知道动作名。暂停、模仿一次，AI 会找到你真正卡住的地方，再换一种更适合你的角度讲明白。</view>
     <view class="flow-strip">
