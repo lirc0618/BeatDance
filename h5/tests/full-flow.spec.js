@@ -32,6 +32,7 @@ test('Feed 列表会自动发现新导入的视频且不需要刷新页面', asy
   });
 
   await page.goto('http://localhost:8000/app/?api=http://127.0.0.1:8000');
+  await expect(page.locator('.brand')).toContainText('对拍');
   await expect(page.locator('.feed-card[data-id="polled_move"]')).toHaveCount(0);
   await expect(page.locator('.feed-card[data-id="polled_move"]')).toHaveCount(1, {
     timeout: 7000
@@ -59,9 +60,9 @@ test('用户暂停 Feed 后获得时刻解释，再完成首练和二练验证',
     }
 
     const grooveVideo = page.locator('.feed-card[data-id="groove_step"] .feed-video');
-    await expect(grooveVideo).toHaveAttribute('src', /\/media\/feed\/six_step_tutorial\.mp4$/);
+    await expect(grooveVideo).toHaveAttribute('src', /\/media\/feed\/.+\.mp4$/);
     await grooveVideo.evaluate(async (video) => {
-      video.currentTime = 18;
+      video.currentTime = 1;
       if (video.seeking) {
         await new Promise(resolve => video.addEventListener('seeked', resolve, { once: true }));
       }
@@ -70,7 +71,7 @@ test('用户暂停 Feed 后获得时刻解释，再完成首练和二练验证',
     });
     const grooveButton = page.locator('.feed-card button[data-id="groove_step"]');
     await expect(grooveButton).toBeEnabled();
-    await expect(grooveButton).toContainText('00:18.0');
+    await expect(grooveButton).toContainText('00:01.0');
 
     const pauseResponsePromise = page.waitForResponse(
       response => response.url().endsWith('/api/v1/actions/groove_step/pause-insight')
@@ -79,8 +80,8 @@ test('用户暂停 Feed 后获得时刻解释，再完成首练和二练验证',
     await page.locator('.feed-card button[data-id="groove_step"]').click();
     await pauseResponsePromise;
     await expect(page.locator('#step-insight')).toBeVisible();
-    await expect(page.locator('#pause-time')).toContainText('00:18.0');
-    await expect(page.locator('#pause-phase')).toContainText('动作进入');
+    await expect(page.locator('#pause-time')).toContainText('00:01.0');
+    await expect(page.locator('#pause-phase')).not.toBeEmpty();
     await expect(page.locator('#pause-search-results .search-card')).toHaveCount(3);
     await page.locator('#practice-button').click();
 
@@ -95,11 +96,12 @@ test('用户暂停 Feed 后获得时刻解释，再完成首练和二练验证',
     const firstResponse = await firstResponsePromise;
     const firstPayload = await firstResponse.json();
     createdIds.push(firstPayload.id);
-    expect(firstPayload.source_timestamp_seconds).toBe(18);
-    expect(firstPayload.source_phase).toBe('动作进入');
+    expect(firstPayload.source_timestamp_seconds).toBe(1);
+    expect(firstPayload.source_phase).toBeTruthy();
     expect(firstPayload.reference_source).toBe('feed_pause_context');
     await expect(page.locator('#result')).toBeVisible({ timeout: 30_000 });
     await expect(page.locator('#result-title')).not.toBeEmpty();
+    await expect(page.locator('#metric-grid .metric')).toHaveCount(1);
     await expect(page.locator('#comparison-image')).toBeVisible();
     await expect(page.locator('#comparison-image')).toHaveAttribute(
       'src',

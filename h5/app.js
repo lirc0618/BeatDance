@@ -44,8 +44,7 @@ function searchCards(results) {
       <div>
         <span>${escapeHtml(item.view_type)}${item.clip_seconds ? ` · ${escapeHtml(item.clip_seconds)}` : ''}</span>
         <strong>${escapeHtml(item.title)}</strong>
-        <p>${escapeHtml(item.description)}</p>
-        <small>${escapeHtml(item.why_matched || '这条正好对症')}${item.creator ? ` · ${escapeHtml(item.creator)}` : ''}</small>
+        <small>${escapeHtml(item.why_matched || '这条正好对症')}</small>
       </div>
     </a>`).join('');
 }
@@ -150,7 +149,7 @@ function renderPauseInsight(insight) {
     preview.pause();
   }, { once: true });
   el('pause-time').textContent = `定格 ${formatTime(insight.timestamp_seconds)}`;
-  el('pause-context').textContent = `AI 偷偷回看了 ${formatTime(insight.context_start_seconds)}–${formatTime(insight.context_end_seconds)}，免得只凭一帧瞎猜。`;
+  el('pause-context').textContent = `前后 3 秒都看了，不瞎猜。`;
   el('pause-phase').textContent = insight.phase;
   el('pause-stuck').textContent = insight.likely_stuck_at;
   el('pause-watch').textContent = insight.watch_for;
@@ -214,12 +213,12 @@ function renderResult(result) {
   const d = result.diagnosis;
   el('result-title').textContent = d.primary_error;
   document.querySelector('.result-kicker').textContent = d.status === 'aligned'
-    ? '可以啊，这把对味了'
-    : '别慌，AI 把卡壳点翻译成人话了';
-  el('result-feedback').textContent = d.vlm_summary || d.priority_feedback;
+    ? '这把可以'
+    : '一句话判定';
+  el('result-feedback').textContent = d.priority_feedback;
   el('drill').textContent = d.drill;
-  el('search-query').textContent = d.search_query || '';
-  el('metric-grid').innerHTML = d.metrics.map(item => `
+  const primaryMetrics = d.metrics.filter(item => item.kind === d.primary_metric);
+  el('metric-grid').innerHTML = primaryMetrics.map(item => `
     <div class="metric">
       <span>${({timing:'出手时间', trajectory:'走的路线', angle:'摆的造型'})[item.kind]} · ${escapeHtml(item.body_part)}</span>
       <strong>${escapeHtml(item.human_value)}</strong>

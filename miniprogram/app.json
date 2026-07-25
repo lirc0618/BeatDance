@@ -5,7 +5,7 @@
     "pages/result/result"
   ],
   "window": {
-    "navigationBarTitleText": "定格教练·卡点搜索",
+    "navigationBarTitleText": "对拍",
     "navigationBarBackgroundColor": "#090a08",
     "navigationBarTextStyle": "white",
     "backgroundColor": "#090a08"

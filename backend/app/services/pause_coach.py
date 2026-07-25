@@ -14,8 +14,6 @@ from ..schemas import PauseInsight, Tutorial
 from .diagnosis import ActionRegistry
 from .video import probe_video
 
-TARGET_VIEWS = ("背面跟练", "慢速分拍", "局部特写")
-
 
 class PauseCoach:
     """Read one real Feed window and turn it into an explanation and reference."""
@@ -57,8 +55,8 @@ class PauseCoach:
             context_start_seconds=round(context_start, 2),
             context_end_seconds=round(context_end, 2),
             phase=str(guide["phase"]),
-            likely_stuck_at=self._plain_problem(guide),
-            watch_for=(f"别一口气看全身，今天只抓一件事：{guide['watch_for']} {observed_motion}"),
+            likely_stuck_at=str(guide["likely_stuck_at"]),
+            watch_for=str(guide["watch_for"]),
             observed_motion=observed_motion,
             sampled_frame_count=sampled_frames,
             suggested_focus=guide["suggested_focus"],
@@ -163,18 +161,6 @@ class PauseCoach:
         return level, sampled_frames
 
     @staticmethod
-    def _plain_problem(guide: dict[str, Any]) -> str:
-        phase = str(guide["phase"])
-        body_part = str(guide["body_part"])
-        metric = str(guide["metric"])
-        detail = str(guide["likely_stuck_at"])
-        if metric == "timing":
-            return f"{phase}这里像是没对上暗号。说人话：{detail}"
-        if metric == "trajectory":
-            return f"{phase}这里像一道{body_part}导航题。说人话：{detail}"
-        return f"{phase}这里要看{body_part}的“定格照”。说人话：{detail}"
-
-    @staticmethod
     def _guide_for_progress(action: dict[str, Any], progress: float) -> dict[str, Any]:
         guides = action.get("pause_guides", [])
         if not guides:
@@ -194,7 +180,13 @@ class PauseCoach:
 
     @staticmethod
     def _ordered_views(candidates: list[Tutorial]) -> list[Tutorial]:
-        by_view: dict[str, Tutorial] = {}
+        picked: list[Tutorial] = []
+        used_views: set[str] = set()
         for item in candidates:
-            by_view.setdefault(item.view_type, item)
-        return [by_view[view] for view in TARGET_VIEWS if view in by_view]
+            if item.view_type in used_views:
+                continue
+            picked.append(item)
+            used_views.add(item.view_type)
+            if len(picked) == 3:
+                break
+        return picked

@@ -17,7 +17,7 @@ analyzer = Analyzer(settings)
 app = FastAPI(
     title=settings.app_name,
     version="0.2.0",
-    description="定格教练·卡点搜索：从 Feed 暂停触发，按用户失败状态召回最合适的动作拆解。",
+    description="对拍：停在没看懂的一秒，找到个人卡点和最合适的动作拆解。",
 )
 origins = ["*"] if settings.cors_origins == "*" else [item.strip() for item in settings.cors_origins.split(",")]
 app.add_middleware(

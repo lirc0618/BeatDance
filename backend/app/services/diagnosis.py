@@ -13,6 +13,7 @@ from uuid import uuid4
 import numpy as np
 
 from ..schemas import Diagnosis, FocusKind, MetricDetail, Tutorial
+from .coaching_profiles import with_coaching_profile
 from .dtw import DTWResult, aligned_pairs, dynamic_time_warping
 from .features import (
     ANGLE_TRIPLETS,
@@ -100,14 +101,14 @@ class ActionRegistry:
     def list(self) -> list[dict[str, Any]]:
         with self.lock:
             self._reload_if_changed()
-            return list(self.actions.values())
+            return [with_coaching_profile(action) for action in self.actions.values()]
 
     def get(self, action_id: str) -> dict[str, Any]:
         with self.lock:
             self._reload_if_changed()
             if action_id not in self.actions:
                 raise KeyError(f"未知动作：{action_id}")
-            return self.actions[action_id]
+            return with_coaching_profile(self.actions[action_id])
 
     def replace_action(self, action: dict[str, Any]) -> bool:
         """Atomically append or replace one action and refresh live readers."""
@@ -185,7 +186,7 @@ class ActionRegistry:
             # 优先召回更适合短视频学习的局部/背面/慢速内容。
             if item.get("view_type") in {"局部特写", "背面跟练", "慢速分拍"}:
                 score += 0.5
-            scored.append((score, item, "、".join(reasons) or "换个角度更好懂"))
+            scored.append((score, item, reasons[0] if reasons else "换个角度更好懂"))
 
         scored.sort(key=lambda row: row[0], reverse=True)
         picked: list[Tutorial] = []
@@ -308,34 +309,34 @@ def compare_poses(
     if primary_metric == "timing":
         body_part = timing_group
         if timing_offset < 0:
-            primary_error = f"{body_part}抢跑了，像偷偷开了倍速"
-            feedback = f"先别管全身。让{body_part}晚一点出发，嘴里数到“走”再动。"
+            primary_error = f"{body_part}抢拍了"
+            feedback = "口令：喊“走”再动。"
         else:
-            primary_error = f"{body_part}慢半拍，像网卡了一下"
-            feedback = f"先别管全身。给{body_part}一点提前量，嘴里喊“走”时它就出发。"
-        drill = f"开启“{body_part}单机模式”：跟四拍做 3 遍，再把全身叫回来。"
+            primary_error = f"{body_part}掉拍了"
+            feedback = "口令：喊“走”就动。"
+        drill = f"{body_part}单刷 ×3"
         ref_key, cand_key = trajectory_peak.get(
             body_part, (len(reference.coords) // 2, len(candidate.coords) // 2)
         )
     elif primary_metric == "trajectory":
         body_part = trajectory_group
-        primary_error = f"{body_part}的导航走偏了"
-        feedback = f"先把注意力放在{body_part}：它这次绕了点路。只看“从哪出发、最后停哪”。"
-        drill = f"开 0.5 倍速，把{body_part}当成鼠标光标，沿同一条路走 3 遍。"
+        primary_error = f"{body_part}跑线了"
+        feedback = "只认起点 → 落点。"
+        drill = "0.5× 描线 ×3"
         ref_key, cand_key = trajectory_peak[trajectory_group]
     else:
         body_part = angle_joint
-        primary_error = f"{body_part}这张“定格照”还没摆到位"
-        feedback = f"先把注意力放在{body_part}。把这个造型摆得更像，再追求连贯。"
-        drill = f"停在最大动作那一帧 2 秒，照着摆{body_part}，摆对再连起来。"
+        primary_error = f"{body_part}没卡住"
+        feedback = "先摆像，再连招。"
+        drill = "定格 2 秒 ×3"
         ref_key, cand_key = angle_peak[angle_joint]
 
     status = "issue_detected"
     if issue_strength < aligned_threshold:
         status = "aligned"
-        primary_error = "这把对味了，动作已经像了"
-        feedback = "别再抠零件啦。现在最重要的是一口气做完，别把顺手的动作想复杂。"
-        drill = "按原速完整来 2 遍：不停、不回看，让身体自己记住。"
+        primary_error = "这把同频了"
+        feedback = "别抠，直接整套。"
+        drill = "原速连跳 ×2"
 
     phase = phase_name(ref_key, len(reference.coords))
     confidence = float(np.clip(0.58 + abs(issue_strength - aligned_threshold) * 0.45, 0.58, 0.96))

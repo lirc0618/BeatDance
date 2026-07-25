@@ -52,9 +52,9 @@ def test_delayed_right_arm_is_timing_error():
     assert result.diagnosis.primary_metric == "timing"
     assert result.diagnosis.body_part == "右臂"
     assert result.diagnosis.timing_offset_seconds > 0.3
-    assert "网卡" in result.diagnosis.primary_error
-    assert "单机模式" in result.diagnosis.drill
-    assert "动作延后" not in result.diagnosis.primary_error
+    assert result.diagnosis.primary_error == "右臂掉拍了"
+    assert result.diagnosis.priority_feedback == "口令：喊“走”就动。"
+    assert result.diagnosis.drill == "右臂单刷 ×3"
 
 
 def test_identical_motion_is_aligned():
@@ -70,8 +70,9 @@ def test_identical_motion_is_aligned():
 
     assert result.diagnosis.status == "aligned"
     assert result.diagnosis.tutorial is None
-    assert "对味" in result.diagnosis.primary_error
-    assert "别再抠" in result.diagnosis.priority_feedback
+    assert result.diagnosis.primary_error == "这把同频了"
+    assert result.diagnosis.priority_feedback == "别抠，直接整套。"
+    assert result.diagnosis.drill == "原速连跳 ×2"
     timing = next(item for item in result.diagnosis.metrics if item.kind == "timing")
     trajectory = next(item for item in result.diagnosis.metrics if item.kind == "trajectory")
     angle = next(item for item in result.diagnosis.metrics if item.kind == "angle")
@@ -97,8 +98,9 @@ def test_shifted_arm_path_is_trajectory_error():
     assert result.diagnosis.status == "issue_detected"
     assert result.diagnosis.primary_metric == "trajectory"
     assert result.diagnosis.body_part == "右臂"
-    assert "导航" in result.diagnosis.primary_error
-    assert "参考轨迹" not in result.diagnosis.priority_feedback
+    assert result.diagnosis.primary_error == "右臂跑线了"
+    assert result.diagnosis.priority_feedback == "只认起点 → 落点。"
+    assert result.diagnosis.drill == "0.5× 描线 ×3"
     trajectory = next(item for item in result.diagnosis.metrics if item.kind == "trajectory")
     assert "偏差" not in trajectory.human_value
 
@@ -120,7 +122,9 @@ def test_bent_elbow_is_angle_error():
     assert result.diagnosis.status == "issue_detected"
     assert result.diagnosis.primary_metric == "angle"
     assert result.diagnosis.body_part == "右肘"
-    assert "定格照" in result.diagnosis.primary_error
+    assert result.diagnosis.primary_error == "右肘没卡住"
+    assert result.diagnosis.priority_feedback == "先摆像，再连招。"
+    assert result.diagnosis.drill == "定格 2 秒 ×3"
     angle = next(item for item in result.diagnosis.metrics if item.kind == "angle")
     assert "°" not in angle.human_value
 
@@ -133,6 +137,7 @@ def test_card_point_search_returns_diverse_views():
     assert len({item.view_type for item in results}) == 3
     assert results[0].error_type == "timing"
     assert "正好治" in results[0].why_matched
+    assert "、" not in results[0].why_matched
     assert all(item.url.startswith("https://www.douyin.com/search/") for item in results)
 
 
@@ -266,17 +271,16 @@ def test_pause_coach_explains_the_exact_moment_with_context_and_searches(tmp_pat
     assert insight.context_start_seconds == 16.5
     assert insight.context_end_seconds == 19.5
     assert insight.phase == "动作进入"
-    assert "导航题" in insight.likely_stuck_at
-    assert "手先撑稳还是脚先跨出" in insight.likely_stuck_at
-    assert insight.watch_for.startswith("别一口气看全身")
+    assert insight.likely_stuck_at == "你停在进入六步的准备段，常见难点是手先撑稳还是脚先跨出。"
+    assert insight.watch_for == "先只看支撑手与第一步落点，不要同时追整套脚步。"
     assert "检测到" not in insight.observed_motion
     assert insight.sampled_frame_count >= 20
     assert insight.suggested_focus == "lower"
-    assert [item.view_type for item in insight.search_results] == [
+    assert {item.view_type for item in insight.search_results} == {
         "背面跟练",
         "慢速分拍",
         "局部特写",
-    ]
+    }
 
 
 def test_pause_coach_rejects_a_timestamp_outside_the_feed(tmp_path):

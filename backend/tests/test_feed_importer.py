@@ -42,7 +42,7 @@ def test_imported_feed_is_immediately_available_as_a_fourth_action(tmp_path):
         source,
         FeedImportSpec(
             action_id="demo_four",
-            name="第四条测试动作",
+            name="Jumpstyle",
             pause_at_seconds=3.0,
             creator="@测试素材",
         ),
@@ -51,7 +51,7 @@ def test_imported_feed_is_immediately_available_as_a_fourth_action(tmp_path):
     assert result.created is True
     assert result.action["id"] == "demo_four"
     assert len(registry.list()) == 4
-    assert stale_reader.get("demo_four")["name"] == "第四条测试动作"
+    assert stale_reader.get("demo_four")["name"] == "Jumpstyle"
     stored = registry.get("demo_four")
     feed_name = Path(stored["feed_video_url"]).name
     assert (settings.feed_dir / feed_name).is_file()
@@ -67,7 +67,12 @@ def test_imported_feed_is_immediately_available_as_a_fourth_action(tmp_path):
         settings.pause_contexts_dir,
     ).explain("demo_four", timestamp_seconds=3.0)
     assert insight.sampled_frame_count > 0
-    assert len(insight.search_results) == 3
+    assert {item.view_type for item in insight.search_results} == {
+        "脚下特写",
+        "超慢换腿",
+        "落地节拍",
+    }
+    assert "秒切" in insight.likely_stuck_at
 
 
 def test_imported_feed_keeps_its_audio_track(tmp_path):

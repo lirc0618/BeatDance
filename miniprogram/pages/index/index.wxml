@@ -42,18 +42,17 @@
   <view wx:if="{{insight}}" class="card">
     <view class="section-label cyan">定格 {{insight.timestamp_seconds}} 秒 · {{insight.phase}}</view>
     <video class="video-preview" src="{{selectedAction.feed_video_full_url}}" initial-time="{{insight.timestamp_seconds}}" controls object-fit="contain"></video>
-    <view class="creator card-gap">先说人话版 · 想看自己的问题，再拍一遍</view>
+    <view class="creator card-gap">一句话点破</view>
     <view class="card-title card-gap">{{insight.likely_stuck_at}}</view>
     <view class="card-copy">{{insight.watch_for}}</view>
     <view class="search-title">
       <view class="section-label cyan">先换个角度看</view>
-      <view class="card-title">背面、慢速和局部拆解</view>
+      <view class="card-title">这招的专属拆法</view>
     </view>
     <block wx:for="{{insight.search_results}}" wx:key="id">
       <view class="search-card" data-url="{{item.url}}" bindtap="copySearch">
         <view class="search-type">{{item.view_type}} · {{item.clip_seconds}}</view>
         <view class="card-title">{{item.title}}</view>
-        <view class="card-copy">{{item.description}}</view>
         <view class="search-open">复制搜索链接 →</view>
       </view>
     </block>

@@ -9,7 +9,7 @@ from http_client import build_http_client
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="上传定格教练参考动作视频")
+    parser = argparse.ArgumentParser(description="上传对拍参考动作视频")
     parser.add_argument("--api", required=True, help="例如 http://localhost:8000/api/v1")
     parser.add_argument("--token", required=True)
     parser.add_argument("--action", required=True, help="动作 ID，可通过 GET /actions 查看")

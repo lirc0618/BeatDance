@@ -115,7 +115,7 @@ def cleanup_created_results(api: str, *, strict: bool = False) -> None:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="通过真实 HTTP API 验收定格教练完整本地流程")
+    parser = argparse.ArgumentParser(description="通过真实 HTTP API 验收对拍完整本地流程")
     parser.add_argument("--api", default="http://127.0.0.1:8000/api/v1")
     parser.add_argument("--admin-token", default="change-me")
     parser.add_argument("--runs-per-action", type=int, default=5)

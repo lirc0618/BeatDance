@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-  <title>定格教练 · 卡点搜索</title>
+  <title>对拍</title>
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
   <main class="shell">
     <nav class="topbar">
-      <div class="brand"><i>定</i><span>定格教练<small>FRAME COACH</small></span></div>
+      <div class="brand"><i>拍</i><span>对拍<small>DUIPAI</small></span></div>
       <div class="system-status"><i></i>动作搜索已就绪</div>
     </nav>
 
@@ -48,14 +48,14 @@
       </div>
       <div class="pause-explanation">
         <span id="pause-phase"></span>
-        <small>先说人话版 · 想看自己的问题，再拍一遍</small>
+        <small>一句话点破</small>
         <h3 id="pause-stuck"></h3>
         <p id="pause-watch"></p>
       </div>
       <div class="search-head">
         <div>
           <span>先换个角度看</span>
-          <h3>背面、慢速和局部拆解</h3>
+          <h3>这招的专属拆法</h3>
         </div>
       </div>
       <div id="pause-search-results" class="search-results"></div>
@@ -92,7 +92,7 @@
     </section>
 
     <section id="result" class="panel hidden">
-      <div class="result-kicker">别慌，AI 把卡壳点翻译成人话了</div>
+      <div class="result-kicker">一句话判定</div>
       <h2 id="result-title"></h2>
       <p id="result-feedback" class="lead"></p>
       <img id="comparison-image" class="comparison hidden" alt="参考动作与用户动作对比" />
@@ -100,16 +100,15 @@
       <div class="metric-grid" id="metric-grid"></div>
 
       <div class="advice-card">
-        <span>先别贪多，只修这一件事</span>
+        <span>只练这一件事</span>
         <strong id="drill"></strong>
       </div>
 
       <div class="search-head">
         <div>
-          <span>不懂就换个角度看</span>
-          <h3>给你 3 种不烧脑的拆法</h3>
+          <span>还没懂？换个视角</span>
+          <h3>三条对症拆法</h3>
         </div>
-        <code id="search-query"></code>
       </div>
       <div id="search-results" class="search-results"></div>
 

@@ -13,6 +13,7 @@ from uuid import uuid4
 
 from ..config import Settings
 from ..file_lock import catalog_transaction
+from .coaching_profiles import with_coaching_profile
 from .diagnosis import ActionRegistry
 from .pose import extract_pose_sequence
 from .video import VideoValidationError, probe_video
@@ -385,7 +386,7 @@ class FeedImporter:
         }[spec.focus]
         suggested_focus = spec.focus if spec.focus != "timing" else "timing"
         name = spec.name.strip()
-        return {
+        return with_coaching_profile({
             "id": spec.action_id,
             "name": name,
             "description": spec.description.strip() or "播放视频，停在动作衔接、方向或发力顺序没看懂的时刻。",
@@ -478,4 +479,4 @@ class FeedImporter:
                 },
                 "aligned_threshold": 0.22,
             },
-        }
+        })
