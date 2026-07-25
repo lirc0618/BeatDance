@@ -9,6 +9,8 @@ from uuid import uuid4
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from .file_lock import catalog_transaction
+
 
 class Settings(BaseSettings):
     app_name: str = "定格教练·卡点搜索 API"
@@ -103,6 +105,10 @@ class Settings(BaseSettings):
     def bootstrap_runtime_catalog(self) -> None:
         """Seed the persistent catalog and bundled feeds on first startup."""
 
+        with catalog_transaction(self.data_dir):
+            self._bootstrap_runtime_catalog()
+
+    def _bootstrap_runtime_catalog(self) -> None:
         runtime_registry = self.data_dir / "actions.json"
         if not runtime_registry.exists():
             self._atomic_copy(self.built_in_action_registry_path, runtime_registry)

@@ -149,6 +149,32 @@ def test_cleanup_failure_does_not_rollback_a_committed_import(tmp_path, monkeypa
     assert Analyzer(settings).reference_ready("cleanup_safe") is True
 
 
+def test_post_commit_version_failure_keeps_the_new_generation(tmp_path, monkeypatch):
+    settings = runtime_settings(tmp_path)
+    registry = ActionRegistry(settings.action_registry_path)
+    importer = FeedImporter(settings, registry)
+    source = Path(__file__).parents[2] / "assets" / "samples" / "open_sources" / "simple_step.mp4"
+    original_file_version = registry._file_version
+
+    def fail_only_after_commit():
+        payload = json.loads(settings.action_registry_path.read_text(encoding="utf-8"))
+        if any(action["id"] == "post_commit_safe" for action in payload["actions"]):
+            raise OSError("simulated post-commit stat failure")
+        return original_file_version()
+
+    monkeypatch.setattr(registry, "_file_version", fail_only_after_commit)
+    result = importer.import_video(
+        source,
+        FeedImportSpec(action_id="post_commit_safe", name="提交后仍可用"),
+    )
+    monkeypatch.setattr(registry, "_file_version", original_file_version)
+
+    assert result.created is True
+    assert registry.get("post_commit_safe")["name"] == "提交后仍可用"
+    assert (settings.feed_dir / Path(result.action["feed_video_url"]).name).is_file()
+    assert Analyzer(settings).reference_ready("post_commit_safe") is True
+
+
 def test_authenticated_http_import_publishes_the_action(tmp_path):
     settings = runtime_settings(tmp_path)
     settings.admin_token = "replace-with-a-long-random-secret"

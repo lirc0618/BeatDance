@@ -3,6 +3,7 @@ from __future__ import annotations
 import fcntl
 import json
 import threading
+from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -114,6 +115,7 @@ class ActionRegistry:
         lock_path = self.path.with_suffix(f"{self.path.suffix}.lock")
         with self.lock, lock_path.open("a+") as lock_file:
             fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+            committed = False
             try:
                 latest = json.loads(self.path.read_text(encoding="utf-8"))
                 current = {item["id"]: item for item in latest["actions"]}
@@ -129,14 +131,25 @@ class ActionRegistry:
                         encoding="utf-8",
                     )
                     pending.replace(self.path)
+                    committed = True
                 finally:
-                    pending.unlink(missing_ok=True)
+                    try:
+                        pending.unlink(missing_ok=True)
+                    except OSError:
+                        if not committed:
+                            raise
                 self.data = payload
                 self.actions = {item["id"]: item for item in items}
-                self.file_version = self._file_version()
+                try:
+                    self.file_version = self._file_version()
+                except OSError:
+                    # Force the next read to refresh; the catalog commit already
+                    # succeeded and must never be reported as a failed publish.
+                    self.file_version = (-1, -1, -1)
                 return created
             finally:
-                fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+                with suppress(OSError):
+                    fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
 
     def search_tutorials(
         self,

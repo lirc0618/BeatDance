@@ -7,6 +7,7 @@ from pathlib import Path
 from uuid import uuid4
 
 from ..config import Settings
+from ..file_lock import catalog_transaction
 from ..schemas import AnalysisResult, FocusKind, Improvement, PauseInsight
 from .diagnosis import ActionRegistry, calculate_improvement, compare_poses
 from .doubao import DoubaoService
@@ -109,6 +110,10 @@ class Analyzer:
         return video, sequence, "feed_pause_context"
 
     def register_reference(self, action_id: str, video_path: Path) -> PoseSequence:
+        with catalog_transaction(self.settings.data_dir):
+            return self._register_reference(action_id, video_path)
+
+    def _register_reference(self, action_id: str, video_path: Path) -> PoseSequence:
         self.registry.get(action_id)
         pose = extract_pose_sequence(
             video_path,
