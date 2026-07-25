@@ -110,6 +110,7 @@ class AnalysisResult(BaseModel):
     action_id: str
     created_at: datetime
     duration_seconds: float
+    analyzed_frame_count: int = 0
     pose_coverage: float
     mirrored_input: bool
     trigger_source: str = "feed_pause"
@@ -123,6 +124,7 @@ class AnalysisResult(BaseModel):
     )
     diagnosis: Diagnosis
     comparison_image_url: str | None = None
+    comparison_video_url: str | None = None
     improvement: Improvement | None = None
     warnings: list[str] = Field(default_factory=list)
 

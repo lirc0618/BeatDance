@@ -5,6 +5,11 @@
     <view class="feedback">{{result.diagnosis.vlm_summary || result.diagnosis.priority_feedback}}</view>
   </view>
 
+  <view wx:if="{{comparisonVideoUrl}}" class="card">
+    <view class="section-label">整段分析 {{result.duration_seconds}} 秒 · {{result.analyzed_frame_count}} 帧 · 红色是卡点</view>
+    <video class="video-preview" src="{{comparisonVideoUrl}}" controls loop object-fit="contain"></video>
+  </view>
+
   <image wx:if="{{comparisonUrl}}" class="comparison" src="{{comparisonUrl}}" mode="widthFix"></image>
 
   <view class="metric-row">

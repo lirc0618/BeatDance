@@ -255,6 +255,7 @@ def main() -> int:
             assert len(result["diagnosis"]["search_results"]) == 3
             assert len({item["view_type"] for item in result["diagnosis"]["search_results"]}) == 3
             assert result["comparison_image_url"]
+            assert result["comparison_video_url"]
             assert result["source_timestamp_seconds"] == pause_insights[action_id][
                 "timestamp_seconds"
             ]
@@ -263,6 +264,9 @@ def main() -> int:
             image = client.get(f"{public_origin}{result['comparison_image_url']}")
             image.raise_for_status()
             assert image.headers["content-type"] == "image/jpeg"
+            comparison_video = client.get(f"{public_origin}{result['comparison_video_url']}")
+            comparison_video.raise_for_status()
+            assert comparison_video.headers["content-type"] == "video/mp4"
             first_results[action_id] = result
             diagnosis = result["diagnosis"]
             signatures[action_id].add(
@@ -334,6 +338,8 @@ def main() -> int:
         assert client.get(f"{api}/results/{retry['id']}").status_code == 404
         deleted_image = client.get(f"{public_origin}{retry['comparison_image_url']}")
         assert deleted_image.status_code == 404
+        deleted_video = client.get(f"{public_origin}{retry['comparison_video_url']}")
+        assert deleted_video.status_code == 404
 
         response = post_video(
             client,
@@ -351,7 +357,7 @@ def main() -> int:
     print("PASS: 四条内置 Feed 均可按暂停时刻返回上下文和三种拆解")
     print("PASS: 时长和无人画面校验返回可读错误")
     print("PASS: 非法参考上传被拒绝且不破坏已有参考")
-    print("PASS: 四个内置动作均返回诊断、三种拆法和对比图")
+    print("PASS: 四个内置动作均返回诊断、三种拆法、整段骨架回放和关键帧对比图")
     if doubao_configured:
         print("PASS: 豆包已配置时诊断主链正常")
     else:

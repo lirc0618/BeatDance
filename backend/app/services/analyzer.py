@@ -15,7 +15,7 @@ from .dtw import dynamic_time_warping
 from .features import normalize_pose, pose_feature_matrix
 from .pause_coach import PauseCoach
 from .pose import PoseSequence, extract_pose_sequence, mirror_sequence
-from .render import create_comparison_image
+from .render import create_comparison_image, create_comparison_video
 from .storage import ResultStore
 
 
@@ -223,7 +223,18 @@ class Analyzer:
                 output_path=visualization_path,
                 mirror_candidate_frame=use_mirror,
             )
+            comparison_video_path = self.settings.comparison_videos_dir / f"{analysis_id}.mp4"
+            rendered_video = create_comparison_video(
+                reference_pose=reference_sequence,
+                candidate_pose=selected_sequence,
+                alignment_path=bundle.dtw.path,
+                highlight=bundle.diagnosis.body_part,
+                output_path=comparison_video_path,
+            )
         comparison_url = f"/media/visualizations/{rendered.name}" if rendered else None
+        comparison_video_url = (
+            f"/media/comparison-videos/{rendered_video.name}" if rendered_video else None
+        )
         if bundle.diagnosis.status == "issue_detected":
             bundle.diagnosis.vlm_summary = await self.doubao.refine_feedback(
                 bundle.diagnosis, action["name"], rendered
@@ -263,6 +274,7 @@ class Analyzer:
             action_id=action_id,
             created_at=datetime.now(UTC),
             duration_seconds=candidate_sequence.duration_seconds,
+            analyzed_frame_count=len(candidate_sequence.landmarks),
             pose_coverage=candidate_sequence.coverage,
             mirrored_input=use_mirror,
             trigger_source="feed_pause",
@@ -274,6 +286,7 @@ class Analyzer:
             reference_source=reference_source,
             diagnosis=bundle.diagnosis,
             comparison_image_url=comparison_url,
+            comparison_video_url=comparison_video_url,
             improvement=improvement,
             warnings=warnings,
         )

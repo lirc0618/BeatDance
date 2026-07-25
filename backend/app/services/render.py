@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+import shutil
+import subprocess
 from pathlib import Path
+from uuid import uuid4
 
 import cv2
 import numpy as np
 
 from .pose import PoseSequence
-from .video import read_frame_at
+from .video import probe_video, read_frame_at
 
 CONNECTIONS = [
     (11, 12), (11, 13), (13, 15), (12, 14), (14, 16),
@@ -75,3 +78,151 @@ def create_comparison_image(
     output_path.parent.mkdir(parents=True, exist_ok=True)
     cv2.imwrite(str(output_path), combined, [cv2.IMWRITE_JPEG_QUALITY, 88])
     return output_path
+
+
+def _aligned_reference_indices(
+    path: list[tuple[int, int]],
+    candidate_frame_count: int,
+    reference_frame_count: int,
+) -> np.ndarray:
+    """Map every candidate frame to its closest DTW-aligned reference frame."""
+
+    grouped: dict[int, list[int]] = {}
+    for reference_index, candidate_index in path:
+        grouped.setdefault(candidate_index, []).append(reference_index)
+    known_candidate = np.asarray(sorted(grouped), dtype=np.float32)
+    known_reference = np.asarray(
+        [float(np.median(grouped[int(index)])) for index in known_candidate],
+        dtype=np.float32,
+    )
+    if len(known_candidate) == 0:
+        return np.linspace(
+            0,
+            max(reference_frame_count - 1, 0),
+            candidate_frame_count,
+        ).round().astype(np.int32)
+    mapped = np.interp(
+        np.arange(candidate_frame_count, dtype=np.float32),
+        known_candidate,
+        known_reference,
+    )
+    return np.clip(mapped.round(), 0, reference_frame_count - 1).astype(np.int32)
+
+
+def _skeleton_canvas(landmarks: np.ndarray, highlight: str, label: str) -> np.ndarray:
+    canvas = np.full((720, 540, 3), (18, 19, 16), dtype=np.uint8)
+    cv2.rectangle(canvas, (0, 0), (539, 719), (43, 46, 38), 2)
+    normalized = landmarks.copy()
+    hip_center = (normalized[23, :2] + normalized[24, :2]) / 2
+    shoulder_center = (normalized[11, :2] + normalized[12, :2]) / 2
+    torso_size = max(float(np.linalg.norm(shoulder_center - hip_center)), 1e-4)
+    normalized[:, :2] = (normalized[:, :2] - hip_center) * (0.22 / torso_size)
+    normalized[:, 0] += 0.5
+    normalized[:, 1] += 0.56
+    _draw_pose(canvas, normalized, highlight)
+    cv2.putText(
+        canvas,
+        label,
+        (18, 42),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.9,
+        (255, 255, 255),
+        2,
+        cv2.LINE_AA,
+    )
+    return canvas
+
+
+def create_comparison_video(
+    reference_pose: PoseSequence,
+    candidate_pose: PoseSequence,
+    alignment_path: list[tuple[int, int]],
+    highlight: str,
+    output_path: Path,
+) -> Path | None:
+    """Render the full attempt as an anonymous, DTW-aligned skeleton replay."""
+
+    ffmpeg = shutil.which("ffmpeg")
+    if not ffmpeg or not len(reference_pose.landmarks) or not len(candidate_pose.landmarks):
+        return None
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    nonce = uuid4().hex
+    intermediate = output_path.with_name(f".{output_path.stem}-{nonce}.avi")
+    pending = output_path.with_name(f".{output_path.stem}-{nonce}.pending.mp4")
+    duration = max(float(candidate_pose.duration_seconds), 0.1)
+    fps = float(np.clip(len(candidate_pose.landmarks) / duration, 8.0, 15.0))
+    reference_indices = _aligned_reference_indices(
+        alignment_path,
+        len(candidate_pose.landmarks),
+        len(reference_pose.landmarks),
+    )
+    writer = cv2.VideoWriter(
+        str(intermediate),
+        cv2.VideoWriter_fourcc(*"MJPG"),
+        fps,
+        (1080, 720),
+    )
+    if not writer.isOpened():
+        intermediate.unlink(missing_ok=True)
+        return None
+
+    try:
+        for candidate_index, reference_index in enumerate(reference_indices):
+            reference_frame = _skeleton_canvas(
+                reference_pose.landmarks[reference_index],
+                highlight,
+                "REFERENCE",
+            )
+            candidate_frame = _skeleton_canvas(
+                candidate_pose.landmarks[candidate_index],
+                highlight,
+                "YOUR FULL CLIP",
+            )
+            combined = np.concatenate([reference_frame, candidate_frame], axis=1)
+            progress = (candidate_index + 1) / len(reference_indices)
+            cv2.rectangle(combined, (0, 710), (1080, 719), (45, 48, 40), -1)
+            cv2.rectangle(
+                combined,
+                (0, 710),
+                (round(1080 * progress), 719),
+                (67, 255, 217),
+                -1,
+            )
+            writer.write(combined)
+        writer.release()
+        subprocess.run(
+            [
+                ffmpeg,
+                "-hide_banner",
+                "-loglevel",
+                "error",
+                "-y",
+                "-i",
+                str(intermediate),
+                "-an",
+                "-c:v",
+                "libx264",
+                "-preset",
+                "veryfast",
+                "-crf",
+                "24",
+                "-pix_fmt",
+                "yuv420p",
+                "-movflags",
+                "+faststart",
+                str(pending),
+            ],
+            check=True,
+            capture_output=True,
+            timeout=90,
+        )
+        probe_video(pending)
+        pending.replace(output_path)
+        return output_path
+    except (OSError, ValueError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        return None
+    finally:
+        writer.release()
+        intermediate.unlink(missing_ok=True)
+        pending.unlink(missing_ok=True)

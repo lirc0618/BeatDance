@@ -65,6 +65,10 @@ class Settings(BaseSettings):
         return self.data_dir / "visualizations"
 
     @property
+    def comparison_videos_dir(self) -> Path:
+        return self.data_dir / "comparison_videos"
+
+    @property
     def pause_contexts_dir(self) -> Path:
         return self.data_dir / "pause_contexts"
 
@@ -87,6 +91,7 @@ class Settings(BaseSettings):
             self.references_dir,
             self.results_dir,
             self.visualizations_dir,
+            self.comparison_videos_dir,
             self.pause_contexts_dir,
         ):
             path.mkdir(parents=True, exist_ok=True)

@@ -29,6 +29,11 @@ app.add_middleware(
 )
 app.include_router(create_router(settings, analyzer), prefix=settings.api_prefix)
 app.mount("/media/visualizations", StaticFiles(directory=settings.visualizations_dir), name="visualizations")
+app.mount(
+    "/media/comparison-videos",
+    StaticFiles(directory=settings.comparison_videos_dir),
+    name="comparison-videos",
+)
 app.mount("/media/references", StaticFiles(directory=settings.references_dir), name="references")
 
 

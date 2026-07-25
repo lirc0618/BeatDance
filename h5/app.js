@@ -225,6 +225,19 @@ function renderResult(result) {
       <div class="metric-track"><i style="width:${Math.round(item.normalized_score * 100)}%"></i></div>
     </div>`).join('');
 
+  const comparisonVideo = el('comparison-video');
+  const comparisonVideoWrap = el('comparison-video-wrap');
+  if (result.comparison_video_url) {
+    comparisonVideo.src = mediaUrl(result.comparison_video_url);
+    el('analysis-replay-label').textContent =
+      `整段分析 ${result.duration_seconds.toFixed(1)} 秒 · ${result.analyzed_frame_count} 帧 · 红色是卡点`;
+    comparisonVideoWrap.classList.remove('hidden');
+  } else {
+    comparisonVideo.pause();
+    comparisonVideo.removeAttribute('src');
+    comparisonVideoWrap.classList.add('hidden');
+  }
+
   const image = el('comparison-image');
   if (result.comparison_image_url) {
     image.src = mediaUrl(result.comparison_image_url);

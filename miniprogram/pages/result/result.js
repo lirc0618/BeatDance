@@ -2,7 +2,8 @@ const { mediaUrl, request } = require('../../utils/api');
 
 Page({
   data: {
-    result: null, comparisonUrl: '', resultBadge: '一句话判定', displayMetrics: [],
+    result: null, comparisonUrl: '', comparisonVideoUrl: '',
+    resultBadge: '一句话判定', displayMetrics: [],
     retryText: '练一次，再验证',
     metricLabels: { timing: '出手时间', trajectory: '走的路线', angle: '摆的造型' }
   },
@@ -22,7 +23,8 @@ Page({
       ),
       resultBadge: result.diagnosis.status === 'aligned' ? '这把可以' : '一句话判定',
       retryText: result.diagnosis.status === 'aligned' ? '再录一次，确认稳定' : '练一次，再验证',
-      comparisonUrl: mediaUrl(result.comparison_image_url)
+      comparisonUrl: mediaUrl(result.comparison_image_url),
+      comparisonVideoUrl: mediaUrl(result.comparison_video_url)
     });
   },
   retry() {

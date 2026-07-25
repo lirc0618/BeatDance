@@ -13,7 +13,7 @@ from app.services.analyzer import Analyzer
 from app.services.diagnosis import ActionRegistry
 from app.services.feed_importer import FeedImporter, FeedImportSpec
 from app.services.pause_coach import PauseCoach
-from app.services.video import VideoValidationError
+from app.services.video import VideoValidationError, probe_video
 
 
 def runtime_settings(tmp_path: Path) -> Settings:
@@ -302,8 +302,18 @@ def test_authenticated_http_import_publishes_the_action(tmp_path):
             files={"video": ("attempt.mp4", handle, "video/mp4")},
         )
     assert analyzed.status_code == 200
-    assert analyzed.json()["reference_source"] == "feed_pause_context"
-    assert client.delete(f"{settings.api_prefix}/results/{analyzed.json()['id']}").status_code == 200
+    analyzed_payload = analyzed.json()
+    assert analyzed_payload["reference_source"] == "feed_pause_context"
+    assert analyzed_payload["analyzed_frame_count"] > 20
+    assert analyzed_payload["comparison_video_url"].startswith("/media/comparison-videos/")
+    comparison_video = settings.comparison_videos_dir / f"{analyzed_payload['id']}.mp4"
+    assert comparison_video.is_file()
+    assert probe_video(comparison_video).duration_seconds == pytest.approx(
+        analyzed_payload["duration_seconds"],
+        abs=0.15,
+    )
+    assert client.delete(f"{settings.api_prefix}/results/{analyzed_payload['id']}").status_code == 200
+    assert not comparison_video.exists()
 
 
 def test_startup_removes_only_orphaned_generated_files(tmp_path):

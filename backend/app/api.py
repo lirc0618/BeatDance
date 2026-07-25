@@ -215,6 +215,8 @@ def create_router(settings: Settings, analyzer: Analyzer) -> APIRouter:
         analyzer.store.delete(analysis_id)
         image = settings.visualizations_dir / f"{analysis_id}.jpg"
         image.unlink(missing_ok=True)
+        comparison_video = settings.comparison_videos_dir / f"{analysis_id}.mp4"
+        comparison_video.unlink(missing_ok=True)
         return {"ok": True}
 
     return router

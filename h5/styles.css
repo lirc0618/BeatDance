@@ -653,6 +653,24 @@ p { margin-top: 0; }
   border-radius: 20px;
 }
 
+.analysis-replay {
+  margin: 18px 0;
+}
+
+.analysis-replay > span {
+  display: block;
+  margin-bottom: 9px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.comparison-video {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: #000;
+}
+
 .metric-grid {
   display: grid;
   grid-template-columns: 1fr;

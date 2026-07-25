@@ -102,6 +102,11 @@ test('用户暂停 Feed 后获得时刻解释，再完成首练和二练验证',
     await expect(page.locator('#result')).toBeVisible({ timeout: 30_000 });
     await expect(page.locator('#result-title')).not.toBeEmpty();
     await expect(page.locator('#metric-grid .metric')).toHaveCount(1);
+    await expect(page.locator('#comparison-video')).toBeVisible();
+    await expect(page.locator('#comparison-video')).toHaveAttribute(
+      'src',
+      /^http:\/\/127\.0\.0\.1:8000\/media\/comparison-videos\//
+    );
     await expect(page.locator('#comparison-image')).toBeVisible();
     await expect(page.locator('#comparison-image')).toHaveAttribute(
       'src',
