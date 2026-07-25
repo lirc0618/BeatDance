@@ -33,6 +33,37 @@ make dev
 - H5：`http://localhost:8000/app/`
 - API：`http://localhost:8000/docs`
 
+## 手机一键启动（Cloudflare Tunnel）
+
+首次使用先准备 Python 环境并安装 `cloudflared`：
+
+```bash
+make setup
+brew install cloudflared
+```
+
+之后只需执行一个命令：
+
+```bash
+make mobile
+```
+
+该命令会自动启动或复用本地后端，等待健康检查通过，再创建 Cloudflare Quick
+Tunnel。终端会输出一个 `https://*.trycloudflare.com` 地址；手机无需和电脑连接
+同一 Wi-Fi，直接打开该地址或其 `/app/` 路径即可体验。Quick Tunnel 每次启动的
+地址都会变化，按 `Ctrl+C` 会关闭隧道，并停止本命令启动的后端进程。
+
+手机端使用「拓展舞库」时，管理员口令需要手动填写 `change-me`。如果 `8000`
+端口已被其他程序占用，可以改用：
+
+```bash
+make mobile PORT=8001
+```
+
+需要固定域名时，应在 Cloudflare Zero Trust 中创建正式 Tunnel，将 Public
+Hostname 的 Service 指向 `http://localhost:8000`；正式部署还应使用 `.env` 中
+至少 24 字符的随机 `ADMIN_TOKEN`，不要继续使用演示口令。
+
 ## 导入或替换任意测试视频
 
 五个内置动作只是首次启动的样例。打开 H5 后点击首页的「拓展舞库」，可以：
