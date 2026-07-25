@@ -1,13 +1,69 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 MetricKind = Literal["timing", "trajectory", "angle"]
 DiagnosisStatus = Literal["issue_detected", "aligned"]
 FocusKind = Literal["auto", "hands", "arms", "torso", "lower", "timing", "upper"]
+TeachingPriority = Literal["优先", "建议", "了解"]
+
+
+class TeachingSegment(BaseModel):
+    start_seconds: float = Field(ge=0)
+    end_seconds: float = Field(gt=0)
+    title: str = Field(min_length=1, max_length=80)
+    description: str = Field(min_length=1, max_length=300)
+    mnemonic: str = Field(default="", max_length=120)
+    pitfall: str = Field(default="", max_length=200)
+    priority: TeachingPriority = "建议"
+    suggested_focus: FocusKind = "auto"
+    metric: MetricKind = "trajectory"
+    body_part: str = Field(default="躯干", min_length=1, max_length=40)
+
+    @model_validator(mode="after")
+    def validate_time_range(self) -> "TeachingSegment":
+        if self.end_seconds <= self.start_seconds:
+            raise ValueError("教学阶段结束时间必须晚于开始时间")
+        return self
+
+
+class TeachingPlanProvenance(BaseModel):
+    generator: str
+    model: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    orientation: Literal["source", "mirrored", "unknown"] = "unknown"
+
+
+class TeachingPlan(BaseModel):
+    schema_version: int = 1
+    action_id: str
+    source_hash: str
+    source_start_seconds: float = Field(ge=0)
+    source_end_seconds: float = Field(gt=0)
+    overall_summary: str = ""
+    segments: list[TeachingSegment] = Field(min_length=1)
+    warmups: list[str] = Field(default_factory=list)
+    practice_plan: str = ""
+    image_prompt: str = ""
+    provenance: TeachingPlanProvenance
+
+    @model_validator(mode="after")
+    def validate_timeline(self) -> "TeachingPlan":
+        if self.source_end_seconds <= self.source_start_seconds:
+            raise ValueError("教学计划结束时间必须晚于开始时间")
+        previous_end = self.source_start_seconds
+        for segment in self.segments:
+            if segment.start_seconds < self.source_start_seconds:
+                raise ValueError("教学阶段早于参考片段")
+            if segment.end_seconds > self.source_end_seconds:
+                raise ValueError("教学阶段晚于参考片段")
+            if segment.start_seconds < previous_end:
+                raise ValueError("教学阶段不能重叠或乱序")
+            previous_end = segment.end_seconds
+        return self
 
 
 class Tutorial(BaseModel):
