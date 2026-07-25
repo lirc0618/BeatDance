@@ -1,5 +1,9 @@
 const { mediaUrl, request } = require('../../utils/api');
 
+const FEATURED_ACTION_IDS = new Set([
+  'groove_step', 'arm_wave', 'cross_step', 'two_step_demo', 'jazz_demo'
+]);
+
 function formatTime(seconds) {
   const whole = Math.max(0, Math.floor(seconds));
   const minutes = String(Math.floor(whole / 60)).padStart(2, '0');
@@ -35,12 +39,14 @@ Page({
     this.actionsLoading = true;
     if (!silent) this.setData({ loading: true, error: '' });
     try {
-      const actions = (await request('/actions')).map(action => ({
-        ...action,
-        feed_video_full_url: (action.feed_video_url || action.reference_video_url)
-          ? mediaUrl(action.feed_video_url || action.reference_video_url)
-          : ''
-      }));
+      const actions = (await request('/actions'))
+        .filter(action => FEATURED_ACTION_IDS.has(action.id))
+        .map(action => ({
+          ...action,
+          feed_video_full_url: (action.feed_video_url || action.reference_video_url)
+            ? mediaUrl(action.feed_video_url || action.reference_video_url)
+            : ''
+        }));
       const signature = JSON.stringify(actions.map(action => [
         action.id,
         action.name,

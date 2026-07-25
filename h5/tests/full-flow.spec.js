@@ -6,6 +6,9 @@ const { test, expect } = require('@playwright/test');
 const projectRoot = path.resolve(__dirname, '..', '..');
 const wrongAttempt = path.join(projectRoot, 'assets/samples/open_sources/arm_movements_reference.mp4');
 const tooLongAttempt = path.join(projectRoot, 'assets/samples/open_sources/arm_movements_veil.mp4');
+const featuredActionIds = [
+  'groove_step', 'arm_wave', 'cross_step', 'two_step_demo', 'jazz_demo'
+];
 
 function createContextVideo(source, target, start) {
   fs.mkdirSync(path.dirname(target), { recursive: true });
@@ -17,7 +20,31 @@ function createContextVideo(source, target, start) {
   ]);
 }
 
-test('Feed 列表会自动发现新导入的视频且不需要刷新页面', async ({ page, request }) => {
+test('刷新后首页只保留五个预设动作', async ({ page, request }) => {
+  const response = await request.get('http://127.0.0.1:8000/api/v1/actions');
+  expect(response.ok()).toBeTruthy();
+  const actions = await response.json();
+  const featured = featuredActionIds.map(
+    id => actions.find(action => action.id === id)
+  );
+  expect(featured.every(Boolean)).toBeTruthy();
+  const imported = [
+    { ...featured[0], id: 'session_extra_one', name: '临时动作一' },
+    { ...featured[1], id: 'session_extra_two', name: '临时动作二' }
+  ];
+  await page.route('**/api/v1/actions', route => route.fulfill({
+    json: [...featured, ...imported]
+  }));
+
+  await page.goto('http://localhost:8000/app/?api=http://127.0.0.1:8000');
+
+  await expect(page.locator('.feed-card')).toHaveCount(5);
+  await expect(page.locator('#action-count')).toHaveText('5');
+  await expect(page.locator('[data-id="session_extra_one"]')).toHaveCount(0);
+  await expect(page.locator('[data-id="session_extra_two"]')).toHaveCount(0);
+});
+
+test('轮询不会让后台导入动作永久占据首页', async ({ page, request }) => {
   const response = await request.get('http://127.0.0.1:8000/api/v1/actions');
   expect(response.ok()).toBeTruthy();
   const baseActions = await response.json();
@@ -59,9 +86,10 @@ test('Feed 列表会自动发现新导入的视频且不需要刷新页面', asy
   await expect(page.locator('.mission-progress .mission-step')).toHaveCount(4);
   await expect(page.locator('.hero')).toContainText('一局只打一个卡点');
   await expect(page.locator('.feed-card[data-id="polled_move"]')).toHaveCount(0);
-  await expect(page.locator('.feed-card[data-id="polled_move"]')).toHaveCount(1, {
-    timeout: 7000
-  });
+  await page.waitForTimeout(5500);
+  expect(requestCount).toBeGreaterThan(1);
+  await expect(page.locator('.feed-card[data-id="polled_move"]')).toHaveCount(0);
+  await expect(page.locator('.feed-card')).toHaveCount(5);
   expect(feedRequests.size).toBeLessThanOrEqual(1);
   expect(await page.locator('.feed-video').evaluateAll(
     videos => videos.every(video => video.preload === 'none')
@@ -69,8 +97,28 @@ test('Feed 列表会自动发现新导入的视频且不需要刷新页面', asy
   await expect(page.locator('#video-input')).not.toHaveAttribute('capture', /.+/);
 });
 
-test('用户可以预览素材库并一键加入首页', async ({ page }) => {
+test('用户可以临时加入素材，刷新后恢复五个预设', async ({ page, request }) => {
   let imported = false;
+  const actionsResponse = await request.get('http://127.0.0.1:8000/api/v1/actions');
+  expect(actionsResponse.ok()).toBeTruthy();
+  const allActions = await actionsResponse.json();
+  const featured = featuredActionIds.map(
+    id => allActions.find(action => action.id === id)
+  );
+  expect(featured.every(Boolean)).toBeTruthy();
+  const importedAction = {
+    ...featured[0],
+    id: 'library_breakdance_2_step',
+    name: 'Breaking 两步',
+    description: '先把两步踩稳',
+    reference_video_url: '/media/references/library-breakdance.mp4',
+    feed_video_url: '/media/feed/library-breakdance.mp4',
+    reference_ready: true,
+    tutorial_count: 3
+  };
+  await page.route('**/api/v1/actions', route => route.fulfill({
+    json: imported ? [...featured, importedAction] : featured
+  }));
   await page.route('**/api/v1/sample-library', async (route) => {
     await route.fulfill({
       json: [
@@ -100,16 +148,7 @@ test('用户可以预览素材库并一键加入首页', async ({ page }) => {
         created: true,
         duration_seconds: 6.1,
         pose_coverage: 0.9,
-        action: {
-          id: 'library_breakdance_2_step',
-          name: 'Breaking 两步',
-          description: '先把两步踩稳',
-          duration_hint: '3–8 秒',
-          reference_video_url: '/media/references/library-breakdance.mp4',
-          feed_video_url: '/media/feed/library-breakdance.mp4',
-          reference_ready: true,
-          tutorial_count: 3
-        }
+        action: importedAction
       }
     });
   });
@@ -125,8 +164,15 @@ test('用户可以预览素材库并一键加入首页', async ({ page }) => {
   );
   await expect(page.locator('.library-card video')).toHaveCSS('object-fit', 'contain');
   await page.locator('.library-card button[data-sample-id="breakdance_2_step"]').click();
-  await expect(page.locator('#library-message')).toContainText('已经加入首页');
+  await expect(page.locator('#library-message')).toContainText('已加入本次首页');
   expect(imported).toBeTruthy();
+  await expect(page.locator('.feed-card[data-id="library_breakdance_2_step"]')).toHaveCount(1);
+  await expect(page.locator('.feed-card')).toHaveCount(6);
+
+  await page.reload();
+
+  await expect(page.locator('.feed-card[data-id="library_breakdance_2_step"]')).toHaveCount(0);
+  await expect(page.locator('.feed-card')).toHaveCount(5);
 });
 
 test('用户暂停 Feed 后获得时刻解释，再完成首练和二练验证', async ({ page, request }, testInfo) => {

@@ -1,13 +1,17 @@
 const API_BASE = (new URLSearchParams(location.search).get('api') || location.origin).replace(/\/$/, '');
 const API = `${API_BASE}/api/v1`;
 const MEDIA_ORIGIN = new URL(API_BASE, location.origin).origin;
+const FEATURED_ACTION_IDS = new Set([
+  'groove_step', 'arm_wave', 'cross_step', 'two_step_demo', 'jazz_demo'
+]);
 const state = {
   actions: [], action: null, file: null, focus: 'auto',
   sessionId: localStorage.getItem('freezeCoachSession') || crypto.randomUUID(),
   baselineId: null, pausedAt: null, feedDuration: null, pauseInsight: null,
   actionSignature: '', actionsLoading: false, library: [], libraryLoading: false,
   relatedMetric: 'trajectory', relatedBodyPart: '', scanTimer: null,
-  lastResultWasRetry: false, baselineReplayUrl: '', fileUrl: ''
+  lastResultWasRetry: false, baselineReplayUrl: '', fileUrl: '',
+  sessionActionIds: new Set()
 };
 localStorage.setItem('freezeCoachSession', state.sessionId);
 
@@ -125,7 +129,10 @@ function adminToken() {
 }
 
 function libraryCard(item) {
-  const buttonCopy = item.imported ? '已经在首页' : (item.available ? '一键加入首页' : '素材待下载');
+  const inSession = state.sessionActionIds.has(item.action_id);
+  const buttonCopy = inSession
+    ? '本次已加入'
+    : (item.imported ? '本次加入首页' : (item.available ? '一键加入首页' : '素材待下载'));
   return `
     <article class="library-card" data-sample-id="${escapeHtml(item.id)}">
       <video src="${escapeHtml(mediaUrl(item.preview_url))}" playsinline controls preload="none"></video>
@@ -137,7 +144,7 @@ function libraryCard(item) {
         <strong>${escapeHtml(item.name)}</strong>
         <p>${escapeHtml(item.description)}</p>
         <small>${escapeHtml(item.creator)}</small>
-        <button data-sample-id="${escapeHtml(item.id)}" ${item.imported || !item.available ? 'disabled' : ''}>${buttonCopy}</button>
+        <button data-sample-id="${escapeHtml(item.id)}" ${inSession || (!item.imported && !item.available) ? 'disabled' : ''}>${buttonCopy}</button>
       </div>
     </article>`;
 }
@@ -168,6 +175,15 @@ async function loadLibrary() {
 }
 
 async function importSample(sampleId, button) {
+  const item = state.library.find(candidate => candidate.id === sampleId);
+  if (item?.imported) {
+    state.sessionActionIds.add(item.action_id);
+    state.actionSignature = '';
+    await loadActions();
+    renderLibrary();
+    el('library-message').textContent = `“${item.name}”已加入本次首页，刷新后仍恢复五个预设。`;
+    return;
+  }
   const token = adminToken();
   if (!token) {
     el('library-message').textContent = '先填管理员口令，本地演示默认是 change-me。';
@@ -184,9 +200,10 @@ async function importSample(sampleId, button) {
     });
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.detail || '加入首页失败');
+    state.sessionActionIds.add(payload.action.id);
     state.actionSignature = '';
     await Promise.all([loadActions(), loadLibrary()]);
-    el('library-message').textContent = `“${payload.action.name}”已经加入首页，可以直接开刷。`;
+    el('library-message').textContent = `“${payload.action.name}”已加入本次首页，可以直接开刷。`;
   } catch (error) {
     button.disabled = false;
     button.textContent = '重新加入';
@@ -294,6 +311,12 @@ function actionSignature(actions) {
   ]));
 }
 
+function visibleActions(actions) {
+  return actions.filter(action => (
+    FEATURED_ACTION_IDS.has(action.id) || state.sessionActionIds.has(action.id)
+  ));
+}
+
 async function loadActions() {
   if (state.actionsLoading) return;
   state.actionsLoading = true;
@@ -301,7 +324,7 @@ async function loadActions() {
   try {
     const response = await fetch(`${API}/actions`);
     if (!response.ok) throw new Error('无法加载 Feed 片段');
-    actions = await response.json();
+    actions = visibleActions(await response.json());
   } finally {
     state.actionsLoading = false;
   }
@@ -409,11 +432,12 @@ el('custom-import-form').addEventListener('submit', async (event) => {
     });
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.detail || '视频导入失败');
-    el('library-message').textContent = `“${payload.action.name}”已经加入首页。`;
+    state.sessionActionIds.add(payload.action.id);
+    el('library-message').textContent = `“${payload.action.name}”已加入本次首页。`;
     event.target.reset();
     state.actionSignature = '';
     await loadActions();
-    el('library-message').textContent = `“${payload.action.name}”已经加入首页，可以直接开刷。`;
+    el('library-message').textContent = `“${payload.action.name}”已加入本次首页，可以直接开刷。`;
   } catch (error) {
     el('library-message').textContent = error.message;
   } finally {
