@@ -201,7 +201,7 @@ function searchCards(results) {
       || (url && new URL(url).pathname.startsWith('/media/tutorials/'));
     return `
     <article class="search-card ${isLocalVideo ? 'has-tutorial-video' : ''}" data-loadout="${index + 1}">
-      ${isLocalVideo ? `<video class="tutorial-video" src="${escapeHtml(url)}" controls playsinline preload="metadata"></video>` : ''}
+      ${isLocalVideo ? `<video class="tutorial-video" src="${escapeHtml(url)}" controls playsinline preload="none"></video>` : ''}
       <div class="search-card-copy">
         <div class="rank">0${index + 1}</div>
         <span>${escapeHtml(item.view_type)}${item.clip_seconds ? ` · ${escapeHtml(item.clip_seconds)}` : ''}</span>
@@ -317,7 +317,7 @@ async function loadActions() {
       <div class="feed-visual media-stage visual-${index + 1} ${action.reference_ready ? 'has-video' : 'placeholder'}" data-media-stage>
         ${action.reference_ready ? `
           <img class="media-backdrop" src="${escapeHtml(coverUrl)}" alt="" aria-hidden="true" />
-          <video class="feed-video" src="${escapeHtml(mediaUrl(action.feed_video_url || action.reference_video_url))}" poster="${escapeHtml(coverUrl)}" playsinline controls preload="metadata"></video>
+          <video class="feed-video" src="${escapeHtml(mediaUrl(action.feed_video_url || action.reference_video_url))}" poster="${escapeHtml(coverUrl)}" playsinline controls preload="none"></video>
         ` : ''}
         <button class="freeze-action" data-id="${escapeHtml(action.id)}" disabled>
           ${action.reference_ready ? '暂停后锁定这一拍' : '待配置参考片段'}
@@ -510,7 +510,7 @@ function selectAction() {
     <span>定格 ${formatTime(state.pausedAt)} · ${escapeHtml(state.pauseInsight.phase)}</span>
     <strong>${escapeHtml(state.action.name)}</strong>
     <p>${escapeHtml(state.pauseInsight.likely_stuck_at)}</p>`;
-  resetUpload('拍摄或上传你的模仿', '3–8 秒，完整露出全身');
+  resetUpload('从相册选择或现场拍摄', '3–8 秒，手机会让你选择相册、拍摄或文件');
   show('step-upload');
 }
 

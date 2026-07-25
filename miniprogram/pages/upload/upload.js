@@ -29,7 +29,7 @@ Page({
     wx.chooseMedia({
       count: 1,
       mediaType: ['video'],
-      sourceType: ['album'],
+      sourceType: ['album', 'camera'],
       maxDuration: 8,
       success: res => this.setData({ filePath: res.tempFiles[0].tempFilePath }),
       fail: err => {

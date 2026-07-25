@@ -21,6 +21,10 @@ test('Feed 列表会自动发现新导入的视频且不需要刷新页面', asy
   const response = await request.get('http://127.0.0.1:8000/api/v1/actions');
   expect(response.ok()).toBeTruthy();
   const baseActions = await response.json();
+  const feedRequests = new Set();
+  page.on('request', request => {
+    if (/\/media\/feed\/.+\.mp4/.test(request.url())) feedRequests.add(request.url());
+  });
   let requestCount = 0;
   await page.route('**/api/v1/actions', async (route) => {
     const actions = structuredClone(baseActions);
@@ -58,6 +62,11 @@ test('Feed 列表会自动发现新导入的视频且不需要刷新页面', asy
   await expect(page.locator('.feed-card[data-id="polled_move"]')).toHaveCount(1, {
     timeout: 7000
   });
+  expect(feedRequests.size).toBeLessThanOrEqual(1);
+  expect(await page.locator('.feed-video').evaluateAll(
+    videos => videos.every(video => video.preload === 'none')
+  )).toBeTruthy();
+  await expect(page.locator('#video-input')).not.toHaveAttribute('capture', /.+/);
 });
 
 test('用户可以预览素材库并一键加入首页', async ({ page }) => {
@@ -178,10 +187,6 @@ test('用户暂停 Feed 后获得时刻解释，再完成首练和二练验证',
       'poster',
       /^http:\/\/127\.0\.0\.1:8000\/media\/covers\/.+\.jpg$/
     );
-    await expect(page.locator('.feed-card .feed-visual').first()).toHaveAttribute(
-      'data-orientation',
-      'portrait'
-    );
     const expectedSkillFocus = {
       groove_step: '手势关',
       arm_wave: '脚步关',
@@ -207,6 +212,10 @@ test('用户暂停 Feed 后获得时刻解释，再完成首练和二练验证',
       video.muted = true;
       await video.play();
     });
+    await expect(page.locator('.feed-card .feed-visual').first()).toHaveAttribute(
+      'data-orientation',
+      'portrait'
+    );
     await page.locator('.feed-card .feed-video').nth(1).evaluate(async (video) => {
       video.muted = true;
       await video.play();
@@ -259,6 +268,9 @@ test('用户暂停 Feed 后获得时刻解释，再完成首练和二练验证',
     );
     await expect(page.locator('#pause-search-results .search-card')).toHaveCount(3);
     await expect(page.locator('#pause-search-results .search-card video')).toHaveCount(3);
+    expect(await page.locator('#pause-search-results .search-card video').evaluateAll(
+      videos => videos.every(video => video.preload === 'none')
+    )).toBeTruthy();
     await expect(page.locator('#pause-search-results .search-card video').first()).toHaveCSS(
       'object-fit',
       'contain'
