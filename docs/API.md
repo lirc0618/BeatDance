@@ -103,7 +103,9 @@ JSON 请求：
   "source_phase": "动作进入",
   "reference_source": "feed_pause_context",
   "diagnosis": {
+    "overall_feedback": "整体能跟上动作，但关键部位还有明显偏差。",
     "primary_error": "右臂抢跑了，像偷偷开了倍速",
+    "vlm_summary": "重点看右臂：听到重拍再出手，先连做三次。",
     "user_focus": "upper",
     "search_query": "手臂路线 右臂 拍点 慢速分拍 背面跟练",
     "search_results": [

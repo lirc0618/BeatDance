@@ -198,10 +198,16 @@ make demo-seed ADMIN_TOKEN="<与 .env 中相同的 ADMIN_TOKEN>"
 
 结果新增：
 
+- `diagnosis.overall_feedback`
+- `diagnosis.vlm_summary`（重点问题和改法）
 - `diagnosis.search_query`
 - `diagnosis.search_results`
 - `diagnosis.user_focus`
 - `reference_source=feed_pause_context`
+
+H5 会在上传前检查 3–8 秒时长、横竖屏比例、画面尺寸和首帧清晰度；时长或文件
+大小不合规则阻止提交，尺寸或清晰度不足只给出重拍建议。所有页面的视频共用一个
+播放互斥规则，同一时间只会播放一条。
 
 ## 隐私与边界
 

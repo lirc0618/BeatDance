@@ -21,6 +21,19 @@ const scanCopies = [
   '正在配一条最短解法'
 ];
 
+function pauseOtherVideos(activeVideo) {
+  document.querySelectorAll('video').forEach(video => {
+    if (video === activeVideo || video.paused) return;
+    if (video.classList.contains('feed-video')) video.dataset.autoPaused = 'true';
+    video.pause();
+    video.closest('.feed-card')?.classList.remove('is-paused');
+  });
+}
+
+document.addEventListener('play', event => {
+  if (event.target instanceof HTMLVideoElement) pauseOtherVideos(event.target);
+}, true);
+
 function stopScanSequence() {
   if (state.scanTimer) window.clearInterval(state.scanTimer);
   state.scanTimer = null;
@@ -332,12 +345,6 @@ async function loadActions() {
     const card = video.closest('.feed-card');
     const button = card.querySelector('button');
     video.addEventListener('play', () => {
-      document.querySelectorAll('.feed-card .feed-video').forEach(other => {
-        if (other === video || other.paused) return;
-        other.dataset.autoPaused = 'true';
-        other.pause();
-        other.closest('.feed-card').classList.remove('is-paused');
-      });
       card.classList.remove('is-paused');
       button.disabled = true;
       button.textContent = '看到没懂的地方就暂停';

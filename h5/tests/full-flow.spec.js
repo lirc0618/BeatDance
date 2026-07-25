@@ -223,6 +223,19 @@ test('用户暂停 Feed 后获得时刻解释，再完成首练和二练验证',
       'object-fit',
       'contain'
     );
+    const pausePreview = page.locator('#pause-preview');
+    const firstTutorial = page.locator('#pause-search-results .search-card video').first();
+    await pausePreview.evaluate(async (video) => {
+      video.muted = true;
+      await video.play();
+    });
+    await firstTutorial.evaluate(async (video) => {
+      video.muted = true;
+      await video.play();
+    });
+    expect(await pausePreview.evaluate(video => video.paused)).toBeTruthy();
+    expect(await firstTutorial.evaluate(video => video.paused)).toBeFalsy();
+    await firstTutorial.evaluate(video => video.pause());
     await expect(page.locator('#step-insight .search-head')).toContainText('AI 即时拆解');
     await page.locator('#pause-related-button').click();
     await expect(page.locator('#related-video-dialog')).toBeVisible();

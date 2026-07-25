@@ -93,7 +93,7 @@
       errors.push('视频需为 3–8 秒');
     }
     if (Math.min(width, height) < limits.minShortEdge) {
-      errors.push('画面尺寸太小，短边至少需要 320 px');
+      warnings.push('画面尺寸偏小，动作细节可能看不清，建议换更清晰的视频');
     }
     const sharpness = frameSharpness(video);
     if (sharpness !== null && sharpness < 24) {
