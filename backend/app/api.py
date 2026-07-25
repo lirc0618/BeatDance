@@ -51,6 +51,7 @@ def create_router(settings: Settings, analyzer: Analyzer) -> APIRouter:
             id=item["id"],
             name=item["name"],
             description=item["description"],
+            skill_focus=item.get("skill_focus", "全身协调关"),
             duration_hint=item.get("duration_hint", "3–8 秒"),
             cover_url=item.get("cover_url", ""),
             reference_video_url=analyzer.reference_video_url(item["id"]),

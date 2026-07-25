@@ -9,6 +9,7 @@ from uuid import uuid4
 from ..config import Settings
 from ..file_lock import catalog_transaction
 from ..schemas import AnalysisResult, FocusKind, Improvement, PauseInsight
+from .action_matcher import assess_action_match
 from .diagnosis import ActionRegistry, calculate_improvement, compare_poses
 from .doubao import DoubaoService
 from .dtw import dynamic_time_warping
@@ -20,6 +21,10 @@ from .storage import ResultStore
 
 
 class ReferenceNotReadyError(RuntimeError):
+    pass
+
+
+class ActionMismatchError(ValueError):
     pass
 
 
@@ -188,6 +193,24 @@ class Analyzer:
             normal = normalize_pose(candidate_sequence)
             mirrored_sequence = mirror_sequence(candidate_sequence)
             mirrored_normalized = normalize_pose(mirrored_sequence)
+
+            available_actions = [
+                item for item in self.registry.list() if self.reference_ready(item["id"])
+            ]
+            identity_references = {
+                item["id"]: normalize_pose(PoseSequence.load(self.reference_paths(item["id"])[1]))
+                for item in available_actions
+            }
+            match = assess_action_match(
+                expected_action_id=action_id,
+                candidate_variants=[normal, mirrored_normalized],
+                references=identity_references,
+                action_names={item["id"]: item["name"] for item in available_actions},
+                maximum_match_cost=self.settings.action_match_max_cost,
+                alternative_ratio=self.settings.action_match_alternative_ratio,
+            )
+            if not match.matched:
+                raise ActionMismatchError(match.message)
 
             normal_cost = dynamic_time_warping(
                 pose_feature_matrix(ref_normalized),

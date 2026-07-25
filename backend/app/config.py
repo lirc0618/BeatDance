@@ -35,6 +35,8 @@ class Settings(BaseSettings):
     pose_min_detection_confidence: float = 0.5
     pose_min_tracking_confidence: float = 0.5
     min_pose_coverage: float = 0.65
+    action_match_max_cost: float = 1.15
+    action_match_alternative_ratio: float = 0.72
     keep_original_video: bool = False
     admin_token: str = "change-me"
     allow_insecure_admin_token: bool = False

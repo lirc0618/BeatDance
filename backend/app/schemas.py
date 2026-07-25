@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 
 MetricKind = Literal["timing", "trajectory", "angle"]
 DiagnosisStatus = Literal["issue_detected", "aligned"]
-FocusKind = Literal["auto", "upper", "lower", "timing"]
+FocusKind = Literal["auto", "hands", "arms", "torso", "lower", "timing", "upper"]
 
 
 class Tutorial(BaseModel):
@@ -38,6 +38,7 @@ class ActionSummary(BaseModel):
     id: str
     name: str
     description: str
+    skill_focus: str = "全身协调关"
     duration_hint: str
     cover_url: str = ""
     reference_video_url: str = ""

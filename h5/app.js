@@ -107,11 +107,14 @@ function syncFocusControls() {
 }
 
 function actionFocus(action) {
+  if (action.skill_focus) return action.skill_focus;
   const copy = `${action.name} ${action.description} ${action.feed_caption}`.toLowerCase();
-  if (/脚|腿|步|feet|foot|jump|科目三/.test(copy)) return '脚下关';
-  if (/手|臂|肩|upper|hand|爱你/.test(copy)) return '上身关';
-  if (/节奏|卡点|摇|timing|beat/.test(copy)) return '节奏关';
-  return '全身关';
+  if (/手势|手指|gesture|finger/.test(copy)) return '手势关';
+  if (/脚|腿|步|feet|foot|jump|科目三/.test(copy)) return '脚步关';
+  if (/手|臂|肩|upper|hand|爱你/.test(copy)) return '手臂关';
+  if (/核心|躯干|肩胯|摇|core|torso/.test(copy)) return '核心律动关';
+  if (/节奏|卡点|timing|beat/.test(copy)) return '节奏关';
+  return '全身协调关';
 }
 
 function adminToken() {
@@ -576,7 +579,17 @@ async function analyze() {
     if (!response.ok) throw new Error(payload.detail || '分析失败');
     renderResult(payload, wasRetry);
   } catch (error) {
-    alert(error.message);
+    state.file = null;
+    el('analyze-button').disabled = true;
+    const isMismatch = /动作.*对不上|更像《.+》.*不是当前/.test(error.message);
+    el('upload-validation').innerHTML = [
+      `<strong class="check-error">${isMismatch ? '这段先不判动作' : '这段暂时看不清'}</strong>`,
+      `<span class="check-error">${escapeHtml(error.message)}</span>`,
+      `<span>${isMismatch
+        ? '重新选择同一段舞的模仿视频，AI 再继续找卡点。'
+        : '按上面的提示重拍，AI 再继续找卡点。'}</span>`
+    ].join('');
+    el('upload-hint').textContent = isMismatch ? '动作身份没通过，请换视频' : '画面信息不足，请重拍';
     show('step-upload');
   }
 }

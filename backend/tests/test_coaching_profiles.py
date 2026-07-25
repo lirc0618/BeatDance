@@ -6,6 +6,13 @@ from app.services.diagnosis import ActionRegistry
 
 
 def test_featured_dances_each_have_their_own_coaching_language_and_views():
+    expected_focus = {
+        "groove_step": "手势关",
+        "arm_wave": "脚步关",
+        "cross_step": "核心律动关",
+        "two_step_demo": "脚步关",
+        "jazz_demo": "全身协调关",
+    }
     expected_views = {
         "groove_step": {"镜像跟跳", "上身特写", "节奏慢放", "收尾定格", "慢速跟跳"},
         "arm_wave": {"脚步特写", "0.55×慢放", "节拍慢放", "关键帧定格", "慢速跟跳"},
@@ -17,6 +24,7 @@ def test_featured_dances_each_have_their_own_coaching_language_and_views():
 
     for action_id, views in expected_views.items():
         action = with_coaching_profile({"id": action_id, "name": "任意显示名"})
+        assert action["skill_focus"] == expected_focus[action_id]
         assert {item["view_type"] for item in action["tutorials"]} == views
         assert len(action["pause_guides"]) == 3
         stuck_lines.add(action["pause_guides"][0]["likely_stuck_at"])

@@ -18,6 +18,12 @@ def _skeleton(frame_count: int = 60) -> np.ndarray:
         14: (0.7, -0.3),
         15: (-0.9, 0.4),
         16: (0.9, 0.4),
+        17: (-1.0, 0.35),
+        18: (1.0, 0.35),
+        19: (-1.05, 0.4),
+        20: (1.05, 0.4),
+        21: (-0.98, 0.5),
+        22: (0.98, 0.5),
         23: (-0.25, 0.0),
         24: (0.25, 0.0),
         25: (-0.25, 0.8),
@@ -129,6 +135,51 @@ def test_bent_elbow_is_angle_error():
     assert result.diagnosis.drill == "定格 2 秒 ×3"
     angle = next(item for item in result.diagnosis.metrics if item.kind == "angle")
     assert "°" not in angle.human_value
+
+
+def test_hand_focus_can_find_a_gesture_error_without_blaming_the_whole_arm():
+    frame_count = 60
+    reference_coords = _skeleton(frame_count)
+    candidate_coords = reference_coords.copy()
+    candidate_coords[:, [18, 20, 22], 0] += 0.45
+    times = np.linspace(0, 4, frame_count)
+    visibility = np.ones((frame_count, 33))
+    reference = NormalizedPose(reference_coords, visibility, times, 4)
+    candidate = NormalizedPose(candidate_coords, visibility, times, 4)
+    registry = ActionRegistry(Path(__file__).parents[1] / "app" / "data" / "actions.json")
+
+    result = compare_poses(
+        "groove_step",
+        reference,
+        candidate,
+        registry,
+        mirrored=False,
+        focus="hands",
+    )
+
+    assert result.diagnosis.status == "issue_detected"
+    assert result.diagnosis.body_part == "右手势"
+    assert result.diagnosis.user_focus == "hands"
+
+
+def test_hand_focus_asks_for_a_clearer_clip_when_fingertips_are_not_visible():
+    frame_count = 30
+    coords = _skeleton(frame_count)
+    times = np.linspace(0, 3, frame_count)
+    visibility = np.ones((frame_count, 33))
+    visibility[:, [15, 16, 17, 18, 19, 20, 21, 22]] = 0.1
+    pose = NormalizedPose(coords, visibility, times, 3)
+    registry = ActionRegistry(Path(__file__).parents[1] / "app" / "data" / "actions.json")
+
+    with pytest.raises(ValueError, match="手势看不清"):
+        compare_poses(
+            "groove_step",
+            pose,
+            pose,
+            registry,
+            mirrored=False,
+            focus="hands",
+        )
 
 
 def test_card_point_search_returns_diverse_views():
@@ -280,7 +331,7 @@ def test_pause_coach_explains_the_exact_moment_with_context_and_searches(tmp_pat
     assert "检测到" not in insight.observed_motion
     assert insight.sampled_frame_count >= 20
     assert insight.observed_motion.startswith("这秒")
-    assert insight.suggested_focus == "upper"
+    assert insight.suggested_focus == "arms"
     assert len(insight.search_results) == 3
     assert insight.search_results[0].error_type == "angle"
 

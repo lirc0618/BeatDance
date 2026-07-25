@@ -7,6 +7,7 @@ from .tutorial_catalog import tutorials_for_action
 
 PROFILES: dict[str, dict[str, Any]] = {
     "aini": {
+        "skill_focus": "手势关",
         "description": "手势要甜，拍点要脆，点到就收。",
         "feed_caption": "甜妹感不是甩大，是每一下都刚好。",
         "pause_guides": [
@@ -15,7 +16,7 @@ PROFILES: dict[str, dict[str, Any]] = {
                 "phase": "手势开机",
                 "likely_stuck_at": "手先营业，胯晚点上线。",
                 "watch_for": "口令：手到，胯到。",
-                "suggested_focus": "upper",
+                "suggested_focus": "hands",
                 "metric": "timing",
                 "body_part": "双手",
             },
@@ -24,7 +25,7 @@ PROFILES: dict[str, dict[str, Any]] = {
                 "phase": "副歌上糖",
                 "likely_stuck_at": "甜不是甩大，点到就收。",
                 "watch_for": "口令：点、收、换边。",
-                "suggested_focus": "upper",
+                "suggested_focus": "hands",
                 "metric": "trajectory",
                 "body_part": "双手",
             },
@@ -33,13 +34,14 @@ PROFILES: dict[str, dict[str, Any]] = {
                 "phase": "收尾定点",
                 "likely_stuck_at": "笑容可以松，拍子不能掉。",
                 "watch_for": "口令：停住半拍。",
-                "suggested_focus": "upper",
+                "suggested_focus": "arms",
                 "metric": "angle",
                 "body_part": "双臂",
             },
         ],
     },
     "kemusan": {
+        "skill_focus": "脚步关",
         "description": "脚下点火、重心换挡，落地还得弹。",
         "feed_caption": "脚在蹦迪，重心可别还在加载。",
         "pause_guides": [
@@ -73,6 +75,7 @@ PROFILES: dict[str, dict[str, Any]] = {
         ],
     },
     "shake": {
+        "skill_focus": "核心律动关",
         "description": "肩胯一起联网，摇得松但轴心不跑。",
         "feed_caption": "摇不是散架，松弛感也有主心骨。",
         "pause_guides": [
@@ -81,7 +84,7 @@ PROFILES: dict[str, dict[str, Any]] = {
                 "phase": "肩膀开机",
                 "likely_stuck_at": "肩开机了，胯还没联网。",
                 "watch_for": "口令：肩带胯。",
-                "suggested_focus": "upper",
+                "suggested_focus": "arms",
                 "metric": "timing",
                 "body_part": "双肩",
             },
@@ -90,7 +93,7 @@ PROFILES: dict[str, dict[str, Any]] = {
                 "phase": "左右换边",
                 "likely_stuck_at": "摇不是散架，轴心别跑路。",
                 "watch_for": "口令：摇两边，人留中间。",
-                "suggested_focus": "auto",
+                "suggested_focus": "torso",
                 "metric": "trajectory",
                 "body_part": "躯干",
             },
@@ -99,13 +102,14 @@ PROFILES: dict[str, dict[str, Any]] = {
                 "phase": "回正收尾",
                 "likely_stuck_at": "回正要收，别把惯性带回家。",
                 "watch_for": "口令：摇、停、回中。",
-                "suggested_focus": "auto",
+                "suggested_focus": "torso",
                 "metric": "angle",
                 "body_part": "躯干",
             },
         ],
     },
     "jumpstyle": {
+        "skill_focus": "脚步关",
         "description": "腿快、点准、落地还能接着弹。",
         "feed_caption": "腿像弹幕一样刷过去，落地还得稳。",
         "pause_guides": [
@@ -139,6 +143,7 @@ PROFILES: dict[str, dict[str, Any]] = {
         ],
     },
     "jazz": {
+        "skill_focus": "全身协调关",
         "description": "节奏踩稳，身体线条再跟上，别让手脚各跳各的。",
         "feed_caption": "爵士不是摆得多，是每个拍点都刚好落在线条上。",
         "pause_guides": [
@@ -165,7 +170,7 @@ PROFILES: dict[str, dict[str, Any]] = {
                 "phase": "线条定点",
                 "likely_stuck_at": "动作到了，线条没刹住。",
                 "watch_for": "口令：到点，停半拍。",
-                "suggested_focus": "upper",
+                "suggested_focus": "torso",
                 "metric": "angle",
                 "body_part": "躯干",
             },

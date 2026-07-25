@@ -288,6 +288,7 @@ def test_authenticated_http_import_publishes_the_action(tmp_path):
     assert imported.json()["created"] is True
     actions = client.get(f"{settings.api_prefix}/actions").json()
     assert any(action["id"] == "http_move" and action["reference_ready"] for action in actions)
+    assert next(action for action in actions if action["id"] == "groove_step")["skill_focus"] == "手势关"
 
     insight = client.post(
         f"{settings.api_prefix}/actions/http_move/pause-insight",
@@ -295,6 +296,26 @@ def test_authenticated_http_import_publishes_the_action(tmp_path):
     )
     assert insight.status_code == 200
     assert insight.json()["sampled_frame_count"] > 0
+
+    wrong_dance = (
+        Path(__file__).parents[2]
+        / "assets"
+        / "samples"
+        / "open_sources"
+        / "arm_movements_reference.mp4"
+    )
+    with wrong_dance.open("rb") as handle:
+        mismatched = client.post(
+            f"{settings.api_prefix}/analyze",
+            data={
+                "action_id": "http_move",
+                "session_id": "dynamic-http-test",
+                "pause_timestamp_seconds": "3",
+            },
+            files={"video": ("wrong-dance.mp4", handle, "video/mp4")},
+        )
+    assert mismatched.status_code == 422
+    assert "这段动作和《接口导入动作》对不上" in mismatched.json()["detail"]
 
     with source.open("rb") as handle:
         analyzed = client.post(

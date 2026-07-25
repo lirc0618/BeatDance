@@ -57,7 +57,7 @@ JSON 请求：
 - `name`：动作显示名称；
 - `pause_at_seconds`：可选，用于抽取清晰参考片段；默认视频中点；
 - `description`、`feed_caption`、`creator`：可选文案；
-- `focus`：`auto | upper | lower | timing`；
+- `focus`：`auto | hands | arms | torso | lower | timing`；`upper` 仅兼容旧客户端；
 - Header `X-Admin-Token`：管理员令牌。
 
 系统自动转码、抽取参考、提取骨架并原子更新动作清单。响应中的 `created=true`
@@ -87,9 +87,16 @@ JSON 请求：
 - `video`：3–8 秒用户模仿；
 - `action_id`：Feed 片段 ID；
 - `session_id`：匿名会话；
-- `focus`：`auto | upper | lower | timing`；
+- `focus`：`auto | hands | arms | torso | lower | timing`；`upper` 仅兼容旧客户端；
 - `pause_timestamp_seconds`：Feed 暂停秒数；
 - `baseline_analysis_id`：二练时可选。
+
+服务端在生成诊断前执行动作身份闸门：用户骨架必须与 `action_id` 对应的已注册
+动作匹配。明显更像其他动作或与全部参考都相差过大时返回 HTTP 422，`detail`
+直接说明“更像哪支舞”或“与当前动作对不上”，不会返回伪造的局部纠错。
+
+`hands` 是手势级分析，使用手腕、拇指、食指和小指方向判断掌心与开合；当这些点
+不可见时同样返回 HTTP 422，要求把双手拍清楚，不提供逐指关节评分。
 
 新增核心响应：
 

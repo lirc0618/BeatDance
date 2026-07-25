@@ -25,7 +25,9 @@ from .features import (
     pose_feature_matrix,
 )
 
-UPPER_WORDS = ("臂", "肘", "肩", "腕", "手", "躯干")
+HAND_WORDS = ("手势", "手指", "掌心", "拇指", "食指", "小指")
+ARM_WORDS = ("臂", "肘", "肩", "腕")
+TORSO_WORDS = ("躯干", "核心", "胸", "腰")
 LOWER_WORDS = ("腿", "膝", "髋", "脚", "踝")
 
 
@@ -39,19 +41,29 @@ class ComparisonBundle:
 
 
 def _part_focus(body_part: str) -> str:
-    if any(word in body_part for word in UPPER_WORDS):
-        return "upper"
+    if any(word in body_part for word in HAND_WORDS) or body_part in {"左手", "右手", "双手"}:
+        return "hands"
+    if any(word in body_part for word in ARM_WORDS):
+        return "arms"
+    if any(word in body_part for word in TORSO_WORDS):
+        return "torso"
     if any(word in body_part for word in LOWER_WORDS):
         return "lower"
     return "auto"
 
 
+def _focus_matches(part_focus: str, focus: FocusKind) -> bool:
+    if focus == "upper":
+        return part_focus in {"hands", "arms", "torso"}
+    return part_focus == focus
+
+
 def _focus_aware_max(values: dict[str, float], focus: FocusKind, absolute: bool = False) -> str:
     score = (lambda key: abs(values[key])) if absolute else (lambda key: values[key])
     global_best = max(values, key=score)
-    if focus not in ("upper", "lower"):
+    if focus in ("auto", "timing"):
         return global_best
-    candidates = [key for key in values if _part_focus(key) == focus]
+    candidates = [key for key in values if _focus_matches(_part_focus(key), focus)]
     if not candidates:
         return global_best
     focused_best = max(candidates, key=score)
@@ -180,6 +192,9 @@ class ActionRegistry:
             if focus != "auto" and focus in tags:
                 score += 2
                 reasons.append("就是你想看的部位")
+            elif focus in {"hands", "arms", "torso"} and "upper" in tags:
+                score += 1
+                reasons.append("同属上半身细节")
             if focus == "timing" and item.get("error_type") == "timing":
                 score += 2
                 reasons.append("专治抢拍和慢拍")
@@ -262,11 +277,23 @@ def compare_poses(
     trajectory_by_group: dict[str, float] = {}
     trajectory_peak: dict[str, tuple[int, int]] = {}
     for group_name, joints in BODY_GROUPS.items():
+        if group_name.endswith("手势") and focus != "hands":
+            continue
+        if group_name.endswith("手势"):
+            visibility = min(
+                float(reference.visibility[ref_indices][:, joints].mean()),
+                float(candidate.visibility[cand_indices][:, joints].mean()),
+            )
+            if visibility < 0.65:
+                continue
         diff = reference.coords[ref_indices][:, joints, :2] - candidate.coords[cand_indices][:, joints, :2]
         per_pair = np.linalg.norm(diff, axis=2).mean(axis=1)
         trajectory_by_group[group_name] = float(per_pair.mean())
         peak = int(np.argmax(per_pair))
         trajectory_peak[group_name] = (int(ref_indices[peak]), int(cand_indices[peak]))
+
+    if focus == "hands" and not any(name.endswith("手势") for name in trajectory_by_group):
+        raise ValueError("手势看不清。请让双手靠近镜头、避免遮挡，并保留手腕到指尖。")
 
     trajectory_group = _focus_aware_max(trajectory_by_group, focus)
     trajectory_error = trajectory_by_group[trajectory_group]
@@ -274,6 +301,15 @@ def compare_poses(
     angle_by_joint: dict[str, float] = {}
     angle_peak: dict[str, tuple[int, int]] = {}
     for joint_name, triplet in ANGLE_TRIPLETS.items():
+        if joint_name.endswith("手势") and focus != "hands":
+            continue
+        if joint_name.endswith("手势"):
+            visibility = min(
+                float(reference.visibility[ref_indices][:, list(triplet)].mean()),
+                float(candidate.visibility[cand_indices][:, list(triplet)].mean()),
+            )
+            if visibility < 0.65:
+                continue
         ref_angles = joint_angle(reference.coords, triplet)[ref_indices]
         cand_angles = joint_angle(candidate.coords, triplet)[cand_indices]
         differences = np.abs(ref_angles - cand_angles)
@@ -285,6 +321,8 @@ def compare_poses(
 
     timing_by_group: dict[str, float] = {}
     for group_name, joints in BODY_GROUPS.items():
+        if group_name not in trajectory_by_group:
+            continue
         timing_by_group[group_name] = _cross_correlation_lag(
             motion_signal(reference, joints),
             motion_signal(candidate, joints),
@@ -320,15 +358,25 @@ def compare_poses(
         )
     elif primary_metric == "trajectory":
         body_part = trajectory_group
-        primary_error = f"{body_part}跑线了"
-        feedback = "只认起点 → 落点。"
-        drill = "0.5× 描线 ×3"
+        if body_part.endswith("手势"):
+            primary_error = f"{body_part}没摆对"
+            feedback = "先看掌心方向，再看手指开合。"
+            drill = f"{body_part}定格 ×3"
+        else:
+            primary_error = f"{body_part}跑线了"
+            feedback = "只认起点 → 落点。"
+            drill = "0.5× 描线 ×3"
         ref_key, cand_key = trajectory_peak[trajectory_group]
     else:
         body_part = angle_joint
-        primary_error = f"{body_part}没卡住"
-        feedback = "先摆像，再连招。"
-        drill = "定格 2 秒 ×3"
+        if body_part.endswith("手势"):
+            primary_error = f"{body_part}开合不对"
+            feedback = "掌心先定向，手指再打开。"
+            drill = f"{body_part}定格 ×3"
+        else:
+            primary_error = f"{body_part}没卡住"
+            feedback = "先摆像，再连招。"
+            drill = "定格 2 秒 ×3"
         ref_key, cand_key = angle_peak[angle_joint]
 
     status = "issue_detected"

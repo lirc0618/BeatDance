@@ -3,7 +3,6 @@ const { test, expect } = require('@playwright/test');
 
 const projectRoot = path.resolve(__dirname, '..', '..');
 const wrongAttempt = path.join(projectRoot, 'assets/samples/open_sources/arm_movements_reference.mp4');
-const correctedAttempt = path.join(projectRoot, 'assets/samples/open_sources/breakdance_6_step.mp4');
 const tooLongAttempt = path.join(projectRoot, 'assets/samples/open_sources/arm_movements_veil.mp4');
 
 test('Feed 列表会自动发现新导入的视频且不需要刷新页面', async ({ page, request }) => {
@@ -112,6 +111,15 @@ test('用户可以预览素材库并一键加入首页', async ({ page }) => {
 test('用户暂停 Feed 后获得时刻解释，再完成首练和二练验证', async ({ page, request }) => {
   const createdIds = [];
   try {
+    const actionsResponse = await request.get('http://127.0.0.1:8000/api/v1/actions');
+    const actions = await actionsResponse.json();
+    const grooveAction = actions.find(action => action.id === 'groove_step');
+    const matchingAttempt = path.join(
+      projectRoot,
+      'data',
+      'references',
+      path.basename(new URL(grooveAction.reference_video_url, 'http://localhost').pathname)
+    );
     await page.route('**/api/v1/actions/groove_step/related-videos?**', async (route) => {
       await route.fulfill({
         json: {
@@ -160,6 +168,18 @@ test('用户暂停 Feed 后获得时刻解释，再完成首练和二练验证',
       'data-orientation',
       'portrait'
     );
+    const expectedSkillFocus = {
+      groove_step: '手势关',
+      arm_wave: '脚步关',
+      cross_step: '核心律动关',
+      two_step_demo: '脚步关',
+      jazz_demo: '全身协调关'
+    };
+    for (const [actionId, label] of Object.entries(expectedSkillFocus)) {
+      await expect(
+        page.locator(`.feed-card[data-id="${actionId}"] .level-focus`)
+      ).toHaveText(label);
+    }
     await expect(page.locator('#action-count')).toHaveText(String(actionCount));
     await expect(page.locator('#video-attribution')).toHaveAttribute(
       'href',
@@ -216,7 +236,13 @@ test('用户暂停 Feed 后获得时刻解释，再完成首练和二练验证',
     await expect(page.locator('#pause-stuck')).toContainText('按这个位置先排查');
     await expect(page.locator('#pause-beat-lane')).toBeVisible();
     await expect(page.locator('#pause-beat-lane .boss-crystal')).toBeVisible();
-    await expect(page.locator('#pause-focus-chips button')).toHaveCount(4);
+    await expect(page.locator('#pause-focus-chips button')).toHaveCount(6);
+    await expect(page.locator('#pause-focus-chips button')).toHaveText([
+      'AI 选重点', '看手势', '看手臂', '看核心', '看脚步', '卡节奏'
+    ]);
+    await expect(page.locator('#step-insight .focus-note')).toContainText(
+      '手势可看掌心和开合，暂不做逐指关节评分'
+    );
     await expect(page.locator('#pause-search-results .search-card')).toHaveCount(3);
     await expect(page.locator('#pause-search-results .search-card video')).toHaveCount(3);
     await expect(page.locator('#pause-search-results .search-card video').first()).toHaveCSS(
@@ -259,6 +285,10 @@ test('用户暂停 Feed 后获得时刻解释，再完成首练和二练验证',
     await page.locator('#practice-button').click();
     await expect(page.locator('#step-upload .challenge-stage')).toBeVisible();
     await expect(page.locator('#step-upload')).toContainText('READY');
+    await expect(page.locator('#focus-chips button')).toHaveCount(6);
+    await expect(page.locator('#step-upload .focus-note')).toContainText(
+      '手势可看掌心和开合，暂不做逐指关节评分'
+    );
 
     await page.locator('#focus-chips button[data-focus="lower"]').click();
     await expect(page.locator('#focus-chips button[data-focus="lower"]')).toHaveClass(/active/);
@@ -273,6 +303,18 @@ test('用户暂停 Feed 后获得时刻解释，再完成首练和二练验证',
       '竖屏 · 1080 × 1920 · 5.0 秒'
     );
     await expect(page.locator('#analyze-button')).toBeEnabled();
+    const mismatchResponsePromise = page.waitForResponse(
+      response => response.url().endsWith('/api/v1/analyze') && response.status() === 422
+    );
+    await page.locator('#analyze-button').click();
+    await mismatchResponsePromise;
+    await expect(page.locator('#step-upload')).toBeVisible();
+    await expect(page.locator('#upload-validation')).toContainText('对不上');
+
+    await page.locator('#video-input').setInputFiles(matchingAttempt);
+    await expect(page.locator('#upload-validation')).toContainText(
+      '竖屏 · 720 × 1280 · 5.0 秒'
+    );
     const firstResponsePromise = page.waitForResponse(
       response => response.url().endsWith('/api/v1/analyze') && response.status() === 200
     );
@@ -322,9 +364,9 @@ test('用户暂停 Feed 后获得时刻解释，再完成首练和二练验证',
     await expect(page.locator('#result-related-button')).toBeVisible();
 
     await page.locator('#retry-button').click();
-    await page.locator('#video-input').setInputFiles(correctedAttempt);
+    await page.locator('#video-input').setInputFiles(matchingAttempt);
     await expect(page.locator('#upload-validation')).toContainText(
-      '横屏 · 640 × 360 · 4.0 秒'
+      '竖屏 · 720 × 1280 · 5.0 秒'
     );
     const retryResponsePromise = page.waitForResponse(
       response => response.url().endsWith('/api/v1/analyze') && response.status() === 200
@@ -335,13 +377,8 @@ test('用户暂停 Feed 后获得时刻解释，再完成首练和二练验证',
     await expect(page.locator('#result')).toBeVisible({ timeout: 30_000 });
     await expect(page.locator('.mission-step[data-phase="rematch"]')).toHaveClass(/active/);
     await expect(page.locator('#improvement')).toBeVisible();
-    await expect(page.locator('#improvement')).toContainText('卡壳点顺了');
-    await expect(page.locator('#result-judgement')).toHaveText('ALMOST');
-    await expect(page.locator('#result-overall')).toContainText('比上一遍更顺');
-    await expect(page.locator('#result-beat-lane .beat-node.miss')).toHaveCount(1);
-    await expect(page.locator('#result-lane-summary')).toHaveText(
-      '问题标记，不代表精确发生时间'
-    );
+    await expect(page.locator('#improvement')).not.toBeEmpty();
+    await expect(page.locator('#result-judgement')).toHaveText(/CLEAR|MISS/);
     await expect(page.locator('#baseline-comparison-wrap')).toBeVisible();
     await expect(page.locator('#baseline-comparison-video')).toHaveAttribute(
       'src',

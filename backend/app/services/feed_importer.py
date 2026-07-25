@@ -431,16 +431,29 @@ class FeedImporter:
         reference_manifest: str,
     ) -> dict[str, Any]:
         body_part = {
+            "hands": "双手",
+            "arms": "双臂",
+            "torso": "躯干",
             "upper": "右臂",
             "lower": "右腿",
             "timing": "躯干",
             "auto": "躯干",
         }[spec.focus]
-        suggested_focus = spec.focus if spec.focus != "timing" else "timing"
+        skill_focus = {
+            "hands": "手势关",
+            "arms": "手臂关",
+            "torso": "核心律动关",
+            "upper": "手臂关",
+            "lower": "脚步关",
+            "timing": "节奏关",
+            "auto": "全身协调关",
+        }[spec.focus]
+        suggested_focus = spec.focus
         name = spec.name.strip()
         return with_coaching_profile({
             "id": spec.action_id,
             "name": name,
+            "skill_focus": skill_focus,
             "description": spec.description.strip() or "播放视频，停在动作衔接、方向或发力顺序没看懂的时刻。",
             "duration_hint": "上传 3–8 秒模仿",
             "cover_url": f"/media/covers/{cover_name}",
