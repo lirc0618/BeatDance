@@ -190,8 +190,10 @@ class FeedImporter:
             raise ValueError("动作 ID 只能使用小写字母、数字、下划线或连字符")
         if not spec.name.strip():
             raise ValueError("动作名称不能为空")
-        if spec.focus not in {"auto", "upper", "lower", "timing"}:
-            raise ValueError("关注点必须是 auto、upper、lower 或 timing")
+        if spec.focus not in {"auto", "hands", "arms", "torso", "upper", "lower", "timing"}:
+            raise ValueError(
+                "关注点必须是 auto、hands、arms、torso、lower 或 timing；upper 仅兼容旧客户端"
+            )
         if source.stat().st_size > self.settings.max_feed_upload_mb * 1024 * 1024:
             raise VideoValidationError(f"Feed 视频不能超过 {self.settings.max_feed_upload_mb}MB")
         metadata = probe_video(source)

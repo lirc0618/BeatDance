@@ -14,6 +14,7 @@ Base URL：`/api/v1`
   "creator": "@Fabiola Mastache · CC BY-SA 4.0",
   "segment_label": "12 秒手臂片段 · 任意暂停",
   "entry_copy": "定格看手怎么走",
+  "skill_focus": "手臂关",
   "feed_video_url": "/media/feed/arm_movements_veil.mp4",
   "reference_video_url": "/media/references/arm_wave.mp4",
   "reference_ready": true,
@@ -91,8 +92,9 @@ JSON 请求：
 - `pause_timestamp_seconds`：Feed 暂停秒数；
 - `baseline_analysis_id`：二练时可选。
 
-服务端在生成诊断前执行动作身份闸门：用户骨架必须与 `action_id` 对应的已注册
-动作匹配。明显更像其他动作或与全部参考都相差过大时返回 HTTP 422，`detail`
+服务端在生成诊断前执行动作身份闸门：用户骨架必须与 `action_id` 本次暂停点前后
+1.5 秒的动作匹配；其他已注册动作只用于识别明显传错的舞。明显更像其他动作或
+与当前暂停片段相差过大时返回 HTTP 422，`detail`
 直接说明“更像哪支舞”或“与当前动作对不上”，不会返回伪造的局部纠错。
 
 `hands` 是手势级分析，使用手腕、拇指、食指和小指方向判断掌心与开合；当这些点
@@ -113,7 +115,7 @@ JSON 请求：
     "overall_feedback": "整体能跟上动作，但关键部位还有明显偏差。",
     "primary_error": "右臂抢跑了，像偷偷开了倍速",
     "vlm_summary": "重点看右臂：听到重拍再出手，先连做三次。",
-    "user_focus": "upper",
+    "user_focus": "arms",
     "search_query": "手臂路线 右臂 拍点 慢速分拍 背面跟练",
     "search_results": [
       {

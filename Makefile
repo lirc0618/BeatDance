@@ -19,9 +19,9 @@ dev:
 
 demo-seed:
 	.venv/bin/python scripts/download_open_samples.py
-	.venv/bin/python scripts/import_feed.py assets/samples/open_sources/爱你.MP4 --api "$(API)" --token "$(ADMIN_TOKEN)" --id groove_step --name 爱你 --pause-at 10 --focus upper
+	.venv/bin/python scripts/import_feed.py assets/samples/open_sources/爱你.MP4 --api "$(API)" --token "$(ADMIN_TOKEN)" --id groove_step --name 爱你 --pause-at 10 --focus hands
 	.venv/bin/python scripts/import_feed.py assets/samples/open_sources/科目三.MP4 --api "$(API)" --token "$(ADMIN_TOKEN)" --id arm_wave --name 科目三 --pause-at 14 --focus lower
-	.venv/bin/python scripts/import_feed.py assets/samples/open_sources/摇一摇.MP4 --api "$(API)" --token "$(ADMIN_TOKEN)" --id cross_step --name 摇一摇 --pause-at 7 --focus auto
+	.venv/bin/python scripts/import_feed.py assets/samples/open_sources/摇一摇.MP4 --api "$(API)" --token "$(ADMIN_TOKEN)" --id cross_step --name 摇一摇 --pause-at 7 --focus torso
 	.venv/bin/python scripts/import_feed.py assets/samples/open_sources/jumpstyle.MP4 --api "$(API)" --token "$(ADMIN_TOKEN)" --id two_step_demo --name Jumpstyle --pause-at 8 --focus lower
 
 tutorial-build:

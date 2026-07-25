@@ -1,9 +1,21 @@
+const fs = require('node:fs');
 const path = require('node:path');
+const { execFileSync } = require('node:child_process');
 const { test, expect } = require('@playwright/test');
 
 const projectRoot = path.resolve(__dirname, '..', '..');
 const wrongAttempt = path.join(projectRoot, 'assets/samples/open_sources/arm_movements_reference.mp4');
 const tooLongAttempt = path.join(projectRoot, 'assets/samples/open_sources/arm_movements_veil.mp4');
+
+function createContextVideo(source, target, start) {
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  execFileSync('ffmpeg', [
+    '-hide_banner', '-loglevel', 'error', '-y',
+    '-ss', String(start), '-t', '3', '-i', source,
+    '-an', '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23',
+    '-pix_fmt', 'yuv420p', target
+  ]);
+}
 
 test('Feed 列表会自动发现新导入的视频且不需要刷新页面', async ({ page, request }) => {
   const response = await request.get('http://127.0.0.1:8000/api/v1/actions');
@@ -108,18 +120,20 @@ test('用户可以预览素材库并一键加入首页', async ({ page }) => {
   expect(imported).toBeTruthy();
 });
 
-test('用户暂停 Feed 后获得时刻解释，再完成首练和二练验证', async ({ page, request }) => {
+test('用户暂停 Feed 后获得时刻解释，再完成首练和二练验证', async ({ page, request }, testInfo) => {
   const createdIds = [];
   try {
     const actionsResponse = await request.get('http://127.0.0.1:8000/api/v1/actions');
     const actions = await actionsResponse.json();
     const grooveAction = actions.find(action => action.id === 'groove_step');
-    const matchingAttempt = path.join(
-      projectRoot,
-      'data',
-      'references',
-      path.basename(new URL(grooveAction.reference_video_url, 'http://localhost').pathname)
+    const grooveFeed = path.join(
+      projectRoot, 'data', 'feeds',
+      path.basename(new URL(grooveAction.feed_video_url, 'http://localhost').pathname)
     );
+    const baselineAttempt = testInfo.outputPath('groove-shifted.mp4');
+    const matchingAttempt = testInfo.outputPath('groove-pause-context.mp4');
+    createContextVideo(grooveFeed, baselineAttempt, 8.8);
+    createContextVideo(grooveFeed, matchingAttempt, 8.5);
     await page.route('**/api/v1/actions/groove_step/related-videos?**', async (route) => {
       await route.fulfill({
         json: {
@@ -206,7 +220,7 @@ test('用户暂停 Feed 后获得时刻解释，再完成首练和二练验证',
     const grooveVideo = page.locator('.feed-card[data-id="groove_step"] .feed-video');
     await expect(grooveVideo).toHaveAttribute('src', /\/media\/feed\/.+\.mp4$/);
     await grooveVideo.evaluate(async (video) => {
-      video.currentTime = 1;
+      video.currentTime = 10;
       if (video.seeking) {
         await new Promise(resolve => video.addEventListener('seeked', resolve, { once: true }));
       }
@@ -215,7 +229,7 @@ test('用户暂停 Feed 后获得时刻解释，再完成首练和二练验证',
     });
     const grooveButton = page.locator('.feed-card button[data-id="groove_step"]');
     await expect(grooveButton).toBeEnabled();
-    await expect(grooveButton).toContainText('就学 00:01.0 这一拍');
+    await expect(grooveButton).toContainText('就学 00:10.0 这一拍');
     await expect(page.locator('.feed-card[data-id="groove_step"]')).toHaveClass(/is-paused/);
     await expect(
       page.locator('.feed-card[data-id="groove_step"] .feed-visual button')
@@ -228,7 +242,7 @@ test('用户暂停 Feed 后获得时刻解释，再完成首练和二练验证',
     await page.locator('.feed-card button[data-id="groove_step"]').click();
     await pauseResponsePromise;
     await expect(page.locator('#step-insight')).toBeVisible();
-    await expect(page.locator('#pause-time')).toContainText('00:01.0');
+    await expect(page.locator('#pause-time')).toContainText('00:10.0');
     await expect(page.locator('#pause-phase')).not.toBeEmpty();
     await expect(page.locator('#step-insight .insight-basis')).toContainText(
       '位置排查，不是对你跟拍动作的诊断'
@@ -311,9 +325,9 @@ test('用户暂停 Feed 后获得时刻解释，再完成首练和二练验证',
     await expect(page.locator('#step-upload')).toBeVisible();
     await expect(page.locator('#upload-validation')).toContainText('对不上');
 
-    await page.locator('#video-input').setInputFiles(matchingAttempt);
+    await page.locator('#video-input').setInputFiles(baselineAttempt);
     await expect(page.locator('#upload-validation')).toContainText(
-      '竖屏 · 720 × 1280 · 5.0 秒'
+      '竖屏 · 720 × 1280 · 3.0 秒'
     );
     const firstResponsePromise = page.waitForResponse(
       response => response.url().endsWith('/api/v1/analyze') && response.status() === 200
@@ -322,13 +336,13 @@ test('用户暂停 Feed 后获得时刻解释，再完成首练和二练验证',
     const firstResponse = await firstResponsePromise;
     const firstPayload = await firstResponse.json();
     createdIds.push(firstPayload.id);
-    expect(firstPayload.source_timestamp_seconds).toBe(1);
+    expect(firstPayload.source_timestamp_seconds).toBe(10);
     expect(firstPayload.source_phase).toBeTruthy();
     expect(firstPayload.reference_source).toBe('feed_pause_context');
     await expect(page.locator('#result')).toBeVisible({ timeout: 30_000 });
     await expect(page.locator('.mission-step[data-phase="decode"]')).toHaveClass(/active/);
     await expect(page.locator('#result .boss-stage')).toBeVisible();
-    await expect(page.locator('#result-judgement')).not.toBeEmpty();
+    await expect(page.locator('#result-judgement')).toHaveText('MISS');
     await expect(page.locator('#result-overall')).not.toBeEmpty();
     await expect(page.locator('#result .overall-label')).toHaveText('整体评价');
     await expect(page.locator('#result .focus-label')).toHaveText('重点问题');
@@ -366,7 +380,7 @@ test('用户暂停 Feed 后获得时刻解释，再完成首练和二练验证',
     await page.locator('#retry-button').click();
     await page.locator('#video-input').setInputFiles(matchingAttempt);
     await expect(page.locator('#upload-validation')).toContainText(
-      '竖屏 · 720 × 1280 · 5.0 秒'
+      '竖屏 · 720 × 1280 · 3.0 秒'
     );
     const retryResponsePromise = page.waitForResponse(
       response => response.url().endsWith('/api/v1/analyze') && response.status() === 200
@@ -377,8 +391,8 @@ test('用户暂停 Feed 后获得时刻解释，再完成首练和二练验证',
     await expect(page.locator('#result')).toBeVisible({ timeout: 30_000 });
     await expect(page.locator('.mission-step[data-phase="rematch"]')).toHaveClass(/active/);
     await expect(page.locator('#improvement')).toBeVisible();
-    await expect(page.locator('#improvement')).not.toBeEmpty();
-    await expect(page.locator('#result-judgement')).toHaveText(/CLEAR|MISS/);
+    await expect(page.locator('#improvement')).toContainText('卡壳点基本消失');
+    await expect(page.locator('#result-judgement')).toHaveText('CLEAR');
     await expect(page.locator('#baseline-comparison-wrap')).toBeVisible();
     await expect(page.locator('#baseline-comparison-video')).toHaveAttribute(
       'src',

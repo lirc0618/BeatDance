@@ -87,6 +87,38 @@ def create_mirrored_video(source: Path, target: Path) -> None:
     )
 
 
+def create_context_video(source: Path, target: Path, *, start: float, duration: float = 3.0) -> None:
+    ffmpeg = shutil.which("ffmpeg")
+    if not ffmpeg:
+        raise RuntimeError("完整流程验收需要 ffmpeg")
+    subprocess.run(
+        [
+            ffmpeg,
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-y",
+            "-ss",
+            str(start),
+            "-t",
+            str(duration),
+            "-i",
+            str(source),
+            "-an",
+            "-c:v",
+            "libx264",
+            "-preset",
+            "veryfast",
+            "-crf",
+            "23",
+            "-pix_fmt",
+            "yuv420p",
+            str(target),
+        ],
+        check=True,
+    )
+
+
 def post_video(client, url: str, video: Path, data: dict[str, str]):
     with video.open("rb") as handle:
         response = client.post(
@@ -191,6 +223,31 @@ def main() -> int:
             assert len({item["view_type"] for item in insight["search_results"]}) == 3
             pause_insights[action_id] = insight
 
+        matching_paths: dict[str, Path] = {}
+        actions_by_id = {action["id"]: action for action in action_data}
+        for action_id, insight in pause_insights.items():
+            feed_name = Path(urlsplit(actions_by_id[action_id]["feed_video_url"]).path).name
+            feed_path = project_root / "data" / "feeds" / feed_name
+            matching_path = Path(temp_dir) / f"{action_id}-pause-context.mp4"
+            create_context_video(
+                feed_path,
+                matching_path,
+                start=insight["context_start_seconds"],
+                duration=insight["context_end_seconds"] - insight["context_start_seconds"],
+            )
+            matching_paths[action_id] = matching_path
+
+        shifted_groove = Path(temp_dir) / "groove-step-shifted.mp4"
+        groove_insight = pause_insights["groove_step"]
+        groove_feed_name = Path(
+            urlsplit(actions_by_id["groove_step"]["feed_video_url"]).path
+        ).name
+        create_context_video(
+            project_root / "data" / "feeds" / groove_feed_name,
+            shifted_groove,
+            start=groove_insight["context_start_seconds"] + 0.3,
+        )
+
         short_video = Path(temp_dir) / "short.mp4"
         long_video = Path(temp_dir) / "long.mp4"
         blank_video = Path(temp_dir) / "blank.mp4"
@@ -245,12 +302,12 @@ def main() -> int:
         first_results = {}
         timings: dict[str, list[float]] = {action_id: [] for action_id in SAMPLES}
         signatures: dict[str, set[tuple[str, str, str]]] = {action_id: set() for action_id in SAMPLES}
-        for action_id, filename in SAMPLES.items():
+        for action_id in SAMPLES:
             started = time.perf_counter()
             response = post_video(
                 client,
                 f"{api}/analyze",
-                sample_paths[action_id],
+                matching_paths[action_id],
                 {
                     "action_id": action_id,
                     "session_id": f"acceptance-{action_id}",
@@ -286,13 +343,13 @@ def main() -> int:
                 (diagnosis["status"], diagnosis["primary_metric"], diagnosis["body_part"])
             )
 
-        for action_id, filename in SAMPLES.items():
+        for action_id in SAMPLES:
             for index in range(1, args.runs_per_action):
                 started = time.perf_counter()
                 response = post_video(
                     client,
                     f"{api}/analyze",
-                    sample_paths[action_id],
+                    matching_paths[action_id],
                     {
                         "action_id": action_id,
                         "session_id": f"acceptance-stability-{index}",
@@ -318,6 +375,19 @@ def main() -> int:
             sample_paths["arm_wave"],
             {"action_id": "groove_step", "session_id": "acceptance-improvement"},
         )
+        assert response.status_code == 422, response.text
+        assert "对不上" in response.json()["detail"] or "更像" in response.json()["detail"]
+
+        response = post_video(
+            client,
+            f"{api}/analyze",
+            shifted_groove,
+            {
+                "action_id": "groove_step",
+                "session_id": "acceptance-improvement",
+                "pause_timestamp_seconds": str(groove_insight["timestamp_seconds"]),
+            },
+        )
         response.raise_for_status()
         baseline = response.json()
         assert baseline["diagnosis"]["status"] == "issue_detected"
@@ -327,11 +397,12 @@ def main() -> int:
         response = post_video(
             client,
             f"{api}/analyze",
-            sample_paths["groove_step"],
+            matching_paths["groove_step"],
             {
                 "action_id": "groove_step",
                 "session_id": "acceptance-improvement",
                 "baseline_analysis_id": baseline["id"],
+                "pause_timestamp_seconds": str(groove_insight["timestamp_seconds"]),
             },
         )
         response.raise_for_status()

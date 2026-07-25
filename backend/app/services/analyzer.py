@@ -13,7 +13,7 @@ from .action_matcher import assess_action_match
 from .diagnosis import ActionRegistry, calculate_improvement, compare_poses
 from .doubao import DoubaoService
 from .dtw import dynamic_time_warping
-from .features import normalize_pose, pose_feature_matrix
+from .features import NormalizedPose, normalize_pose, pose_feature_matrix
 from .pause_coach import PauseCoach
 from .pose import PoseSequence, extract_pose_sequence, mirror_sequence
 from .render import create_comparison_image, create_comparison_video
@@ -80,6 +80,19 @@ class Analyzer:
         with self.reference_lock:
             video, sequence = self.reference_paths(action_id)
             return video.exists() and sequence.exists()
+
+    @staticmethod
+    def identity_references(
+        *,
+        expected_action_id: str,
+        pause_context: NormalizedPose,
+        registered_references: dict[str, NormalizedPose],
+    ) -> dict[str, NormalizedPose]:
+        """Use the selected Feed moment as truth, while retaining other dances as negatives."""
+
+        references = dict(registered_references)
+        references[expected_action_id] = pause_context
+        return references
 
     def analysis_reference(
         self,
@@ -197,10 +210,15 @@ class Analyzer:
             available_actions = [
                 item for item in self.registry.list() if self.reference_ready(item["id"])
             ]
-            identity_references = {
+            registered_references = {
                 item["id"]: normalize_pose(PoseSequence.load(self.reference_paths(item["id"])[1]))
                 for item in available_actions
             }
+            identity_references = self.identity_references(
+                expected_action_id=action_id,
+                pause_context=ref_normalized,
+                registered_references=registered_references,
+            )
             match = assess_action_match(
                 expected_action_id=action_id,
                 candidate_variants=[normal, mirrored_normalized],

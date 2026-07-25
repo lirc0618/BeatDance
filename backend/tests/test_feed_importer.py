@@ -256,6 +256,7 @@ def test_authenticated_http_import_publishes_the_action(tmp_path):
         "action_id": "http_move",
         "name": "接口导入动作",
         "pause_at_seconds": "3",
+        "focus": "hands",
     }
 
     settings.admin_token = ""
@@ -288,6 +289,7 @@ def test_authenticated_http_import_publishes_the_action(tmp_path):
     assert imported.json()["created"] is True
     actions = client.get(f"{settings.api_prefix}/actions").json()
     assert any(action["id"] == "http_move" and action["reference_ready"] for action in actions)
+    assert next(action for action in actions if action["id"] == "http_move")["skill_focus"] == "手势关"
     assert next(action for action in actions if action["id"] == "groove_step")["skill_focus"] == "手势关"
 
     insight = client.post(
@@ -304,6 +306,29 @@ def test_authenticated_http_import_publishes_the_action(tmp_path):
         / "open_sources"
         / "arm_movements_reference.mp4"
     )
+    matching_context = tmp_path / "matching-context.mp4"
+    subprocess.run(
+        [
+            "ffmpeg",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-y",
+            "-ss",
+            "1.5",
+            "-t",
+            "3",
+            "-i",
+            str(source),
+            "-an",
+            "-c:v",
+            "libx264",
+            "-pix_fmt",
+            "yuv420p",
+            str(matching_context),
+        ],
+        check=True,
+    )
     with wrong_dance.open("rb") as handle:
         mismatched = client.post(
             f"{settings.api_prefix}/analyze",
@@ -317,7 +342,7 @@ def test_authenticated_http_import_publishes_the_action(tmp_path):
     assert mismatched.status_code == 422
     assert "这段动作和《接口导入动作》对不上" in mismatched.json()["detail"]
 
-    with source.open("rb") as handle:
+    with matching_context.open("rb") as handle:
         analyzed = client.post(
             f"{settings.api_prefix}/analyze",
             data={
