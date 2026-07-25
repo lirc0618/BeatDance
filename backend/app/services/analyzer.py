@@ -18,6 +18,11 @@ from .pause_coach import PauseCoach
 from .pose import PoseSequence, extract_pose_sequence, mirror_sequence
 from .render import create_comparison_image, create_comparison_video
 from .storage import ResultStore
+from .teaching_plans import (
+    QwenTeachingPlanGenerator,
+    TeachingPlanService,
+    TeachingPlanStore,
+)
 
 
 class ReferenceNotReadyError(RuntimeError):
@@ -32,10 +37,15 @@ class Analyzer:
     def __init__(self, settings: Settings):
         self.settings = settings
         self.registry = ActionRegistry(settings.action_registry_path)
+        self.teaching_plans = TeachingPlanService(
+            TeachingPlanStore(settings.teaching_plans_dir),
+            QwenTeachingPlanGenerator(settings),
+        )
         self.pause_coach = PauseCoach(
             self.registry,
             settings.feed_dir,
             settings.pause_contexts_dir,
+            teaching_plans=self.teaching_plans,
         )
         self.store = ResultStore(settings.results_dir)
         self.doubao = DoubaoService(settings)

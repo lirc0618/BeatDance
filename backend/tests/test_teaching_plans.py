@@ -1,10 +1,16 @@
+import json
 from pathlib import Path
 
+import httpx
 import numpy as np
 
+from app.config import Settings
 from app.schemas import TeachingPlan, TeachingPlanProvenance, TeachingSegment
+from app.services.diagnosis import ActionRegistry
+from app.services.pause_coach import PauseCoach
 from app.services.pose import PoseSequence
 from app.services.teaching_plans import (
+    QwenTeachingPlanGenerator,
     TeachingPlanService,
     TeachingPlanSource,
     TeachingPlanStore,
@@ -120,3 +126,120 @@ def test_generation_failure_falls_back_without_using_a_stale_plan(tmp_path: Path
 
     assert result is None
     assert selected is None
+
+
+def test_qwen_generator_normalizes_model_output_to_feed_timestamps(tmp_path: Path) -> None:
+    content = """```json
+    {
+      "overall_summary": "先收手，再向外打开。",
+      "segments": [
+        {
+          "start_time": 0,
+          "end_time": 1.5,
+          "title": "双手收回",
+          "description": "双手回到胸前。",
+          "mnemonic": "收到胸口",
+          "pitfall": "肩膀不要抬起",
+          "priority": "优先",
+          "suggested_focus": "hands",
+          "metric": "timing",
+          "body_part": "双手"
+        },
+        {
+          "start_time": 1.5,
+          "end_time": 3,
+          "title": "双手打开",
+          "description": "双手向两侧展开。",
+          "mnemonic": "开到两边",
+          "pitfall": "不要翻掌",
+          "priority": "建议",
+          "suggested_focus": "hands",
+          "metric": "trajectory",
+          "body_part": "双手"
+        }
+      ],
+      "warm_up_tips": ["活动手腕"],
+      "practice_plan": "每段练三遍。",
+      "image_generation_prompt": "保留但暂不生成图片"
+    }
+    ```"""
+
+    def respond(request: httpx.Request) -> httpx.Response:
+        assert request.headers["Authorization"] == "Bearer test-qwen-key"
+        return httpx.Response(
+            200,
+            json={"choices": [{"message": {"content": content}}]},
+        )
+
+    settings = Settings(
+        data_dir=tmp_path / "data",
+        feed_dir=tmp_path / "feeds",
+        dashscope_api_key="test-qwen-key",
+        qwen_send_images=False,
+    )
+    generator = QwenTeachingPlanGenerator(
+        settings,
+        transport=httpx.MockTransport(respond),
+    )
+
+    plan = generator.generate(teaching_source(tmp_path))
+
+    assert plan.segments[0].start_seconds == 8.5
+    assert plan.segments[1].end_seconds == 11.5
+    assert plan.segments[0].metric == "timing"
+    assert plan.image_prompt == "保留但暂不生成图片"
+
+
+def test_pause_coach_uses_plan_inside_its_reference_window(tmp_path: Path) -> None:
+    root = Path(__file__).parents[2]
+    built_in = json.loads(
+        (root / "backend" / "app" / "data" / "actions.json").read_text(encoding="utf-8")
+    )
+    built_in["actions"][0]["teaching_source_hash"] = "source-v1"
+    registry_path = tmp_path / "actions.json"
+    registry_path.write_text(json.dumps(built_in, ensure_ascii=False), encoding="utf-8")
+    service = TeachingPlanService(
+        TeachingPlanStore(tmp_path / "plans"),
+        RecordingGenerator(),
+    )
+    service.prepare(teaching_source(tmp_path, source_hash="source-v1"))
+    coach = PauseCoach(
+        ActionRegistry(registry_path),
+        root / "assets" / "samples" / "open_sources",
+        tmp_path / "contexts",
+        teaching_plans=service,
+    )
+
+    enhanced = coach.explain("groove_step", timestamp_seconds=10.5)
+    fallback = coach.explain("groove_step", timestamp_seconds=4.0)
+
+    assert enhanced.phase == "手势打开"
+    assert enhanced.likely_stuck_at == "双手向两侧展开。易错点：掌心方向不要翻反。"
+    assert enhanced.watch_for == "打开后停住。"
+    assert fallback.phase != "手势打开"
+
+
+def test_invalid_qwen_json_is_rejected_without_storing_a_plan(tmp_path: Path) -> None:
+    def respond(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={"choices": [{"message": {"content": "这不是 JSON"}}]},
+        )
+
+    settings = Settings(
+        data_dir=tmp_path / "data",
+        feed_dir=tmp_path / "feeds",
+        dashscope_api_key="test-qwen-key",
+        qwen_send_images=False,
+    )
+    store = TeachingPlanStore(tmp_path / "plans")
+    service = TeachingPlanService(
+        store,
+        QwenTeachingPlanGenerator(settings, transport=httpx.MockTransport(respond)),
+    )
+    source = teaching_source(tmp_path)
+
+    result = service.prepare(source)
+
+    assert result is None
+    assert store.load(source.action_id) is None

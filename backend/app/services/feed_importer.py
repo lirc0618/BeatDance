@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import re
@@ -13,9 +14,11 @@ from uuid import uuid4
 
 from ..config import Settings
 from ..file_lock import catalog_transaction
+from ..schemas import FocusKind
 from .coaching_profiles import with_coaching_profile
 from .diagnosis import ActionRegistry
 from .pose import extract_pose_sequence
+from .teaching_plans import TeachingPlanSource
 from .video import VideoValidationError, probe_video
 
 ACTION_ID = re.compile(r"^[a-z][a-z0-9_-]{0,63}$")
@@ -34,7 +37,7 @@ class FeedImportSpec:
     description: str = ""
     feed_caption: str = ""
     creator: str = "自定义素材"
-    focus: str = "auto"
+    focus: FocusKind = "auto"
 
 
 @dataclass(frozen=True, slots=True)
@@ -43,6 +46,7 @@ class FeedImportResult:
     action: dict[str, Any]
     duration_seconds: float
     pose_coverage: float
+    teaching_source: TeachingPlanSource | None = None
 
 
 class FeedImporter:
@@ -138,12 +142,16 @@ class FeedImporter:
                     f"参考时间点附近人体覆盖率仅 {pose.coverage:.0%}，请换一个单人全身清晰的时间点"
                 )
             self._save_pose(pose, reference_sequence)
+            source_hash = self._sha256(reference_video)
             self._write_json(
                 reference_manifest,
                 {
                     "generation": nonce,
                     "video": reference_video.name,
                     "sequence": reference_sequence.name,
+                    "source_hash": source_hash,
+                    "source_start_seconds": clip_start,
+                    "source_end_seconds": clip_start + pose.duration_seconds,
                 },
             )
             if self._storage_bytes() > self.settings.max_feed_storage_mb * 1024 * 1024:
@@ -156,6 +164,7 @@ class FeedImporter:
                 feed_name=feed_target.name,
                 cover_name=cover_target.name,
                 reference_manifest=reference_manifest.name,
+                teaching_source_hash=source_hash,
             )
             created = self.registry.replace_action(action)
             try:
@@ -177,6 +186,16 @@ class FeedImporter:
                 action=action,
                 duration_seconds=round(metadata.duration_seconds, 2),
                 pose_coverage=pose.coverage,
+                teaching_source=TeachingPlanSource(
+                    action_id=spec.action_id,
+                    action_name=spec.name.strip(),
+                    reference_video=reference_video,
+                    pose=pose,
+                    source_hash=source_hash,
+                    source_start_seconds=clip_start,
+                    source_end_seconds=clip_start + pose.duration_seconds,
+                    default_focus=spec.focus,
+                ),
             )
         except Exception:
             for path in published:
@@ -403,6 +422,14 @@ class FeedImporter:
             pending.unlink(missing_ok=True)
 
     @staticmethod
+    def _sha256(path: Path) -> str:
+        digest = hashlib.sha256()
+        with path.open("rb") as handle:
+            for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                digest.update(chunk)
+        return digest.hexdigest()
+
+    @staticmethod
     def _save_pose(pose, target: Path) -> None:
         pending = target.with_name(f".{target.name}-{uuid4().hex}.pending.npz")
         try:
@@ -431,6 +458,7 @@ class FeedImporter:
         feed_name: str,
         cover_name: str,
         reference_manifest: str,
+        teaching_source_hash: str,
     ) -> dict[str, Any]:
         body_part = {
             "hands": "双手",
@@ -461,6 +489,7 @@ class FeedImporter:
             "cover_url": f"/media/covers/{cover_name}",
             "reference_video_url": "",
             "reference_manifest": reference_manifest,
+            "teaching_source_hash": teaching_source_hash,
             "feed_caption": spec.feed_caption.strip() or f"{name} 到底怎么做？停在你没看懂的那一秒。",
             "creator": spec.creator.strip() or "自定义素材",
             "segment_label": f"{duration_seconds:.0f} 秒素材 · 任意暂停",

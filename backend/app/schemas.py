@@ -24,7 +24,7 @@ class TeachingSegment(BaseModel):
     body_part: str = Field(default="躯干", min_length=1, max_length=40)
 
     @model_validator(mode="after")
-    def validate_time_range(self) -> "TeachingSegment":
+    def validate_time_range(self) -> TeachingSegment:
         if self.end_seconds <= self.start_seconds:
             raise ValueError("教学阶段结束时间必须晚于开始时间")
         return self
@@ -51,7 +51,7 @@ class TeachingPlan(BaseModel):
     provenance: TeachingPlanProvenance
 
     @model_validator(mode="after")
-    def validate_timeline(self) -> "TeachingPlan":
+    def validate_timeline(self) -> TeachingPlan:
         if self.source_end_seconds <= self.source_start_seconds:
             raise ValueError("教学计划结束时间必须晚于开始时间")
         previous_end = self.source_start_seconds

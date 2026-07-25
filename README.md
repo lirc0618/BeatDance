@@ -103,6 +103,31 @@ Hostname 的 Service 指向 `http://localhost:8000`；正式部署还应使用 `
 `--id` 再导入会安全替换该动作，其他 ID 会继续追加。`--pause-at` 应选择人物
 全身清晰、动作有代表性的秒数；省略时使用视频中点。
 
+### 可选：Qwen 参考动作教学计划
+
+配置阿里云百炼后，Feed 导入成功会在响应之后为刚生成的参考片段创建分阶段教学
+计划。它只增强暂停页的阶段标题、动作描述、口诀和易错点，不进入用户 `/analyze`
+链路，也不会改变动作匹配、镜像校正、DTW、豆包诊断、首页动作数或每个预设原有
+的 5 条教学记录。
+
+```env
+DASHSCOPE_API_KEY=你的百炼_API_Key
+QWEN_MODEL=qwen3.7-plus
+QWEN_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+QWEN_TIMEOUT_SECONDS=30
+QWEN_SEND_IMAGES=true
+QWEN_MAX_FRAMES=12
+```
+
+教学计划按参考片段哈希缓存在 `data/teaching_plans/`。同一参考素材不会重复请求；
+参考更新后旧计划不会被使用。未配置 Qwen、请求超时、返回非标准 JSON 或生成失败
+时，Feed 导入仍然成功，暂停页自动使用原有规则引导。
+
+`QWEN_SEND_IMAGES=true` 只会发送管理员导入的参考片段采样帧和 MediaPipe 时间线，
+不会发送用户模仿视频。模型返回的图片 Prompt 只保存在教学计划中，第一阶段不会
+调用图片生成能力。若不希望参考画面离开本机，可设置 `QWEN_SEND_IMAGES=false`，
+此时仅发送归一化骨架时间线。
+
 默认约束：
 
 - Feed 至少 3 秒、不超过 200 MB；

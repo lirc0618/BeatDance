@@ -367,6 +367,38 @@ def test_authenticated_http_import_publishes_the_action(tmp_path):
     assert not comparison_video.exists()
 
 
+def test_http_import_schedules_reference_teaching_after_publish(tmp_path):
+    settings = runtime_settings(tmp_path)
+    analyzer = Analyzer(settings)
+    scheduled: list[str] = []
+    analyzer.teaching_plans.prepare = lambda source: scheduled.append(source.action_id)
+    app = FastAPI()
+    app.include_router(create_router(settings, analyzer), prefix=settings.api_prefix)
+    client = TestClient(app)
+    source = (
+        Path(__file__).parents[2]
+        / "assets"
+        / "samples"
+        / "open_sources"
+        / "simple_step.mp4"
+    )
+
+    with source.open("rb") as handle:
+        response = client.post(
+            f"{settings.api_prefix}/actions/import",
+            data={
+                "action_id": "teaching_ready",
+                "name": "教学计划测试",
+                "pause_at_seconds": "3",
+            },
+            files={"video": ("move.mp4", handle, "video/mp4")},
+            headers={"X-Admin-Token": settings.admin_token},
+        )
+
+    assert response.status_code == 200
+    assert scheduled == ["teaching_ready"]
+
+
 def test_sample_library_lists_server_videos_and_imports_one_without_upload(tmp_path):
     settings = runtime_settings(tmp_path)
     settings.seed_feed_dir = (

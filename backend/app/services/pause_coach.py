@@ -12,16 +12,25 @@ import numpy as np
 
 from ..schemas import PauseInsight, Tutorial
 from .diagnosis import ActionRegistry
+from .teaching_plans import TeachingPlanService
 from .video import probe_video
 
 
 class PauseCoach:
     """Read one real Feed window and turn it into an explanation and reference."""
 
-    def __init__(self, registry: ActionRegistry, feed_dir: Path, contexts_dir: Path):
+    def __init__(
+        self,
+        registry: ActionRegistry,
+        feed_dir: Path,
+        contexts_dir: Path,
+        *,
+        teaching_plans: TeachingPlanService | None = None,
+    ):
         self.registry = registry
         self.feed_dir = feed_dir.resolve()
         self.contexts_dir = contexts_dir
+        self.teaching_plans = teaching_plans
         contexts_dir.mkdir(parents=True, exist_ok=True)
 
     def explain(self, action_id: str, timestamp_seconds: float) -> PauseInsight:
@@ -38,8 +47,32 @@ class PauseCoach:
             context_start,
             context_end,
         )
-        progress = timestamp_seconds / duration_seconds
-        guide = self._guide_for_progress(action, progress)
+        segment = (
+            self.teaching_plans.segment_for(
+                action_id,
+                timestamp_seconds,
+                expected_source_hash=action.get("teaching_source_hash"),
+            )
+            if self.teaching_plans
+            else None
+        )
+        if segment:
+            guide = {
+                "phase": segment.title,
+                "likely_stuck_at": (
+                    f"{segment.description}易错点：{segment.pitfall}"
+                    if segment.pitfall
+                    else segment.description
+                ),
+                "watch_for": segment.mnemonic or segment.description,
+                "suggested_focus": segment.suggested_focus,
+                "metric": segment.metric,
+                "body_part": segment.body_part,
+                "generated_plan": True,
+            }
+        else:
+            progress = timestamp_seconds / duration_seconds
+            guide = self._guide_for_progress(action, progress)
         candidates = self.registry.search_tutorials(
             action_id,
             str(guide["metric"]),
@@ -56,8 +89,12 @@ class PauseCoach:
             context_end_seconds=round(context_end, 2),
             phase=str(guide["phase"]),
             likely_stuck_at=(
-                f"你锁定了{guide['phase']}。按这个位置先排查："
-                f"{guide['likely_stuck_at']}"
+                str(guide["likely_stuck_at"])
+                if guide.get("generated_plan")
+                else (
+                    f"你锁定了{guide['phase']}。按这个位置先排查："
+                    f"{guide['likely_stuck_at']}"
+                )
             ),
             watch_for=str(guide["watch_for"]),
             observed_motion=observed_motion,

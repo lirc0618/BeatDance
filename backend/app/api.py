@@ -3,7 +3,17 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import APIRouter, File, Form, Header, HTTPException, Query, UploadFile, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    File,
+    Form,
+    Header,
+    HTTPException,
+    Query,
+    UploadFile,
+    status,
+)
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse
 
@@ -101,12 +111,18 @@ def create_router(settings: Settings, analyzer: Analyzer) -> APIRouter:
     )
     async def import_sample(
         sample_id: str,
+        background_tasks: BackgroundTasks,
         x_admin_token: Annotated[str, Header()] = "",
     ) -> FeedImportResponse:
         require_admin(x_admin_token)
         try:
             path, spec = sample_library.resolve(sample_id)
             result = await run_in_threadpool(feed_importer.import_video, path, spec)
+            if result.teaching_source:
+                background_tasks.add_task(
+                    analyzer.teaching_plans.prepare,
+                    result.teaching_source,
+                )
             return FeedImportResponse(
                 created=result.created,
                 action=action_summary(result.action),
@@ -127,6 +143,7 @@ def create_router(settings: Settings, analyzer: Analyzer) -> APIRouter:
 
     @router.post("/actions/import", response_model=FeedImportResponse)
     async def import_feed(
+        background_tasks: BackgroundTasks,
         video: Annotated[UploadFile, File()],
         action_id: Annotated[str, Form()],
         name: Annotated[str, Form()],
@@ -158,6 +175,11 @@ def create_router(settings: Settings, analyzer: Analyzer) -> APIRouter:
                     focus=focus,
                 ),
             )
+            if result.teaching_source:
+                background_tasks.add_task(
+                    analyzer.teaching_plans.prepare,
+                    result.teaching_source,
+                )
             return FeedImportResponse(
                 created=result.created,
                 action=action_summary(result.action),

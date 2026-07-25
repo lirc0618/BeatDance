@@ -48,6 +48,14 @@ class Settings(BaseSettings):
     ark_timeout_seconds: float = 8.0
     ark_send_images: bool = True
 
+    # 阿里云百炼 / Qwen。只用于管理员参考素材的离线教学计划，不处理用户模仿视频。
+    dashscope_api_key: str | None = None
+    qwen_model: str = "qwen3.7-plus"
+    qwen_base_url: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    qwen_timeout_seconds: float = 30.0
+    qwen_send_images: bool = True
+    qwen_max_frames: int = 12
+
     # 抖音开放平台视频搜索。可直接填短期 ACCESS_TOKEN，或配置 key/secret 自动换取。
     douyin_access_token: str | None = None
     douyin_client_key: str | None = None
@@ -93,6 +101,10 @@ class Settings(BaseSettings):
         return self.data_dir / "pause_contexts"
 
     @property
+    def teaching_plans_dir(self) -> Path:
+        return self.data_dir / "teaching_plans"
+
+    @property
     def action_registry_path(self) -> Path:
         override = self.data_dir / "actions.json"
         if override.exists():
@@ -114,6 +126,7 @@ class Settings(BaseSettings):
             self.visualizations_dir,
             self.comparison_videos_dir,
             self.pause_contexts_dir,
+            self.teaching_plans_dir,
             self.tutorial_assets_dir,
         ):
             path.mkdir(parents=True, exist_ok=True)
