@@ -40,7 +40,7 @@ function formatTime(seconds) {
 function adminToken() {
   const input = el('library-token');
   const value = input.value.trim();
-  if (value) sessionStorage.setItem('duipaiAdminToken', value);
+  if (value) sessionStorage.setItem('beatdanceAdminToken', value);
   return value;
 }
 
@@ -207,7 +207,7 @@ el('close-library').addEventListener('click', () => {
   el('open-library').setAttribute('aria-expanded', 'false');
 });
 
-const savedAdminToken = sessionStorage.getItem('duipaiAdminToken');
+const savedAdminToken = sessionStorage.getItem('beatdanceAdminToken');
 el('library-token').value = savedAdminToken
   || (['localhost', '127.0.0.1'].includes(location.hostname) ? 'change-me' : '');
 

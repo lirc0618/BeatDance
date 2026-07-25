@@ -1,6 +1,6 @@
 <view class="container">
   <view class="hero" wx:if="{{!insight}}">
-    <view class="badge">AI ACTION SEARCH · 01</view>
+    <view class="badge">BeatDance · AI ACTION SEARCH</view>
     <view class="hero-title">
       <view>刷到抖舞来对拍，</view>
       <view class="accent">全场卡点不带歪</view>

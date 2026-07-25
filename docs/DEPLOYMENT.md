@@ -13,8 +13,8 @@ MVP 使用单 Uvicorn Worker，避免本地文件与多进程状态不一致。�
 ## 部署
 
 ```bash
-git clone <repo>
-cd dingge-coach
+git clone git@github.com:lirc0618/BeatDance.git
+cd BeatDance
 cp .env.example .env
 vim .env
 docker compose up --build -d

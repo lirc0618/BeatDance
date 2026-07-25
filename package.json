@@ -1,5 +1,5 @@
 {
-  "name": "dingge-coach-acceptance",
+  "name": "beatdance-acceptance",
   "private": true,
   "scripts": {
     "test:h5": "playwright test h5/tests --reporter=line"

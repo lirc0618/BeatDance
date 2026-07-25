@@ -227,7 +227,7 @@ REFERENCE_CLIPS = (
 def download(sample: Sample, target: Path) -> None:
     request = urllib.request.Request(
         sample.download_url,
-        headers={"User-Agent": "DinggeCoachHackathon/1.0 (open sample downloader)"},
+        headers={"User-Agent": "BeatDanceHackathon/1.0 (open sample downloader)"},
     )
     with urllib.request.urlopen(request, timeout=120) as response, target.open("wb") as output:
         shutil.copyfileobj(response, output)

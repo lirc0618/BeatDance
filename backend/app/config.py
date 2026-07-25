@@ -13,7 +13,7 @@ from .file_lock import catalog_transaction
 
 
 class Settings(BaseSettings):
-    app_name: str = "对拍 API"
+    app_name: str = "对拍（BeatDance）API"
     api_prefix: str = "/api/v1"
     data_dir: Path = Path("/data")
     h5_dir: Path = Path("/app/h5")

@@ -1,5 +1,6 @@
 API ?= http://127.0.0.1:8000/api/v1
 ADMIN_TOKEN ?= change-me
+PROJECT_DIR := $(notdir $(CURDIR))
 
 .PHONY: setup setup-h5 dev demo-seed tutorial-build accept up down logs test test-h5 lint content-check video-smoke zip
 
@@ -55,7 +56,7 @@ video-smoke:
 	.venv/bin/python scripts/video_sample_smoke_test.py
 
 zip:
-	cd .. && zip -r dingge-coach.zip dingge-coach -x '*/__pycache__/*' '*.pyc' '.env'
+	cd .. && zip -r BeatDance.zip "$(PROJECT_DIR)" -x '*/__pycache__/*' '*.pyc' '.env'
 
 prepare-data:
 	python scripts/prepare_dataset.py --samples 2

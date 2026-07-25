@@ -35,6 +35,7 @@ test('Feed 列表会自动发现新导入的视频且不需要刷新页面', asy
 
   await page.goto('http://localhost:8000/app/?api=http://127.0.0.1:8000');
   await expect(page.locator('.brand')).toContainText('对拍');
+  await expect(page.locator('.brand')).toContainText('BeatDance');
   await expect(page.locator('.feed-card[data-id="polled_move"]')).toHaveCount(0);
   await expect(page.locator('.feed-card[data-id="polled_move"]')).toHaveCount(1, {
     timeout: 7000
