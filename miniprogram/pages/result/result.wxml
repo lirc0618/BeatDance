@@ -28,11 +28,12 @@
   </view>
 
   <block wx:for="{{result.diagnosis.search_results}}" wx:key="id">
-    <view class="search-card">
+    <view class="search-card" data-url="{{item.url}}" bindtap="openTutorial">
       <view class="search-type">{{item.view_type}}<text wx:if="{{item.clip_seconds}}"> · {{item.clip_seconds}}</text></view>
       <view class="card-title">{{item.title}}</view>
       <view class="card-copy">{{item.description}}</view>
       <view class="why">{{item.why_matched}}<text wx:if="{{item.creator}}"> · {{item.creator}}</text></view>
+      <view class="search-open">复制链接，在抖音查看相关拆解 ›</view>
     </view>
   </block>
 

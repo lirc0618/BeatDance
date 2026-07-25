@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     api_prefix: str = "/api/v1"
     data_dir: Path = Path("/data")
     h5_dir: Path = Path("/app/h5")
+    feed_dir: Path = Path("/app/assets/samples/open_sources")
     max_video_seconds: float = 8.0
     min_video_seconds: float = 3.0
     max_upload_mb: int = 40
@@ -26,7 +27,7 @@ class Settings(BaseSettings):
     ark_api_key: str | None = None
     ark_model: str | None = None
     ark_base_url: str = "https://ark.cn-beijing.volces.com/api/v3"
-    ark_timeout_seconds: float = 30.0
+    ark_timeout_seconds: float = 8.0
     ark_send_images: bool = True
 
     public_base_url: str = ""
@@ -51,6 +52,10 @@ class Settings(BaseSettings):
         return self.data_dir / "visualizations"
 
     @property
+    def pause_contexts_dir(self) -> Path:
+        return self.data_dir / "pause_contexts"
+
+    @property
     def action_registry_path(self) -> Path:
         override = self.data_dir / "actions.json"
         if override.exists():
@@ -64,6 +69,7 @@ class Settings(BaseSettings):
             self.references_dir,
             self.results_dir,
             self.visualizations_dir,
+            self.pause_contexts_dir,
         ):
             path.mkdir(parents=True, exist_ok=True)
 

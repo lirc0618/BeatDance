@@ -5,7 +5,6 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-
 MetricKind = Literal["timing", "trajectory", "angle"]
 DiagnosisStatus = Literal["issue_detected", "aligned"]
 FocusKind = Literal["auto", "upper", "lower", "timing"]
@@ -32,12 +31,32 @@ class ActionSummary(BaseModel):
     duration_hint: str
     cover_url: str = ""
     reference_video_url: str = ""
+    feed_video_url: str = ""
     feed_caption: str = ""
     creator: str = ""
     segment_label: str = ""
     entry_copy: str = "定格学这一招"
     reference_ready: bool = False
     tutorial_count: int = 0
+
+
+class PauseInsightRequest(BaseModel):
+    timestamp_seconds: float = Field(ge=0)
+
+
+class PauseInsight(BaseModel):
+    action_id: str
+    timestamp_seconds: float
+    feed_duration_seconds: float
+    context_start_seconds: float
+    context_end_seconds: float
+    phase: str
+    likely_stuck_at: str
+    watch_for: str
+    observed_motion: str
+    sampled_frame_count: int = Field(gt=0)
+    suggested_focus: FocusKind
+    search_results: list[Tutorial] = Field(default_factory=list)
 
 
 class MetricDetail(BaseModel):
@@ -87,6 +106,14 @@ class AnalysisResult(BaseModel):
     pose_coverage: float
     mirrored_input: bool
     trigger_source: str = "feed_pause"
+    source_timestamp_seconds: float | None = None
+    source_feed_duration_seconds: float | None = None
+    source_context_start_seconds: float | None = None
+    source_context_end_seconds: float | None = None
+    source_phase: str | None = None
+    reference_source: Literal["registered_reference", "feed_pause_context"] = (
+        "registered_reference"
+    )
     diagnosis: Diagnosis
     comparison_image_url: str | None = None
     improvement: Improvement | None = None

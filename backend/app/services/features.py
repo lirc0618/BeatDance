@@ -44,7 +44,7 @@ class NormalizedPose:
     duration_seconds: float
 
 
-def normalize_pose(sequence: "PoseSequence") -> NormalizedPose:
+def normalize_pose(sequence: PoseSequence) -> NormalizedPose:
     coords = sequence.landmarks[:, :, :3].astype(np.float32).copy()
     visibility = sequence.landmarks[:, :, 3].astype(np.float32).copy()
     for index in range(coords.shape[0]):

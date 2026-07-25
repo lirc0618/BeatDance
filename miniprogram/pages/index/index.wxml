@@ -5,23 +5,48 @@
     <view class="hero-copy">刷到一个没看懂的动作，停在那一秒。AI 找出你卡在哪里，再搜索最适合你的拆解。</view>
   </view>
 
-  <view wx:if="{{loading}}" class="card"><view class="card-copy">正在加载 Feed 片段…</view></view>
+  <view wx:if="{{loading}}" class="card"><view class="card-copy">正在读取暂停点和动作上下文…</view></view>
   <view wx:if="{{error}}" class="card"><view class="warning">{{error}}</view><button class="ghost" bindtap="loadActions">重试</button></view>
 
-  <block wx:for="{{actions}}" wx:key="id">
-    <view class="feed-card">
-      <view class="feed-visual">
-        <view class="feed-segment">{{item.segment_label}}</view>
-        <view class="pause">Ⅱ</view>
+  <block wx:if="{{!insight}}">
+    <block wx:for="{{actions}}" wx:key="id">
+      <view class="feed-card">
+        <view class="feed-visual">
+          <video wx:if="{{item.reference_ready}}" class="feed-video" src="{{item.feed_video_full_url}}" muted controls object-fit="cover" data-id="{{item.id}}" bindtimeupdate="trackFeedTime" bindpause="pauseFeed"></video>
+          <view class="feed-segment">{{item.segment_label}}</view>
+          <view class="pause">Ⅱ</view>
+        </view>
+        <view class="feed-body">
+          <view class="creator">{{item.creator}}</view>
+          <view class="feed-title">{{item.feed_caption || item.name}}</view>
+          <view class="card-copy">{{item.description}}</view>
+          <button class="feed-cta" disabled="{{!item.reference_ready || !item.pauseReady}}" data-id="{{item.id}}" bindtap="chooseAction">{{item.reference_ready ? (item.pauseCopy || '播放视频，停在没看懂处') : '待配置参考片段'}}</button>
+        </view>
       </view>
-      <view class="feed-body">
-        <view class="creator">{{item.creator}}</view>
-        <view class="feed-title">{{item.feed_caption || item.name}}</view>
-        <view class="card-copy">{{item.description}}</view>
-        <button class="feed-cta" disabled="{{!item.reference_ready}}" data-id="{{item.id}}" bindtap="chooseAction">{{item.reference_ready ? item.entry_copy : '待配置参考片段'}}</button>
-      </view>
-    </view>
+    </block>
   </block>
 
-  <view class="hint">第一版用 3 个受控片段模拟“抖音 Feed 暂停”，不做整支舞评分。</view>
+  <view wx:if="{{insight}}" class="card">
+    <view class="section-label cyan">定格 {{insight.timestamp_seconds}} 秒 · {{insight.phase}}</view>
+    <video class="video-preview" src="{{selectedAction.feed_video_full_url}}" initial-time="{{insight.timestamp_seconds}}" controls muted object-fit="contain"></video>
+    <view class="creator card-gap">这一阶段常见卡点 · 个人诊断需上传模仿</view>
+    <view class="card-title card-gap">{{insight.likely_stuck_at}}</view>
+    <view class="card-copy">{{insight.watch_for}}</view>
+    <view class="search-title">
+      <view class="section-label cyan">先换个角度看</view>
+      <view class="card-title">背面、慢速和局部拆解</view>
+    </view>
+    <block wx:for="{{insight.search_results}}" wx:key="id">
+      <view class="search-card" data-url="{{item.url}}" bindtap="copySearch">
+        <view class="search-type">{{item.view_type}} · {{item.clip_seconds}}</view>
+        <view class="card-title">{{item.title}}</view>
+        <view class="card-copy">{{item.description}}</view>
+        <view class="search-open">复制搜索链接 →</view>
+      </view>
+    </block>
+    <button class="primary" bindtap="startPractice">拍一次，让 AI 找我的卡点</button>
+    <button class="ghost" bindtap="backToFeed">回到 Feed 重新定格</button>
+  </view>
+
+  <view class="hint">系统会把暂停点前后动作作为本次参考；判断“你卡在哪里”还需要一次 3–8 秒模仿。</view>
 </view>

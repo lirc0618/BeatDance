@@ -2,6 +2,15 @@ function apiBase() {
   return getApp().globalData.apiBase.replace(/\/$/, '');
 }
 
+function mediaBase() {
+  return apiBase().replace(/\/api\/v1$/, '');
+}
+
+function mediaUrl(path) {
+  if (!path || /^https?:\/\//.test(path)) return path || '';
+  return `${mediaBase()}${path.startsWith('/') ? path : `/${path}`}`;
+}
+
 function request(path, options = {}) {
   return new Promise((resolve, reject) => {
     wx.request({
@@ -19,7 +28,7 @@ function request(path, options = {}) {
   });
 }
 
-function uploadAnalysis({ filePath, actionId, baselineId, focus = 'auto' }) {
+function uploadAnalysis({ filePath, actionId, baselineId, focus = 'auto', pauseAt }) {
   return new Promise((resolve, reject) => {
     const formData = {
       action_id: actionId,
@@ -27,6 +36,9 @@ function uploadAnalysis({ filePath, actionId, baselineId, focus = 'auto' }) {
       focus
     };
     if (baselineId) formData.baseline_analysis_id = baselineId;
+    if (pauseAt) {
+      formData.pause_timestamp_seconds = pauseAt;
+    }
     wx.uploadFile({
       url: `${apiBase()}/analyze`,
       filePath,
@@ -44,4 +56,4 @@ function uploadAnalysis({ filePath, actionId, baselineId, focus = 'auto' }) {
   });
 }
 
-module.exports = { request, uploadAnalysis, apiBase };
+module.exports = { request, uploadAnalysis, apiBase, mediaUrl };

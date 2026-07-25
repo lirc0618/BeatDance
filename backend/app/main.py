@@ -1,8 +1,10 @@
 from __future__ import annotations
 
-from fastapi import FastAPI
+from pathlib import Path
+
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from .api import create_router
@@ -28,6 +30,22 @@ app.add_middleware(
 app.include_router(create_router(settings, analyzer), prefix=settings.api_prefix)
 app.mount("/media/visualizations", StaticFiles(directory=settings.visualizations_dir), name="visualizations")
 app.mount("/media/references", StaticFiles(directory=settings.references_dir), name="references")
+
+
+@app.get("/media/feed/{filename}", include_in_schema=False)
+async def feed_video(filename: str):
+    allowed = {
+        Path(item.get("feed_video_url", "")).name
+        for item in analyzer.registry.list()
+        if item.get("feed_video_url")
+    }
+    allowed.add("ATTRIBUTION.md")
+    if filename not in allowed:
+        raise HTTPException(status_code=404, detail="Feed 视频不存在")
+    path = settings.feed_dir / filename
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="Feed 视频不存在")
+    return FileResponse(path)
 
 if settings.h5_dir.exists():
     app.mount("/app", StaticFiles(directory=settings.h5_dir, html=True), name="h5")

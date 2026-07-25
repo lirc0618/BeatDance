@@ -1,18 +1,26 @@
 from __future__ import annotations
 
-import shutil
 from pathlib import Path
+from typing import Annotated
 
 from fastapi import APIRouter, File, Form, Header, HTTPException, UploadFile, status
 
 from .config import Settings
-from .schemas import ActionSummary, AnalysisResult, FocusKind, HealthResponse
+from .schemas import (
+    ActionSummary,
+    AnalysisResult,
+    FocusKind,
+    HealthResponse,
+    PauseInsight,
+    PauseInsightRequest,
+)
 from .services.analyzer import Analyzer, ReferenceNotReadyError
 from .services.video import VideoValidationError, probe_video, save_upload, validate_duration
 
 
 def create_router(settings: Settings, analyzer: Analyzer) -> APIRouter:
     router = APIRouter()
+    pause_coach = analyzer.pause_coach
 
     @router.get("/health", response_model=HealthResponse)
     async def health() -> HealthResponse:
@@ -34,7 +42,8 @@ def create_router(settings: Settings, analyzer: Analyzer) -> APIRouter:
                 description=item["description"],
                 duration_hint=item.get("duration_hint", "3–8 秒"),
                 cover_url=item.get("cover_url", ""),
-                reference_video_url=item.get("reference_video_url", ""),
+                reference_video_url=analyzer.reference_video_url(item["id"]),
+                feed_video_url=item.get("feed_video_url", item.get("reference_video_url", "")),
                 feed_caption=item.get("feed_caption", ""),
                 creator=item.get("creator", ""),
                 segment_label=item.get("segment_label", ""),
@@ -45,11 +54,23 @@ def create_router(settings: Settings, analyzer: Analyzer) -> APIRouter:
             for item in analyzer.registry.list()
         ]
 
+    @router.post("/actions/{action_id}/pause-insight", response_model=PauseInsight)
+    async def explain_pause(action_id: str, payload: PauseInsightRequest) -> PauseInsight:
+        try:
+            return pause_coach.explain(
+                action_id,
+                timestamp_seconds=payload.timestamp_seconds,
+            )
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+
     @router.post("/actions/{action_id}/reference")
     async def upload_reference(
         action_id: str,
-        video: UploadFile = File(...),
-        x_admin_token: str = Header(default=""),
+        video: Annotated[UploadFile, File()],
+        x_admin_token: Annotated[str, Header()] = "",
     ) -> dict:
         if x_admin_token != settings.admin_token:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="管理员令牌无效")
@@ -70,18 +91,31 @@ def create_router(settings: Settings, analyzer: Analyzer) -> APIRouter:
 
     @router.post("/analyze", response_model=AnalysisResult)
     async def analyze_video(
-        video: UploadFile = File(...),
-        action_id: str = Form(...),
-        session_id: str = Form(...),
-        baseline_analysis_id: str | None = Form(default=None),
-        focus: FocusKind = Form(default="auto"),
+        video: Annotated[UploadFile, File()],
+        action_id: Annotated[str, Form()],
+        session_id: Annotated[str, Form()],
+        baseline_analysis_id: Annotated[str | None, Form()] = None,
+        focus: Annotated[FocusKind, Form()] = "auto",
+        pause_timestamp_seconds: Annotated[float | None, Form()] = None,
     ) -> AnalysisResult:
         path: Path | None = None
         try:
+            pause_insight = (
+                pause_coach.explain(action_id, pause_timestamp_seconds)
+                if pause_timestamp_seconds is not None
+                else None
+            )
             path = await save_upload(video, settings.uploads_dir, settings.max_upload_mb)
             metadata = probe_video(path)
             validate_duration(metadata, settings.min_video_seconds, settings.max_video_seconds)
-            result = await analyzer.analyze(action_id, session_id, path, baseline_analysis_id, focus=focus)
+            result = await analyzer.analyze(
+                action_id,
+                session_id,
+                path,
+                baseline_analysis_id,
+                focus=focus,
+                pause_insight=pause_insight,
+            )
             return result
         except KeyError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc

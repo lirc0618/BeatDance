@@ -1,0 +1,12 @@
+.git
+.venv
+.env
+data
+node_modules
+test-results
+playwright-report
+assets/samples/open_sources/*
+!assets/samples/open_sources/six_step_tutorial.mp4
+!assets/samples/open_sources/arm_movements_veil.mp4
+!assets/samples/open_sources/tendu_tutorial.mp4
+!assets/samples/open_sources/ATTRIBUTION.md

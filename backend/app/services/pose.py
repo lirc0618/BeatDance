@@ -7,7 +7,6 @@ import cv2
 import mediapipe as mp
 import numpy as np
 
-
 # MediaPipe Pose 33 点左右映射。
 LEFT_RIGHT_PAIRS = [
     (1, 4), (2, 5), (3, 6), (7, 8), (9, 10),
@@ -36,7 +35,7 @@ class PoseSequence:
         )
 
     @classmethod
-    def load(cls, path: Path) -> "PoseSequence":
+    def load(cls, path: Path) -> PoseSequence:
         data = np.load(path)
         return cls(
             landmarks=data["landmarks"],

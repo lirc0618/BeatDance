@@ -9,16 +9,29 @@ Base URL：`/api/v1`
 ```json
 {
   "id": "arm_wave",
-  "name": "手臂波浪·肩肘腕传递",
-  "feed_caption": "不是手甩过去，是一节一节把波浪送过去。",
-  "creator": "@动作拆解实验室",
-  "segment_label": "00:03–00:07 · 手部卡点",
+  "name": "手臂路线·越顶与落位",
+  "feed_caption": "手臂越过头顶时，肘和手腕到底沿哪条路线走？",
+  "creator": "@Fabiola Mastache · CC BY-SA 4.0",
+  "segment_label": "12 秒手臂片段 · 任意暂停",
   "entry_copy": "定格看手怎么走",
+  "feed_video_url": "/media/feed/arm_movements_veil.mp4",
   "reference_video_url": "/media/references/arm_wave.mp4",
   "reference_ready": true,
   "tutorial_count": 5
 }
 ```
+
+## POST /actions/{action_id}/pause-insight
+
+JSON 请求：
+
+```json
+{"timestamp_seconds": 18.0}
+```
+
+服务端读取 Feed 的真实时长与暂停点前后 1.5 秒画面，返回动作阶段、实际画面
+运动观察、采样帧数、可能难点，以及按“背面跟练、慢速分拍、局部特写”排列
+的三种搜索结果。
 
 ## POST /analyze
 
@@ -28,6 +41,7 @@ Base URL：`/api/v1`
 - `action_id`：Feed 片段 ID；
 - `session_id`：匿名会话；
 - `focus`：`auto | upper | lower | timing`；
+- `pause_timestamp_seconds`：Feed 暂停秒数；
 - `baseline_analysis_id`：二练时可选。
 
 新增核心响应：
@@ -35,13 +49,19 @@ Base URL：`/api/v1`
 ```json
 {
   "trigger_source": "feed_pause",
+  "source_timestamp_seconds": 18.0,
+  "source_feed_duration_seconds": 106.52,
+  "source_context_start_seconds": 16.5,
+  "source_context_end_seconds": 19.5,
+  "source_phase": "动作进入",
+  "reference_source": "feed_pause_context",
   "diagnosis": {
     "primary_error": "右臂动作提前",
     "user_focus": "upper",
-    "search_query": "手臂波浪 右臂 拍点 慢速分拍 背面跟练",
+    "search_query": "手臂路线 右臂 拍点 慢速分拍 背面跟练",
     "search_results": [
       {
-        "title": "三拍启动：肩、肘、腕不要一起动",
+        "title": "慢速启动：肩、肘、腕不要一起动",
         "view_type": "慢速分拍",
         "why_matched": "对应当前主要卡点、身体区域一致"
       }

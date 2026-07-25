@@ -1,14 +1,14 @@
 [
   {
     "sample_id": "breakdance_6_step",
-    "commons_filename": "6-step example.webm",
-    "source_page": "https://commons.wikimedia.org/wiki/File:6-step_example.webm",
+    "commons_filename": "6-step example.gif",
+    "source_page": "https://commons.wikimedia.org/wiki/File:6-step_example.gif",
     "author": "Neil Sweeney",
-    "license_name": "CC BY 3.0",
-    "license_url": "https://creativecommons.org/licenses/by/3.0/",
+    "license_name": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
     "description": "4 秒 breakdance 六步动作；适合测试全身快速动作和地面姿态。",
     "expected_duration_seconds": 4.0,
-    "download_url": "https://commons.wikimedia.org/wiki/Special:Redirect/file/6-step%20example.webm",
+    "download_url": "https://commons.wikimedia.org/wiki/Special:Redirect/file/6-step%20example.gif",
     "local_file": "breakdance_6_step.mp4"
   },
   {
@@ -34,5 +34,53 @@
     "expected_duration_seconds": 3.8,
     "download_url": "https://commons.wikimedia.org/wiki/Special:Redirect/file/Simple%20step%20demo.ogv",
     "local_file": "simple_step.mp4"
+  },
+  {
+    "sample_id": "six_step_tutorial",
+    "commons_filename": "Tutorial breakdance - Six Step.webm",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Tutorial_breakdance_-_Six_Step.webm",
+    "author": "Neil Sweeney",
+    "license_name": "CC BY 3.0",
+    "license_url": "https://creativecommons.org/licenses/by/3.0/",
+    "description": "107 秒 breakdance 六步完整教程；用于测试长 Feed 的任意时刻暂停。",
+    "expected_duration_seconds": 107.0,
+    "download_url": "https://commons.wikimedia.org/wiki/Special:Redirect/file/Tutorial%20breakdance%20-%20Six%20Step.webm",
+    "local_file": "six_step_tutorial.mp4"
+  },
+  {
+    "sample_id": "arm_movements_veil",
+    "commons_filename": "Movimientos con velo.webm",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Movimientos_con_velo.webm",
+    "author": "Fabiola Mastache",
+    "license_name": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "description": "12 秒竖屏手臂运动片段；用于测试手部动作暂停与局部解释。",
+    "expected_duration_seconds": 12.0,
+    "download_url": "https://commons.wikimedia.org/wiki/Special:Redirect/file/Movimientos%20con%20velo.webm",
+    "local_file": "arm_movements_veil.mp4"
+  },
+  {
+    "sample_id": "cha_cha_dance",
+    "commons_filename": "Cha cha cha(Dance).webm",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Cha_cha_cha(Dance).webm",
+    "author": "Wpzhiyilee",
+    "license_name": "CC BY-SA 3.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/3.0/",
+    "description": "48 秒恰恰舞片段；用于测试长 Feed 脚步动作的暂停定位。",
+    "expected_duration_seconds": 48.0,
+    "download_url": "https://commons.wikimedia.org/wiki/Special:Redirect/file/Cha%20cha%20cha%28Dance%29.webm",
+    "local_file": "cha_cha_dance.mp4"
+  },
+  {
+    "sample_id": "tendu_tutorial",
+    "commons_filename": "Tendu, ballet technique tutorial.webm",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Tendu,_ballet_technique_tutorial.webm",
+    "author": "Tcshaw427",
+    "license_name": "CC BY-SA 3.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/3.0/",
+    "description": "16 秒单人芭蕾脚尖伸展教程；用于测试落点、方向与回位暂停。",
+    "expected_duration_seconds": 16.0,
+    "download_url": "https://commons.wikimedia.org/wiki/Special:Redirect/file/Tendu%2C%20ballet%20technique%20tutorial.webm",
+    "local_file": "tendu_tutorial.mp4"
   }
 ]

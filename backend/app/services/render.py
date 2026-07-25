@@ -8,7 +8,6 @@ import numpy as np
 from .pose import PoseSequence
 from .video import read_frame_at
 
-
 CONNECTIONS = [
     (11, 12), (11, 13), (13, 15), (12, 14), (14, 16),
     (11, 23), (12, 24), (23, 24), (23, 25), (25, 27),

@@ -1,0 +1,10 @@
+{
+  "name": "dingge-coach-acceptance",
+  "private": true,
+  "scripts": {
+    "test:h5": "playwright test h5/tests --reporter=line"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.62.0"
+  }
+}

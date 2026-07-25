@@ -4,6 +4,7 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
 import numpy as np
 
@@ -18,7 +19,6 @@ from .features import (
     phase_name,
     pose_feature_matrix,
 )
-
 
 UPPER_WORDS = ("臂", "肘", "肩", "腕", "手", "躯干")
 LOWER_WORDS = ("腿", "膝", "髋", "脚", "踝")
@@ -54,6 +54,15 @@ def _focus_aware_max(values: dict[str, float], focus: FocusKind, absolute: bool 
     if score(focused_best) >= score(global_best) * 0.70:
         return focused_best
     return global_best
+
+
+def _tutorial_result(action: dict[str, Any], item: dict[str, Any], reason: str) -> Tutorial:
+    payload = dict(item)
+    payload["why_matched"] = reason
+    if not payload.get("url"):
+        query = quote(f"{action['name']} {item['title']}", safe="")
+        payload["url"] = f"https://www.douyin.com/search/{query}"
+    return Tutorial(**payload)
 
 
 class ActionRegistry:
@@ -114,18 +123,14 @@ class ActionRegistry:
             view = str(item.get("view_type", "微练习"))
             if view in used_views:
                 continue
-            payload = dict(item)
-            payload["why_matched"] = reason
-            picked.append(Tutorial(**payload))
+            picked.append(_tutorial_result(action, item, reason))
             used_views.add(view)
             if len(picked) >= limit:
                 return picked
         for _, item, reason in scored:
             if any(existing.id == item.get("id") for existing in picked):
                 continue
-            payload = dict(item)
-            payload["why_matched"] = reason
-            picked.append(Tutorial(**payload))
+            picked.append(_tutorial_result(action, item, reason))
             if len(picked) >= limit:
                 break
         return picked
@@ -317,5 +322,19 @@ def compare_poses(
     )
 
 
-def composite_score(diagnosis: Diagnosis) -> float:
-    return float(np.mean([metric.normalized_score for metric in diagnosis.metrics]))
+def calculate_improvement(baseline: Diagnosis, current: Diagnosis) -> tuple[bool, float]:
+    """Compare the second attempt against the first attempt's primary card point."""
+
+    target_metric = baseline.primary_metric
+    # Normalized scores are capped at 1.0 for diagnosis display. Comparing the
+    # uncapped measurement preserves visible progress when both attempts exceed
+    # the diagnosis threshold.
+    baseline_score = next(
+        metric.score for metric in baseline.metrics if metric.kind == target_metric
+    )
+    current_score = next(
+        metric.score for metric in current.metrics if metric.kind == target_metric
+    )
+    percentage = (baseline_score - current_score) / max(baseline_score, 1e-6) * 100.0
+    improved = current.status == "aligned" or percentage > 5.0
+    return improved, percentage

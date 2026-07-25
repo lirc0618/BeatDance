@@ -4,7 +4,8 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-import httpx
+
+from http_client import build_http_client
 
 
 def main() -> None:
@@ -15,12 +16,11 @@ def main() -> None:
     parser.add_argument("--video", required=True, type=Path)
     args = parser.parse_args()
 
-    with args.video.open("rb") as handle:
-        response = httpx.post(
+    with build_http_client(timeout=180, api_url=args.api) as client, args.video.open("rb") as handle:
+        response = client.post(
             f"{args.api.rstrip('/')}/actions/{args.action}/reference",
             files={"video": (args.video.name, handle, "video/mp4")},
             headers={"X-Admin-Token": args.token},
-            timeout=180,
         )
     print(response.status_code, response.text)
     response.raise_for_status()

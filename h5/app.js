@@ -1,52 +1,146 @@
-const API = (new URLSearchParams(location.search).get('api') || '').replace(/\/$/, '') + '/api/v1';
+const API_BASE = (new URLSearchParams(location.search).get('api') || location.origin).replace(/\/$/, '');
+const API = `${API_BASE}/api/v1`;
+const MEDIA_ORIGIN = new URL(API_BASE, location.origin).origin;
 const state = {
   actions: [], action: null, file: null, focus: 'auto',
   sessionId: localStorage.getItem('freezeCoachSession') || crypto.randomUUID(),
-  baselineId: null
+  baselineId: null, pausedAt: null, feedDuration: null, pauseInsight: null
 };
 localStorage.setItem('freezeCoachSession', state.sessionId);
 
 const el = (id) => document.getElementById(id);
-const sections = ['step-actions', 'step-upload', 'loading', 'result'];
+el('video-attribution').href = mediaUrl('/media/feed/ATTRIBUTION.md');
+const sections = ['step-actions', 'step-insight', 'step-upload', 'loading', 'result'];
 function show(id) { sections.forEach((name) => el(name).classList.toggle('hidden', name !== id)); }
-function mediaUrl(path) { return path?.startsWith('http') ? path : `${location.origin}${path}`; }
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, character => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[character]);
+}
+function safeUrl(value, base = MEDIA_ORIGIN) {
+  try {
+    const url = new URL(value, base);
+    return ['http:', 'https:'].includes(url.protocol) ? url.href : '';
+  } catch {
+    return '';
+  }
+}
+function mediaUrl(path) { return safeUrl(path); }
+function formatTime(seconds) {
+  const minutes = Math.floor(seconds / 60);
+  const remainder = (seconds % 60).toFixed(1).padStart(4, '0');
+  return `${String(minutes).padStart(2, '0')}:${remainder}`;
+}
+
+function searchCards(results) {
+  return results.map((item, index) => `
+    <a class="search-card" href="${escapeHtml(safeUrl(item.url) || '#')}" target="_blank" rel="noopener noreferrer">
+      <div class="rank">0${index + 1}</div>
+      <div>
+        <span>${escapeHtml(item.view_type)}${item.clip_seconds ? ` · ${escapeHtml(item.clip_seconds)}` : ''}</span>
+        <strong>${escapeHtml(item.title)}</strong>
+        <p>${escapeHtml(item.description)}</p>
+        <small>${escapeHtml(item.why_matched || '与当前卡点匹配')}${item.creator ? ` · ${escapeHtml(item.creator)}` : ''}</small>
+      </div>
+    </a>`).join('');
+}
 
 async function loadActions() {
   const response = await fetch(`${API}/actions`);
   if (!response.ok) throw new Error('无法加载 Feed 片段');
   state.actions = await response.json();
   el('action-list').innerHTML = state.actions.map((action, index) => `
-    <article class="feed-card" data-id="${action.id}">
-      <div class="feed-visual visual-${index + 1}">
-        <span>${action.segment_label || '动作片段'}</span>
+    <article class="feed-card" data-id="${escapeHtml(action.id)}">
+      <div class="feed-visual visual-${index + 1} ${action.reference_ready ? 'has-video' : 'placeholder'}">
+        ${action.reference_ready ? `<video class="feed-video" src="${escapeHtml(mediaUrl(action.feed_video_url || action.reference_video_url))}" muted playsinline controls preload="metadata"></video>` : ''}
+        <span>${escapeHtml(action.segment_label || '动作片段')}</span>
         <b>Ⅱ</b>
       </div>
       <div class="feed-body">
-        <small>${action.creator || '@创作者'}</small>
-        <strong>${action.feed_caption || action.name}</strong>
-        <p>${action.description}</p>
-        <button data-id="${action.id}" ${action.reference_ready ? '' : 'disabled'}>
-          ${action.reference_ready ? (action.entry_copy || '定格学这一招') : '待配置参考片段'}
+        <small>${escapeHtml(action.creator || '@创作者')}</small>
+        <strong>${escapeHtml(action.feed_caption || action.name)}</strong>
+        <p>${escapeHtml(action.description)}</p>
+        <button data-id="${escapeHtml(action.id)}" disabled>
+          ${action.reference_ready ? '播放视频，停在没看懂处' : '待配置参考片段'}
         </button>
       </div>
     </article>`).join('');
-  document.querySelectorAll('.feed-card button:not(:disabled)').forEach(button => {
+  document.querySelectorAll('.feed-card button[data-id]').forEach(button => {
     button.addEventListener('click', (event) => {
       event.stopPropagation();
-      selectAction(button.dataset.id);
+      requestPauseInsight(button.dataset.id);
+    });
+  });
+  document.querySelectorAll('.feed-card .feed-video').forEach(video => {
+    const card = video.closest('.feed-card');
+    const button = card.querySelector('button');
+    video.addEventListener('play', () => {
+      button.disabled = true;
+      button.textContent = '看到没懂的地方就暂停';
+    });
+    video.addEventListener('pause', () => {
+      if (video.ended || video.currentTime <= 0 || !Number.isFinite(video.duration)) return;
+      card.dataset.pausedAt = String(video.currentTime);
+      card.dataset.duration = String(video.duration);
+      button.disabled = false;
+      button.textContent = `分析 ${formatTime(video.currentTime)} 这一秒`;
     });
   });
 }
 
-function selectAction(id) {
+async function requestPauseInsight(id) {
+  const card = Array.from(document.querySelectorAll('.feed-card')).find(
+    item => item.dataset.id === id
+  );
+  if (!card) return;
+  const pausedAt = Number(card.dataset.pausedAt);
+  const duration = Number(card.dataset.duration);
+  if (!Number.isFinite(pausedAt) || !Number.isFinite(duration)) return;
   state.action = state.actions.find(item => item.id === id);
+  state.pausedAt = pausedAt;
+  state.feedDuration = duration;
+  el('loading-copy').textContent = '读取暂停点 → 截取前后动作 → 匹配拆解方向';
+  show('loading');
+  try {
+    const response = await fetch(`${API}/actions/${id}/pause-insight`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ timestamp_seconds: pausedAt })
+    });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.detail || '暂停点分析失败');
+    renderPauseInsight(payload);
+  } catch (error) {
+    alert(error.message);
+    show('step-actions');
+  }
+}
+
+function renderPauseInsight(insight) {
+  state.pauseInsight = insight;
+  const preview = el('pause-preview');
+  preview.src = mediaUrl(state.action.feed_video_url || state.action.reference_video_url);
+  preview.addEventListener('loadedmetadata', () => {
+    preview.currentTime = insight.timestamp_seconds;
+    preview.pause();
+  }, { once: true });
+  el('pause-time').textContent = `定格 ${formatTime(insight.timestamp_seconds)}`;
+  el('pause-context').textContent = `正在看 ${formatTime(insight.context_start_seconds)}–${formatTime(insight.context_end_seconds)} 的动作上下文。`;
+  el('pause-phase').textContent = insight.phase;
+  el('pause-stuck').textContent = insight.likely_stuck_at;
+  el('pause-watch').textContent = insight.watch_for;
+  el('pause-search-results').innerHTML = searchCards(insight.search_results);
+  show('step-insight');
+}
+
+function selectAction() {
   state.file = null;
-  state.focus = 'auto';
-  document.querySelectorAll('#focus-chips button').forEach((button) => button.classList.toggle('active', button.dataset.focus === 'auto'));
+  state.focus = state.pauseInsight?.suggested_focus || 'auto';
+  document.querySelectorAll('#focus-chips button').forEach((button) => button.classList.toggle('active', button.dataset.focus === state.focus));
   el('selected-action').innerHTML = `
-    <span>${state.action.segment_label}</span>
-    <strong>${state.action.name}</strong>
-    <p>${state.action.feed_caption}</p>`;
+    <span>定格 ${formatTime(state.pausedAt)} · ${escapeHtml(state.pauseInsight.phase)}</span>
+    <strong>${escapeHtml(state.action.name)}</strong>
+    <p>${escapeHtml(state.pauseInsight.likely_stuck_at)}</p>`;
   el('video-input').value = '';
   el('video-preview').classList.add('hidden');
   el('analyze-button').disabled = true;
@@ -76,6 +170,9 @@ async function analyze() {
   form.append('action_id', state.action.id);
   form.append('session_id', state.sessionId);
   form.append('focus', state.focus);
+  if (state.pausedAt !== null) {
+    form.append('pause_timestamp_seconds', String(state.pausedAt));
+  }
   if (state.baselineId) form.append('baseline_analysis_id', state.baselineId);
   try {
     const response = await fetch(`${API}/analyze`, { method: 'POST', body: form });
@@ -99,8 +196,8 @@ function renderResult(result) {
   el('search-query').textContent = d.search_query || '';
   el('metric-grid').innerHTML = d.metrics.map(item => `
     <div class="metric">
-      <span>${({timing:'节奏', trajectory:'路线', angle:'幅度'})[item.kind]} · ${item.body_part}</span>
-      <strong>${item.human_value}</strong>
+      <span>${({timing:'节奏', trajectory:'路线', angle:'幅度'})[item.kind]} · ${escapeHtml(item.body_part)}</span>
+      <strong>${escapeHtml(item.human_value)}</strong>
       <div class="metric-track"><i style="width:${Math.round(item.normalized_score * 100)}%"></i></div>
     </div>`).join('');
 
@@ -111,25 +208,18 @@ function renderResult(result) {
   } else image.classList.add('hidden');
 
   const searchResults = d.search_results || (d.tutorial ? [d.tutorial] : []);
-  el('search-results').innerHTML = searchResults.map((item, index) => `
-    <article class="search-card">
-      <div class="rank">0${index + 1}</div>
-      <div>
-        <span>${item.view_type}${item.clip_seconds ? ` · ${item.clip_seconds}` : ''}</span>
-        <strong>${item.title}</strong>
-        <p>${item.description}</p>
-        <small>${item.why_matched || '与当前卡点匹配'}${item.creator ? ` · ${item.creator}` : ''}</small>
-      </div>
-    </article>`).join('');
+  el('search-results').innerHTML = searchCards(searchResults);
 
   el('improvement').classList.toggle('hidden', !result.improvement);
   if (result.improvement) el('improvement').textContent = result.improvement.message;
-  el('warnings').innerHTML = (result.warnings || []).map(item => `<div>提示：${item}</div>`).join('');
+  el('warnings').innerHTML = (result.warnings || []).map(item => `<div>提示：${escapeHtml(item)}</div>`).join('');
   if (!state.baselineId) state.baselineId = result.id;
   show('result');
 }
 
 el('analyze-button').addEventListener('click', analyze);
+el('practice-button').addEventListener('click', selectAction);
+el('insight-back').addEventListener('click', () => show('step-actions'));
 el('change-action').addEventListener('click', () => { state.baselineId = null; show('step-actions'); });
 el('restart-button').addEventListener('click', () => { state.baselineId = null; show('step-actions'); });
 el('retry-button').addEventListener('click', () => {
@@ -143,5 +233,5 @@ el('retry-button').addEventListener('click', () => {
 });
 
 loadActions().catch(error => {
-  el('action-list').innerHTML = `<p>服务未连接：${error.message}<br>可用 ?api=https://你的域名 指定 API。</p>`;
+  el('action-list').innerHTML = `<p>服务未连接：${escapeHtml(error.message)}<br>可用 ?api=https://你的域名 指定 API。</p>`;
 });

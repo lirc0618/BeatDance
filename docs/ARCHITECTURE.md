@@ -4,10 +4,13 @@
 
 ```mermaid
 flowchart LR
-    A[模拟抖音 Feed 片段] --> B[用户暂停并选择关注点]
-    B --> C[微信小程序 / H5 上传模仿]
-    C --> D[FastAPI 视频校验与抽帧]
-    D --> E[MediaPipe Pose]
+    A[受控动作 Feed] --> B[真实暂停事件与准确时间点]
+    B --> C[服务端校验时长并读取前后 1.5 秒真实帧]
+    C --> C1[动作阶段与画面运动解释]
+    C1 --> D0[用户选择关注点并上传模仿]
+    D0 --> D[FastAPI 视频校验与抽帧]
+    C --> E[暂停上下文 MediaPipe Pose]
+    D --> E[用户模仿 MediaPipe Pose]
     E --> F[镜像校正与骨架归一化]
     F --> G[DTW 时序对齐]
     G --> H[节奏 / 路线 / 幅度卡点]
@@ -33,6 +36,7 @@ v1 在诊断后只返回一个教学项；v2 增加了明确的视觉搜索层�
 ## 模型分工
 
 - MediaPipe：连续人体关键点；
+- OpenCV / FFmpeg：读取真实 Feed 帧并原子生成暂停上下文；
 - DTW / 数值规则：计算动作差异；
 - 标签检索：决定“该看哪种内容”；
 - 豆包 VLM：结合关键帧核验语境，生成一句谨慎反馈；
@@ -44,9 +48,11 @@ v1 在诊断后只返回一个教学项；v2 增加了明确的视觉搜索层�
 HTTPS 域名
 └── Docker / FastAPI
     ├── /api/v1/actions
+    ├── /api/v1/actions/{id}/pause-insight
     ├── /api/v1/analyze
     ├── /app/                 H5
-    ├── /media/references/    Feed 参考片段
+    ├── /media/feed/          开放许可 Feed 视频
+    ├── /media/references/    同源短诊断参考
     ├── /media/visualizations/
     └── /data/
 ```

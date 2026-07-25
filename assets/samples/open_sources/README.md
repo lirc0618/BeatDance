@@ -1,17 +1,26 @@
 # 开放动作样例
 
-项目已打包一条真实动作样例：
+项目已打包用于上传诊断和 Feed 暂停测试的开放动作样例：
 
 - `breakdance_6_step.gif`：Wikimedia Commons 原始动画；
 - `breakdance_6_step.mp4`：由该动画转码得到的 4 秒 H.264 测试视频。
+- `breakdance_2_step.mp4`：6.1 秒 breakdance 两步示范；
+- `simple_step.mp4`：3.8 秒简单踏步。
+- `six_step_tutorial.mp4`：106.5 秒六步完整教程；
+- `arm_movements_veil.mp4`：12 秒手臂路线片段；
+- `tendu_tutorial.mp4`：16.3 秒 Tendu 单人教程；
+- `arm_movements_reference.mp4`、`tendu_reference.mp4`：从对应 Feed 截取的
+  5 秒同源诊断参考。
 
 运行实际视频链路烟雾测试：
 
 ```bash
-PYTHONPATH=backend python scripts/video_sample_smoke_test.py
+make video-smoke
 ```
 
-该测试验证真实文件的解码、3–8 秒时长校验、随机帧读取和 FFmpeg 归一化。完整姿态提取必须在项目的 Python 3.11 Docker 环境中运行，因为 MediaPipe 没有 Python 3.13 官方轮子。
+该测试验证真实文件的解码、3–8 秒时长校验、随机帧读取和 FFmpeg 归一化。
+完整本地流程使用 Python 3.11 环境，已覆盖 MediaPipe 姿态提取、DTW、诊断、
+搜索召回和二练验证。
 
 另外可在联网环境运行：
 

@@ -1,9 +1,12 @@
 from pathlib import Path
 
 import numpy as np
+import pytest
 
-from app.services.diagnosis import ActionRegistry, compare_poses
+from app.schemas import Diagnosis, MetricDetail
+from app.services.diagnosis import ActionRegistry, calculate_improvement, compare_poses
 from app.services.features import NormalizedPose
+from app.services.pause_coach import PauseCoach
 
 
 def _skeleton(frame_count: int = 60) -> np.ndarray:
@@ -106,6 +109,7 @@ def test_card_point_search_returns_diverse_views():
     assert len({item.view_type for item in results}) == 3
     assert results[0].error_type == "timing"
     assert results[0].why_matched
+    assert all(item.url.startswith("https://www.douyin.com/search/") for item in results)
 
 
 def test_timing_focus_is_preserved_in_result():
@@ -128,3 +132,132 @@ def test_timing_focus_is_preserved_in_result():
     assert result.diagnosis.user_focus == "timing"
     assert "慢速分拍" in result.diagnosis.search_query
     assert len(result.diagnosis.search_results) == 3
+
+
+def test_improvement_tracks_the_original_primary_metric():
+    def diagnosis(timing: float, trajectory: float, angle: float) -> Diagnosis:
+        return Diagnosis(
+            action_id="arm_wave",
+            phase="起势",
+            primary_metric="timing",
+            primary_error="右臂动作延后",
+            body_part="右臂",
+            priority_feedback="先修拍点",
+            drill="只练右臂",
+            confidence=0.8,
+            metrics=[
+                MetricDetail(
+                    kind="timing",
+                    score=timing,
+                    normalized_score=timing,
+                    body_part="右臂",
+                    phase="起势",
+                    human_value="",
+                ),
+                MetricDetail(
+                    kind="trajectory",
+                    score=trajectory,
+                    normalized_score=trajectory,
+                    body_part="右臂",
+                    phase="起势",
+                    human_value="",
+                ),
+                MetricDetail(
+                    kind="angle",
+                    score=angle,
+                    normalized_score=angle,
+                    body_part="右肘",
+                    phase="起势",
+                    human_value="",
+                ),
+            ],
+        )
+
+    baseline = diagnosis(timing=0.8, trajectory=1.0, angle=1.0)
+    current = diagnosis(timing=0.9, trajectory=0.0, angle=0.0)
+
+    improved, percentage = calculate_improvement(baseline, current)
+
+    assert improved is False
+    assert percentage < 0
+
+
+def test_improvement_uses_raw_score_when_normalized_values_are_saturated():
+    def diagnosis(score: float) -> Diagnosis:
+        return Diagnosis(
+            action_id="groove_step",
+            phase="起势",
+            primary_metric="timing",
+            primary_error="躯干动作延后",
+            body_part="躯干",
+            priority_feedback="先修拍点",
+            drill="只练躯干",
+            confidence=0.8,
+            metrics=[
+                MetricDetail(
+                    kind="timing",
+                    score=score,
+                    normalized_score=1.0,
+                    body_part="躯干",
+                    phase="起势",
+                    human_value="",
+                ),
+                MetricDetail(
+                    kind="trajectory",
+                    score=1.0,
+                    normalized_score=1.0,
+                    body_part="躯干",
+                    phase="起势",
+                    human_value="",
+                ),
+                MetricDetail(
+                    kind="angle",
+                    score=1.0,
+                    normalized_score=1.0,
+                    body_part="躯干",
+                    phase="起势",
+                    human_value="",
+                ),
+            ],
+        )
+
+    improved, percentage = calculate_improvement(
+        diagnosis(score=1.4),
+        diagnosis(score=0.7),
+    )
+
+    assert improved is True
+    assert percentage == pytest.approx(50.0)
+
+
+def test_pause_coach_explains_the_exact_moment_with_context_and_searches(tmp_path):
+    registry = ActionRegistry(Path(__file__).parents[1] / "app" / "data" / "actions.json")
+    feed_dir = Path(__file__).parents[2] / "assets" / "samples" / "open_sources"
+    coach = PauseCoach(registry, feed_dir, tmp_path)
+
+    insight = coach.explain("groove_step", timestamp_seconds=18.0)
+
+    assert insight.timestamp_seconds == 18.0
+    assert insight.feed_duration_seconds == 106.52
+    assert insight.context_start_seconds == 16.5
+    assert insight.context_end_seconds == 19.5
+    assert insight.phase == "动作进入"
+    assert insight.likely_stuck_at
+    assert insight.watch_for
+    assert insight.observed_motion
+    assert insight.sampled_frame_count >= 20
+    assert insight.suggested_focus == "lower"
+    assert [item.view_type for item in insight.search_results] == [
+        "背面跟练",
+        "慢速分拍",
+        "局部特写",
+    ]
+
+
+def test_pause_coach_rejects_a_timestamp_outside_the_feed(tmp_path):
+    registry = ActionRegistry(Path(__file__).parents[1] / "app" / "data" / "actions.json")
+    feed_dir = Path(__file__).parents[2] / "assets" / "samples" / "open_sources"
+    coach = PauseCoach(registry, feed_dir, tmp_path)
+
+    with pytest.raises(ValueError, match="暂停时间点必须位于视频时长范围内"):
+        coach.explain("groove_step", timestamp_seconds=1000.0)

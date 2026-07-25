@@ -3,7 +3,7 @@ const { uploadAnalysis } = require('../../utils/api');
 Page({
   data: {
     actionId: '', actionName: '', segment: '', caption: '', filePath: '',
-    analyzing: false, baselineId: '', focus: 'auto',
+    analyzing: false, baselineId: '', focus: 'auto', pauseAt: '',
     focusOptions: [
       { id: 'auto', label: '我也说不清' },
       { id: 'upper', label: '手部没看懂' },
@@ -18,7 +18,8 @@ Page({
       segment: decodeURIComponent(options.segment || ''),
       caption: decodeURIComponent(options.caption || ''),
       baselineId: options.baselineId || '',
-      focus: options.focus || 'auto'
+      focus: options.focus || 'auto',
+      pauseAt: options.pauseAt || ''
     });
   },
   selectFocus(event) { this.setData({ focus: event.currentTarget.dataset.focus }); },
@@ -42,7 +43,8 @@ Page({
         filePath: this.data.filePath,
         actionId: this.data.actionId,
         baselineId: this.data.baselineId,
-        focus: this.data.focus
+        focus: this.data.focus,
+        pauseAt: this.data.pauseAt
       });
       wx.setStorageSync(`analysis:${result.id}`, result);
       wx.redirectTo({ url: `/pages/result/result?id=${result.id}` });

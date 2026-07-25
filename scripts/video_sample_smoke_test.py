@@ -14,9 +14,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 import tempfile
 from dataclasses import asdict
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 
 from app.services.video import normalize_video, probe_video, read_frame_at, validate_duration
 
