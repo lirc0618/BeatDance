@@ -320,13 +320,13 @@ def compare_poses(
     elif primary_metric == "trajectory":
         body_part = trajectory_group
         primary_error = f"{body_part}的导航走偏了"
-        feedback = f"拍子没大问题，是{body_part}绕了点路。只看“从哪出发、最后停哪”。"
+        feedback = f"先把注意力放在{body_part}：它这次绕了点路。只看“从哪出发、最后停哪”。"
         drill = f"开 0.5 倍速，把{body_part}当成鼠标光标，沿同一条路走 3 遍。"
         ref_key, cand_key = trajectory_peak[trajectory_group]
     else:
         body_part = angle_joint
         primary_error = f"{body_part}这张“定格照”还没摆到位"
-        feedback = f"方向已经对了，就差{body_part}最后那一下。先把造型摆像，再追求连贯。"
+        feedback = f"先把注意力放在{body_part}。把这个造型摆得更像，再追求连贯。"
         drill = f"停在最大动作那一帧 2 秒，照着摆{body_part}，摆对再连起来。"
         ref_key, cand_key = angle_peak[angle_joint]
 
@@ -352,7 +352,9 @@ def compare_poses(
             body_part=timing_group,
             phase=phase,
             human_value=(
-                f"快了 {abs(timing_offset):.1f} 秒"
+                "基本同步"
+                if abs(timing_offset) < 0.05
+                else f"快了 {abs(timing_offset):.1f} 秒"
                 if timing_offset < 0
                 else f"慢了 {abs(timing_offset):.1f} 秒"
             ),
@@ -364,7 +366,13 @@ def compare_poses(
             body_part=trajectory_group,
             phase=phase,
             human_value=(
-                "稍微走偏" if trajectory_norm < 0.45 else "绕了点路" if trajectory_norm < 0.8 else "明显走偏"
+                "路线很稳"
+                if trajectory_norm < 0.08
+                else "稍微走偏"
+                if trajectory_norm < 0.45
+                else "绕了点路"
+                if trajectory_norm < 0.8
+                else "明显走偏"
             ),
         ),
         MetricDetail(
@@ -374,7 +382,13 @@ def compare_poses(
             body_part=angle_joint,
             phase=phase,
             human_value=(
-                "造型差一点" if angle_norm < 0.45 else "还得再打开" if angle_norm < 0.8 else "造型没摆开"
+                "造型到位"
+                if angle_norm < 0.08
+                else "造型差一点"
+                if angle_norm < 0.45
+                else "还得再打开"
+                if angle_norm < 0.8
+                else "造型没摆开"
             ),
         ),
     ]

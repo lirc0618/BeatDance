@@ -167,11 +167,12 @@ class PauseCoach:
         phase = str(guide["phase"])
         body_part = str(guide["body_part"])
         metric = str(guide["metric"])
+        detail = str(guide["likely_stuck_at"])
         if metric == "timing":
-            return f"{phase}这里，{body_part}和拍子没对上暗号，像两个人抢着说话。"
+            return f"{phase}这里像是没对上暗号。说人话：{detail}"
         if metric == "trajectory":
-            return f"{phase}这里，{body_part}的导航容易走偏。不是不会，是眼睛一下看太多了。"
-        return f"{phase}这里，{body_part}的“定格照”容易没摆到位，就差最后一下。"
+            return f"{phase}这里像一道{body_part}导航题。说人话：{detail}"
+        return f"{phase}这里要看{body_part}的“定格照”。说人话：{detail}"
 
     @staticmethod
     def _guide_for_progress(action: dict[str, Any], progress: float) -> dict[str, Any]:

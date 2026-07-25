@@ -2,7 +2,7 @@ const { mediaUrl, request } = require('../../utils/api');
 
 Page({
   data: {
-    result: null, comparisonUrl: '', resultBadge: '别慌，AI 抓到谁在拖后腿了',
+    result: null, comparisonUrl: '', resultBadge: '别慌，AI 把卡壳点翻译成人话了',
     retryText: '练一次，再验证',
     metricLabels: { timing: '出手时间', trajectory: '走的路线', angle: '摆的造型' }
   },
@@ -17,7 +17,7 @@ Page({
     }
     this.setData({
       result,
-      resultBadge: result.diagnosis.status === 'aligned' ? '可以啊，这把对味了' : '别慌，AI 抓到谁在拖后腿了',
+      resultBadge: result.diagnosis.status === 'aligned' ? '可以啊，这把对味了' : '别慌，AI 把卡壳点翻译成人话了',
       retryText: result.diagnosis.status === 'aligned' ? '再录一次，确认稳定' : '练一次，再验证',
       comparisonUrl: mediaUrl(result.comparison_image_url)
     });

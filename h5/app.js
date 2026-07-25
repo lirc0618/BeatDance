@@ -215,7 +215,7 @@ function renderResult(result) {
   el('result-title').textContent = d.primary_error;
   document.querySelector('.result-kicker').textContent = d.status === 'aligned'
     ? '可以啊，这把对味了'
-    : '别慌，AI 抓到谁在拖后腿了';
+    : '别慌，AI 把卡壳点翻译成人话了';
   el('result-feedback').textContent = d.vlm_summary || d.priority_feedback;
   el('drill').textContent = d.drill;
   el('search-query').textContent = d.search_query || '';
@@ -252,7 +252,7 @@ el('retry-button').addEventListener('click', () => {
   el('video-input').value = '';
   el('video-preview').classList.add('hidden');
   el('upload-title').textContent = '上传第二次练习';
-  el('upload-hint').textContent = '再来一遍，看看刚才拖后腿的地方跟上没';
+  el('upload-hint').textContent = '再来一遍，看看刚才那个卡壳点顺了没';
   el('analyze-button').disabled = true;
   show('step-upload');
 });

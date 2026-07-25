@@ -72,6 +72,12 @@ def test_identical_motion_is_aligned():
     assert result.diagnosis.tutorial is None
     assert "对味" in result.diagnosis.primary_error
     assert "别再抠" in result.diagnosis.priority_feedback
+    timing = next(item for item in result.diagnosis.metrics if item.kind == "timing")
+    trajectory = next(item for item in result.diagnosis.metrics if item.kind == "trajectory")
+    angle = next(item for item in result.diagnosis.metrics if item.kind == "angle")
+    assert timing.human_value == "基本同步"
+    assert trajectory.human_value == "路线很稳"
+    assert angle.human_value == "造型到位"
 
 
 def test_shifted_arm_path_is_trajectory_error():
@@ -260,7 +266,8 @@ def test_pause_coach_explains_the_exact_moment_with_context_and_searches(tmp_pat
     assert insight.context_start_seconds == 16.5
     assert insight.context_end_seconds == 19.5
     assert insight.phase == "动作进入"
-    assert "导航" in insight.likely_stuck_at
+    assert "导航题" in insight.likely_stuck_at
+    assert "手先撑稳还是脚先跨出" in insight.likely_stuck_at
     assert insight.watch_for.startswith("别一口气看全身")
     assert "检测到" not in insight.observed_motion
     assert insight.sampled_frame_count >= 20

@@ -57,7 +57,7 @@
         <view class="search-open">复制搜索链接 →</view>
       </view>
     </block>
-    <button class="primary" bindtap="startPractice">拍一次，看谁在拖后腿</button>
+    <button class="primary" bindtap="startPractice">拍一次，看我具体卡哪儿</button>
     <button class="ghost" bindtap="backToFeed">回到 Feed 重新定格</button>
   </view>
 

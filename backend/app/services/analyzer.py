@@ -244,7 +244,7 @@ class Analyzer:
                     (
                         "这遍顺了！刚才那个卡壳点基本消失，可以把完整动作接回来。"
                         if bundle.diagnosis.status == "aligned"
-                        else f"这遍顺了约 {percentage:.0f}%！拖后腿的地方终于跟上队伍了。"
+                        else f"刚才那个卡壳点顺了约 {percentage:.0f}%！方向对了，继续保持。"
                     )
                     if improved
                     else "还差一点，先别加难度。只练刚才那一小段，再来一遍。"
@@ -255,7 +255,7 @@ class Analyzer:
         if use_mirror:
             warnings.append("你拍的是镜像画面，AI 已自动把左右翻回来，不用你烧脑。")
         if candidate_sequence.coverage < 0.8:
-            warnings.append("有几帧人快跑出镜头了。灯开亮一点，全身别出框。")
+            warnings.append("有几帧没看清动作，可能是光线、遮挡或没拍到全身。灯开亮一点，全身别出框。")
 
         result = AnalysisResult(
             id=analysis_id,
