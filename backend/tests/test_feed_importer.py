@@ -407,9 +407,45 @@ def test_http_import_schedules_reference_teaching_after_publish(tmp_path):
 
 def test_reference_upload_schedules_teaching_and_updates_its_source_hash(tmp_path):
     settings = runtime_settings(tmp_path)
+    shutil.copy2(
+        Path(__file__).parents[2] / "assets" / "samples" / "open_sources" / "爱你.MP4",
+        settings.feed_dir / "爱你.MP4",
+    )
     analyzer = Analyzer(settings)
     scheduled: list[str] = []
     analyzer.teaching_plans.prepare = lambda source: scheduled.append(source.action_id)
+    app = FastAPI()
+    app.include_router(create_router(settings, analyzer), prefix=settings.api_prefix)
+    client = TestClient(app)
+    source = (
+        Path(__file__).parents[2]
+        / "assets"
+        / "samples"
+        / "open_sources"
+        / "simple_step.mp4"
+    )
+
+    with source.open("rb") as handle:
+        response = client.post(
+            f"{settings.api_prefix}/actions/groove_step/reference",
+            data={"source_start_seconds": "2"},
+            files={"video": ("reference.mp4", handle, "video/mp4")},
+            headers={"X-Admin-Token": settings.admin_token},
+        )
+
+    assert response.status_code == 200
+    assert scheduled == ["groove_step"]
+    assert analyzer.registry.get("groove_step")["teaching_source_hash"]
+
+
+def test_reference_upload_without_feed_time_mapping_keeps_pause_teaching_unchanged(
+    tmp_path,
+):
+    settings = runtime_settings(tmp_path)
+    analyzer = Analyzer(settings)
+    scheduled: list[str] = []
+    analyzer.teaching_plans.prepare = lambda source: scheduled.append(source.action_id)
+    before = analyzer.registry.get("groove_step").get("teaching_source_hash")
     app = FastAPI()
     app.include_router(create_router(settings, analyzer), prefix=settings.api_prefix)
     client = TestClient(app)
@@ -429,8 +465,8 @@ def test_reference_upload_schedules_teaching_and_updates_its_source_hash(tmp_pat
         )
 
     assert response.status_code == 200
-    assert scheduled == ["groove_step"]
-    assert analyzer.registry.get("groove_step")["teaching_source_hash"]
+    assert scheduled == []
+    assert analyzer.registry.get("groove_step").get("teaching_source_hash") == before
 
 
 def test_qwen_http_timeout_does_not_change_successful_import_response(tmp_path):

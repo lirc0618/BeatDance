@@ -26,6 +26,7 @@ from .teaching_plans import (
     TeachingPlanStore,
     build_teaching_plan_source,
 )
+from .video import probe_video
 
 
 class ReferenceNotReadyError(RuntimeError):
@@ -148,9 +149,19 @@ class Analyzer:
         self,
         action_id: str,
         video_path: Path,
-    ) -> tuple[PoseSequence, TeachingPlanSource]:
+        source_start_seconds: float | None = None,
+    ) -> tuple[PoseSequence, TeachingPlanSource | None]:
+        if source_start_seconds is not None:
+            if source_start_seconds < 0:
+                raise ValueError("参考片段在 Feed 中的起始时间不能为负数")
+            source_duration = probe_video(video_path).duration_seconds
+            feed_duration = probe_video(self.pause_coach.feed_path(action_id)).duration_seconds
+            if source_start_seconds + source_duration > feed_duration + 0.05:
+                raise ValueError("参考片段时间范围必须位于 Feed 视频时长内")
         with catalog_transaction(self.settings.data_dir):
             pose = self._register_reference(action_id, video_path)
+            if source_start_seconds is None:
+                return pose, None
             reference_video, _ = self.reference_paths(action_id)
             action = self.registry.get(action_id)
             guides = action.get("pause_guides", [])
@@ -170,7 +181,7 @@ class Analyzer:
                 action_name=action["name"],
                 reference_video=reference_video,
                 pose=pose,
-                source_start_seconds=0.0,
+                source_start_seconds=source_start_seconds,
                 default_focus=cast(FocusKind, default_focus),
             )
             if self.registry.path.resolve() != self.settings.built_in_action_registry_path.resolve():

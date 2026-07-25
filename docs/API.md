@@ -149,3 +149,8 @@ Qwen 只处理管理员参考素材，不接收 `/analyze` 的用户视频。
 - `POST /actions/{action_id}/reference`
 - `GET /results/{analysis_id}`
 - `DELETE /results/{analysis_id}`
+
+`POST /actions/{action_id}/reference` 除 `video` 外可选提交表单字段
+`source_start_seconds`，表示该短参考在完整 Feed 中的起始秒数。只有提供合法映射时
+才会生成并启用 Qwen 暂停教学计划；省略时只更新动作分析参考，保留现有 Feed 教学
+时间轴。
