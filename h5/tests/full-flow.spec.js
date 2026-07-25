@@ -127,11 +127,6 @@ test('用户暂停 Feed 后获得时刻解释，再完成首练和二练验证',
               platform: 'douyin',
               label: '去抖音搜同款',
               url: 'https://www.douyin.com/search/test'
-            },
-            {
-              platform: 'bilibili',
-              label: '去 B 站看教程',
-              url: 'https://search.bilibili.com/all?keyword=test'
             }
           ]
         }
@@ -191,7 +186,7 @@ test('用户暂停 Feed 后获得时刻解释，再完成首练和二练验证',
     await expect(page.locator('#external-video-results .external-video-card')).toHaveCount(1);
     await expect(page.locator('#external-video-results')).toContainText('爱你手势舞背面慢动作');
     await expect(page.locator('#external-video-results')).toContainText('舞蹈课代表');
-    await expect(page.locator('#related-launches a')).toHaveCount(2);
+    await expect(page.locator('#related-launches a')).toHaveCount(1);
     await page.locator('#related-close').click();
     await page.evaluate(() => {
       renderTutorialSource('pause', [{ local_asset: '' }]);

@@ -41,7 +41,7 @@ JSON 请求：
 - `body_part`：诊断出的身体部位；
 - `limit`：真实视频卡片数量，范围 1–10。
 
-该接口与本地教学矩阵独立。未配置抖音权限时，返回按本次卡点生成的抖音和 B 站
+该接口与本地教学矩阵独立。未配置抖音权限时，返回按本次卡点生成的抖音精准
 搜索入口；配置 `DOUYIN_ACCESS_TOKEN` 或 `DOUYIN_CLIENT_KEY` /
 `DOUYIN_CLIENT_SECRET` 后，使用抖音开放平台视频搜索接口返回真实视频卡片。
 外部接口失败会返回 `provider=platform_search`，不影响分析主流程。

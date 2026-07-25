@@ -199,7 +199,7 @@ async function openRelatedVideos() {
     el('related-query').textContent = `这次搜：${payload.query}`;
     el('external-video-results').innerHTML = payload.videos.length
       ? relatedVideoCards(payload.videos)
-      : '<div class="related-empty">接口暂时没返回视频卡片，下面两个精准搜索入口照样能用。</div>';
+      : '<div class="related-empty">接口暂时没返回视频卡片，下面的抖音精准搜索入口照样能用。</div>';
     el('related-launches').innerHTML = relatedLaunches(payload.launches);
   } catch (error) {
     el('related-status').textContent = error.message;

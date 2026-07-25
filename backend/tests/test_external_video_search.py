@@ -29,7 +29,7 @@ def test_unconfigured_search_returns_precise_platform_launches():
     assert result.configured is False
     assert result.videos == []
     assert result.query == "爵士 双臂 动作路线 局部拆解 慢动作 教学"
-    assert [item.platform for item in result.launches] == ["douyin", "bilibili"]
+    assert [item.platform for item in result.launches] == ["douyin"]
     assert all("%E7%88%B5%E5%A3%AB" in item.url for item in result.launches)
 
 
@@ -139,7 +139,7 @@ def test_douyin_failure_falls_back_to_platform_search():
     assert result.configured is True
     assert result.provider == "platform_search"
     assert result.videos == []
-    assert len(result.launches) == 2
+    assert len(result.launches) == 1
     assert "暂时没回话" in result.message
 
 
@@ -161,7 +161,7 @@ def test_malformed_success_response_also_falls_back():
     )
 
     assert result.provider == "platform_search"
-    assert len(result.launches) == 2
+    assert len(result.launches) == 1
 
 
 def test_malformed_client_token_response_also_falls_back():
@@ -185,7 +185,7 @@ def test_malformed_client_token_response_also_falls_back():
     )
 
     assert result.provider == "platform_search"
-    assert len(result.launches) == 2
+    assert len(result.launches) == 1
 
 
 def test_search_api_uses_action_name_and_falls_back_without_credentials(tmp_path: Path):
@@ -215,7 +215,7 @@ def test_search_api_uses_action_name_and_falls_back_without_credentials(tmp_path
     payload = response.json()
     assert payload["query"] == "爵士 肩膀 定点 造型 姿势 教学"
     assert payload["provider"] == "platform_search"
-    assert len(payload["launches"]) == 2
+    assert len(payload["launches"]) == 1
 
 
 def test_search_api_rejects_unknown_action(tmp_path: Path):

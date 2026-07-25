@@ -121,12 +121,7 @@ class ExternalVideoSearch:
                 platform="douyin",
                 label="去抖音搜同款",
                 url=f"https://www.douyin.com/search/{encoded}",
-            ),
-            SearchLaunch(
-                platform="bilibili",
-                label="去 B 站看教程",
-                url=f"https://search.bilibili.com/all?keyword={encoded}",
-            ),
+            )
         ]
 
     async def _search_douyin(self, query: str, limit: int) -> list[ExternalVideo]:

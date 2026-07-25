@@ -104,7 +104,7 @@ class ExternalVideo(BaseModel):
 
 
 class SearchLaunch(BaseModel):
-    platform: Literal["douyin", "bilibili"]
+    platform: Literal["douyin"]
     label: str
     url: str
 
