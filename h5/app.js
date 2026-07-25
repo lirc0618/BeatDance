@@ -6,15 +6,59 @@ const state = {
   sessionId: localStorage.getItem('freezeCoachSession') || crypto.randomUUID(),
   baselineId: null, pausedAt: null, feedDuration: null, pauseInsight: null,
   actionSignature: '', actionsLoading: false, library: [], libraryLoading: false,
-  relatedMetric: 'trajectory', relatedBodyPart: ''
+  relatedMetric: 'trajectory', relatedBodyPart: '', scanTimer: null,
+  lastResultWasRetry: false
 };
 localStorage.setItem('freezeCoachSession', state.sessionId);
 
 const el = (id) => document.getElementById(id);
 el('video-attribution').href = mediaUrl('/media/feed/ATTRIBUTION.md');
 const sections = ['step-actions', 'step-insight', 'step-upload', 'loading', 'result'];
+const scanCopies = [
+  '正在捕捉动作轨迹',
+  '把你的动作对齐到原拍',
+  '只找这局最大的偏差',
+  '正在配一条最短解法'
+];
+
+function stopScanSequence() {
+  if (state.scanTimer) window.clearInterval(state.scanTimer);
+  state.scanTimer = null;
+}
+
+function startScanSequence() {
+  stopScanSequence();
+  let scanIndex = 0;
+  const steps = Array.from(document.querySelectorAll('.scan-step'));
+  const update = () => {
+    steps.forEach((step, index) => {
+      step.classList.toggle('active', index === scanIndex);
+      step.classList.toggle('done', index < scanIndex);
+    });
+    el('loading-copy').textContent = scanCopies[scanIndex];
+    scanIndex = Math.min(scanIndex + 1, steps.length - 1);
+  };
+  update();
+  state.scanTimer = window.setInterval(update, 900);
+}
+
+function currentPhase(id) {
+  if (id === 'step-upload') return state.baselineId ? 'rematch' : 'challenge';
+  if (id === 'loading') return state.baselineId ? 'rematch' : 'decode';
+  if (id === 'result') return state.lastResultWasRetry ? 'rematch' : 'decode';
+  return 'lock';
+}
+
 function show(id) {
+  if (id === 'loading') startScanSequence();
+  else stopScanSequence();
   sections.forEach((name) => el(name).classList.toggle('hidden', name !== id));
+  const phase = currentPhase(id);
+  document.querySelectorAll('.mission-step').forEach(step => {
+    const phases = ['lock', 'challenge', 'decode', 'rematch'];
+    step.classList.toggle('active', step.dataset.phase === phase);
+    step.classList.toggle('done', phases.indexOf(step.dataset.phase) < phases.indexOf(phase));
+  });
   document.body.classList.toggle('flow-active', id !== 'step-actions');
   requestAnimationFrame(() => window.scrollTo({ top: id === 'step-actions' ? 0 : 54, behavior: 'auto' }));
 }
@@ -36,6 +80,22 @@ function formatTime(seconds) {
   const minutes = Math.floor(seconds / 60);
   const remainder = (seconds % 60).toFixed(1).padStart(4, '0');
   return `${String(minutes).padStart(2, '0')}:${remainder}`;
+}
+
+function syncFocusControls() {
+  document.querySelectorAll('.focus-control button').forEach(button => {
+    const active = button.dataset.focus === state.focus;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-pressed', String(active));
+  });
+}
+
+function actionFocus(action) {
+  const copy = `${action.name} ${action.description} ${action.feed_caption}`.toLowerCase();
+  if (/脚|腿|步|feet|foot|jump|科目三/.test(copy)) return '脚下关';
+  if (/手|臂|肩|upper|hand|爱你/.test(copy)) return '上身关';
+  if (/节奏|卡点|摇|timing|beat/.test(copy)) return '节奏关';
+  return '全身关';
 }
 
 function adminToken() {
@@ -121,7 +181,7 @@ function searchCards(results) {
     const isLocalVideo = Boolean(item.local_asset)
       || (url && new URL(url).pathname.startsWith('/media/tutorials/'));
     return `
-    <article class="search-card ${isLocalVideo ? 'has-tutorial-video' : ''}">
+    <article class="search-card ${isLocalVideo ? 'has-tutorial-video' : ''}" data-loadout="${index + 1}">
       ${isLocalVideo ? `<video class="tutorial-video" src="${escapeHtml(url)}" controls playsinline preload="metadata"></video>` : ''}
       <div class="search-card-copy">
         <div class="rank">0${index + 1}</div>
@@ -240,8 +300,10 @@ async function loadActions() {
       </div>
       <div class="feed-body">
         <div class="feed-meta"><small>${escapeHtml(action.creator || '@创作者')}</small><i>0${index + 1}</i></div>
+        <span class="level-focus">${actionFocus(action)}</span>
         <strong>${escapeHtml(action.feed_caption || action.name)}</strong>
         <p>${escapeHtml(action.description)}</p>
+        <div class="mini-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
         <div class="pause-hint"><i></i>播放，停在没看懂的那一帧</div>
         <button data-id="${escapeHtml(action.id)}" disabled>
           ${action.reference_ready ? '播放视频，停在没看懂处' : '待配置参考片段'}
@@ -356,6 +418,8 @@ async function requestPauseInsight(id) {
 
 function renderPauseInsight(insight) {
   state.pauseInsight = insight;
+  state.focus = insight.suggested_focus || 'auto';
+  syncFocusControls();
   const firstMatch = insight.search_results?.[0];
   state.relatedMetric = ['timing', 'trajectory', 'angle'].includes(firstMatch?.error_type)
     ? firstMatch.error_type
@@ -372,6 +436,11 @@ function renderPauseInsight(insight) {
   el('pause-phase').textContent = insight.phase;
   el('pause-stuck').textContent = insight.likely_stuck_at;
   el('pause-watch').textContent = insight.watch_for;
+  const duration = Number(insight.feed_duration_seconds || state.feedDuration);
+  const lockPercent = Number.isFinite(duration) && duration > 0
+    ? Math.max(8, Math.min(92, (insight.timestamp_seconds / duration) * 100))
+    : 50;
+  el('pause-beat-lane').style.setProperty('--lock-position', `${lockPercent}%`);
   el('pause-search-results').innerHTML = searchCards(insight.search_results);
   renderTutorialSource('pause', insight.search_results);
   show('step-insight');
@@ -379,21 +448,21 @@ function renderPauseInsight(insight) {
 
 function selectAction() {
   state.file = null;
-  state.focus = state.pauseInsight?.suggested_focus || 'auto';
-  document.querySelectorAll('#focus-chips button').forEach((button) => button.classList.toggle('active', button.dataset.focus === state.focus));
+  syncFocusControls();
   el('selected-action').innerHTML = `
     <span>定格 ${formatTime(state.pausedAt)} · ${escapeHtml(state.pauseInsight.phase)}</span>
     <strong>${escapeHtml(state.action.name)}</strong>
     <p>${escapeHtml(state.pauseInsight.likely_stuck_at)}</p>`;
   el('video-input').value = '';
   el('video-preview').classList.add('hidden');
+  document.querySelector('.challenge-stage').classList.remove('has-file');
   el('analyze-button').disabled = true;
   show('step-upload');
 }
 
-document.querySelectorAll('#focus-chips button').forEach(button => button.addEventListener('click', () => {
+document.querySelectorAll('.focus-control button').forEach(button => button.addEventListener('click', () => {
   state.focus = button.dataset.focus;
-  document.querySelectorAll('#focus-chips button').forEach(item => item.classList.toggle('active', item === button));
+  syncFocusControls();
 }));
 
 el('video-input').addEventListener('change', (event) => {
@@ -401,6 +470,7 @@ el('video-input').addEventListener('change', (event) => {
   if (!state.file) return;
   el('video-preview').src = URL.createObjectURL(state.file);
   el('video-preview').classList.remove('hidden');
+  document.querySelector('.challenge-stage').classList.add('has-file');
   el('upload-title').textContent = state.file.name;
   el('upload-hint').textContent = `${(state.file.size / 1024 / 1024).toFixed(1)} MB`;
   el('analyze-button').disabled = false;
@@ -408,6 +478,7 @@ el('video-input').addEventListener('change', (event) => {
 
 async function analyze() {
   if (!state.file || !state.action) return;
+  const wasRetry = Boolean(state.baselineId);
   show('loading');
   const form = new FormData();
   form.append('video', state.file);
@@ -422,21 +493,29 @@ async function analyze() {
     const response = await fetch(`${API}/analyze`, { method: 'POST', body: form });
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.detail || '分析失败');
-    renderResult(payload);
+    renderResult(payload, wasRetry);
   } catch (error) {
     alert(error.message);
     show('step-upload');
   }
 }
 
-function renderResult(result) {
+function renderResult(result, wasRetry = false) {
   const d = result.diagnosis;
+  state.lastResultWasRetry = wasRetry;
   state.relatedMetric = d.primary_metric;
   state.relatedBodyPart = d.body_part || '';
   el('result-title').textContent = d.primary_error;
+  const improved = Boolean(result.improvement?.improved);
+  const judgement = d.status === 'aligned' || improved
+    ? 'CLEAR'
+    : (result.improvement ? 'ALMOST' : 'MISS');
+  const judgementNode = el('result-judgement');
+  judgementNode.textContent = judgement;
+  judgementNode.className = `result-judgement ${judgement.toLowerCase()}`;
   document.querySelector('.result-kicker').textContent = d.status === 'aligned'
-    ? '这把可以'
-    : '一句话判定';
+    ? '这一拍已经过关'
+    : (result.improvement ? '再战判定' : '本局 Boss 已锁定');
   el('result-feedback').textContent = d.vlm_summary || d.priority_feedback;
   el('drill').textContent = d.drill;
   const primaryMetrics = d.metrics.filter(item => item.kind === d.primary_metric);
@@ -446,13 +525,24 @@ function renderResult(result) {
       <strong>${escapeHtml(item.human_value)}</strong>
       <div class="metric-track"><i style="width:${Math.round(item.normalized_score * 100)}%"></i></div>
     </div>`).join('');
+  const missIndex = ({ timing: 1, trajectory: 2, angle: 3 })[d.primary_metric] ?? 2;
+  document.querySelectorAll('#result-beat-lane .beat-node').forEach((node, index) => {
+    node.classList.remove('miss', 'great', 'perfect');
+    if (index === missIndex) {
+      node.classList.add('miss');
+      node.querySelector('span').textContent = 'MISS';
+    } else {
+      node.classList.add(index === 0 ? 'perfect' : 'great');
+      node.querySelector('span').textContent = index === 0 ? 'PERFECT' : 'GREAT';
+    }
+  });
 
   const comparisonVideo = el('comparison-video');
   const comparisonVideoWrap = el('comparison-video-wrap');
   if (result.comparison_video_url) {
     comparisonVideo.src = mediaUrl(result.comparison_video_url);
     el('analysis-replay-label').textContent =
-      `整段分析 ${result.duration_seconds.toFixed(1)} 秒 · ${result.analyzed_frame_count} 帧 · 红色是卡点`;
+      `匿名骨架回放 · ${result.duration_seconds.toFixed(1)} 秒 · ${result.analyzed_frame_count} 帧 · 红色是卡点`;
     comparisonVideoWrap.classList.remove('hidden');
   } else {
     comparisonVideo.pause();
@@ -492,6 +582,7 @@ el('retry-button').addEventListener('click', () => {
   state.file = null;
   el('video-input').value = '';
   el('video-preview').classList.add('hidden');
+  document.querySelector('.challenge-stage').classList.remove('has-file');
   el('upload-title').textContent = '上传第二次练习';
   el('upload-hint').textContent = '再来一遍，看看刚才那个卡壳点顺了没';
   el('analyze-button').disabled = true;

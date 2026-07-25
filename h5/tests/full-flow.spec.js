@@ -36,6 +36,12 @@ test('Feed 列表会自动发现新导入的视频且不需要刷新页面', asy
   await page.goto('http://localhost:8000/app/?api=http://127.0.0.1:8000');
   await expect(page.locator('.brand')).toContainText('对拍');
   await expect(page.locator('.brand')).toContainText('BeatDance');
+  await expect(page.locator('.hero-dancer')).toHaveAttribute(
+    'src',
+    /\/app\/assets\/beat-dancer\.png$/
+  );
+  await expect(page.locator('.mission-progress .mission-step')).toHaveCount(4);
+  await expect(page.locator('.hero')).toContainText('一局只打一个卡点');
   await expect(page.locator('.feed-card[data-id="polled_move"]')).toHaveCount(0);
   await expect(page.locator('.feed-card[data-id="polled_move"]')).toHaveCount(1, {
     timeout: 7000
@@ -172,6 +178,9 @@ test('用户暂停 Feed 后获得时刻解释，再完成首练和二练验证',
     await expect(page.locator('#step-insight')).toBeVisible();
     await expect(page.locator('#pause-time')).toContainText('00:01.0');
     await expect(page.locator('#pause-phase')).not.toBeEmpty();
+    await expect(page.locator('#pause-beat-lane')).toBeVisible();
+    await expect(page.locator('#pause-beat-lane .boss-crystal')).toBeVisible();
+    await expect(page.locator('#pause-focus-chips button')).toHaveCount(4);
     await expect(page.locator('#pause-search-results .search-card')).toHaveCount(3);
     await expect(page.locator('#pause-search-results .search-card video')).toHaveCount(3);
     await expect(page.locator('#step-insight .search-head')).toContainText('AI 即时拆解');
@@ -195,6 +204,8 @@ test('用户暂停 Feed 后获得时刻解释，再完成首练和二练验证',
       '不是当前视频生成'
     );
     await page.locator('#practice-button').click();
+    await expect(page.locator('#step-upload .challenge-stage')).toBeVisible();
+    await expect(page.locator('#step-upload')).toContainText('READY');
 
     await page.locator('#focus-chips button[data-focus="lower"]').click();
     await expect(page.locator('#focus-chips button[data-focus="lower"]')).toHaveClass(/active/);
@@ -211,6 +222,10 @@ test('用户暂停 Feed 后获得时刻解释，再完成首练和二练验证',
     expect(firstPayload.source_phase).toBeTruthy();
     expect(firstPayload.reference_source).toBe('feed_pause_context');
     await expect(page.locator('#result')).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator('#result .boss-stage')).toBeVisible();
+    await expect(page.locator('#result-judgement')).not.toBeEmpty();
+    await expect(page.locator('#result-beat-lane .beat-node')).toHaveCount(4);
+    await expect(page.locator('#result-beat-lane .beat-node.miss')).toHaveCount(1);
     await expect(page.locator('#result-title')).not.toBeEmpty();
     await expect(page.locator('#metric-grid .metric')).toHaveCount(1);
     await expect(page.locator('#comparison-video')).toBeVisible();

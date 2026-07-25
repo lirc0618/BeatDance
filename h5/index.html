@@ -3,50 +3,88 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <meta name="theme-color" content="#070812" />
   <title>对拍 · BeatDance</title>
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
+  <div class="ambient-grid" aria-hidden="true"></div>
   <main class="shell">
     <nav class="topbar">
-      <div class="brand"><i>拍</i><span>对拍<small>BeatDance</small></span></div>
-      <div class="system-status"><i></i>动作搜索已就绪</div>
+      <div class="brand">
+        <i>拍</i>
+        <span>对拍<small>BeatDance</small></span>
+      </div>
+      <div class="mission-progress" aria-label="关卡进度">
+        <div class="mission-step active" data-phase="lock"><b>01</b><span>锁定</span></div>
+        <i></i>
+        <div class="mission-step" data-phase="challenge"><b>02</b><span>跟拍</span></div>
+        <i></i>
+        <div class="mission-step" data-phase="decode"><b>03</b><span>拆招</span></div>
+        <i></i>
+        <div class="mission-step" data-phase="rematch"><b>04</b><span>再战</span></div>
+      </div>
+      <div class="system-status"><i></i><span>AI MOTION READY</span></div>
     </nav>
 
     <header class="hero">
       <div class="hero-copy">
-        <div class="badge">BeatDance · AI ACTION SEARCH</div>
+        <div class="eyebrow"><span></span>DOUYIN DANCE · SINGLE BEAT MISSION</div>
+        <div class="hero-tag">一局只打一个卡点</div>
         <h1>刷到抖舞来对拍，<br><em>全场卡点不带歪</em></h1>
-        <p>不用知道动作名。暂停、模仿一次，AI 会找到你真正卡住的地方，再换一种更适合你的角度讲明白。</p>
+        <p>停在没看懂的那一拍。AI 把动作变成一局能打通的节奏关卡，只锁定一个 Miss，只给最短解法。</p>
+        <a class="hero-cta" href="#step-actions">
+          <span>选择第一局</span>
+          <i>↓</i>
+        </a>
       </div>
-      <div class="flow-strip" aria-label="使用流程">
-        <span><b>01</b>停住画面</span>
-        <i>→</i>
-        <span><b>02</b>模仿一次</span>
-        <i>→</i>
-        <span><b>03</b>找到拆法</span>
+      <div class="hero-stage" aria-label="黑紫科技舞者主视觉">
+        <div class="hero-orbit orbit-one"></div>
+        <div class="hero-orbit orbit-two"></div>
+        <div class="hero-glow"></div>
+        <img class="hero-dancer" src="/app/assets/beat-dancer.png" alt="黑紫色科技舞者" />
+        <div class="hero-scan"></div>
+        <div class="hero-hud hud-left">
+          <span>POSE LOCK</span>
+          <strong>33</strong>
+          <small>KEYPOINTS</small>
+        </div>
+        <div class="hero-hud hud-right">
+          <span>MISSION</span>
+          <strong>01</strong>
+          <small>ONE BEAT</small>
+        </div>
+        <div class="hero-wave" aria-hidden="true">
+          <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        </div>
       </div>
     </header>
 
-    <section id="step-actions" class="panel">
-      <div class="panel-title">
-        <span>01</span>
-        <div><h2>先刷一个想学的</h2><p>听着原声播放，看到不会的地方就暂停。</p></div>
-        <small><b id="action-count">0</b> 条可学素材</small>
+    <section id="step-actions" class="panel level-select">
+      <div class="section-heading">
+        <div class="stage-number">01</div>
+        <div>
+          <span>SELECT MISSION</span>
+          <h2>选一局，准备锁拍</h2>
+          <p>播放原声，停在你没看懂的地方。没有总分，这局只解决一个动作卡点。</p>
+        </div>
+        <small><b id="action-count">0</b> 个动作关卡</small>
       </div>
+
       <div class="feed-toolbar">
         <div>
-          <strong>首页没有你想学的？</strong>
-          <span>从开放素材库一键加入，或上传你刚刷到的视频。</span>
+          <span>VIDEO LAB</span>
+          <strong>没有想学的？把刚刷到的视频变成新关卡。</strong>
         </div>
-        <button id="open-library" class="toolbar-button">＋ 拓展舞库</button>
+        <button id="open-library" class="toolbar-button" aria-expanded="false">＋ 拓展舞库</button>
       </div>
+
       <section id="sample-library" class="library-drawer hidden" aria-label="舞蹈素材库">
         <div class="library-head">
           <div>
-            <span>VIDEO LAB · 随时换舞</span>
-            <h3>挑一条，直接塞进首页</h3>
-            <p>先预览，再一键生成可暂停、可分析的动作卡片。</p>
+            <span>VIDEO LAB · ADD MISSION</span>
+            <h3>挑一条，直接加入选关页</h3>
+            <p>先预览，再生成可暂停、可诊断的动作关卡。</p>
           </div>
           <button id="close-library" aria-label="关闭素材库">×</button>
         </div>
@@ -73,99 +111,219 @@
               </select>
             </label>
             <label class="custom-file"><span>选择视频</span><input id="custom-video" type="file" accept="video/*" required /></label>
-            <button id="custom-import-button" class="primary" type="submit">加入首页并生成分析参考</button>
+            <button id="custom-import-button" class="primary" type="submit">生成动作关卡</button>
           </form>
         </details>
       </section>
       <div id="action-list" class="feed-grid"></div>
     </section>
 
-    <section id="step-insight" class="panel hidden">
-      <div class="panel-title">
-        <span>02</span>
-        <div><h2>这一秒，动作为什么突然卡壳？</h2><p id="pause-context">AI 正在回看前后 1.5 秒。</p></div>
+    <section id="step-insight" class="panel mission-panel hidden">
+      <div class="mission-heading">
+        <div>
+          <span>STAGE 01 · LOCK THE BEAT</span>
+          <h2>锁定这一拍</h2>
+        </div>
+        <small>AI 回看暂停点前后 1.5 秒</small>
       </div>
-      <div class="pause-stage">
-        <video id="pause-preview" class="pause-preview" controls playsinline></video>
-        <div id="pause-time" class="pause-time"></div>
+
+      <div class="insight-arena">
+        <div class="video-deck">
+          <video id="pause-preview" class="pause-preview" controls playsinline></video>
+          <div class="deck-grid" aria-hidden="true"></div>
+          <div class="body-scan" aria-hidden="true"></div>
+          <div class="scan-corner corner-a"></div>
+          <div class="scan-corner corner-b"></div>
+          <div class="scan-corner corner-c"></div>
+          <div class="scan-corner corner-d"></div>
+          <div id="pause-time" class="pause-time"></div>
+          <div class="lock-badge"><i></i>THIS BEAT LOCKED</div>
+        </div>
+
+        <aside class="lock-brief">
+          <div class="boss-label"><i></i>BOSS PREVIEW</div>
+          <span id="pause-phase" class="phase-chip"></span>
+          <small>这一拍最可能卡在</small>
+          <h3 id="pause-stuck"></h3>
+          <p id="pause-context"></p>
+          <div class="watch-card">
+            <span>先盯这里</span>
+            <strong id="pause-watch"></strong>
+          </div>
+          <div id="pause-focus-chips" class="focus-control pause-focus">
+            <button data-focus="auto">AI 自己看</button>
+            <button data-focus="upper">看手</button>
+            <button data-focus="lower">看脚</button>
+            <button data-focus="timing">卡节奏</button>
+          </div>
+        </aside>
       </div>
-      <div class="pause-explanation">
-        <span id="pause-phase"></span>
-        <small>一句话点破</small>
-        <h3 id="pause-stuck"></h3>
-        <p id="pause-watch"></p>
+
+      <div id="pause-beat-lane" class="beat-lane lock-lane">
+        <div class="lane-labels"><span>前动作</span><b>暂停上下文 · 3 秒</b><span>后动作</span></div>
+        <div class="lane-track">
+          <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+          <div class="boss-crystal" aria-label="已锁定卡点"><span></span></div>
+        </div>
       </div>
-      <div class="search-head">
+
+      <div class="loadout-heading search-head">
         <div>
           <span id="pause-tutorial-source">AI 即时拆解 · 取自当前视频</span>
-          <h3 id="pause-tutorial-title">同源慢放、镜像和局部</h3>
+          <h3 id="pause-tutorial-title">选择本局解法装备</h3>
         </div>
-        <button id="pause-related-button" class="related-button" type="button">搜外部相关视频 ↗</button>
+        <button id="pause-related-button" class="related-button" type="button">去抖音搜同款 ↗</button>
       </div>
-      <div id="pause-search-results" class="search-results"></div>
-      <button id="practice-button" class="primary">拍一次，看我具体卡哪儿</button>
-      <button id="insight-back" class="ghost">回到 Feed 重新定格</button>
+      <div id="pause-search-results" class="search-results loadout-grid"></div>
+      <button id="practice-button" class="primary mission-cta">锁定这一拍，进入跟拍 <span>→</span></button>
+      <button id="insight-back" class="ghost">回到选关页</button>
     </section>
 
-    <section id="step-upload" class="panel hidden">
-      <div class="panel-title">
-        <span>03</span>
-        <div><h2>你卡在哪里？</h2><p>先表达关注点，再上传 3–8 秒模仿。</p></div>
+    <section id="step-upload" class="panel mission-panel hidden">
+      <div class="mission-heading">
+        <div>
+          <span>STAGE 02 · TAKE THE SHOT</span>
+          <h2>跟拍挑战</h2>
+        </div>
+        <small>上传或拍摄 3–8 秒 · 单人 · 固定机位</small>
       </div>
-      <div class="selected-feed" id="selected-action"></div>
-      <div id="focus-chips" class="focus-chips">
-        <button data-focus="auto" class="active">我也说不清</button>
-        <button data-focus="upper">手部没看懂</button>
-        <button data-focus="lower">脚步没看懂</button>
-        <button data-focus="timing">总跟不上拍</button>
+
+      <div class="challenge-stage">
+        <div class="challenge-viewport">
+          <video id="video-preview" class="preview hidden" controls playsinline></video>
+          <div class="camera-grid" aria-hidden="true"></div>
+          <div class="body-guide" aria-hidden="true">
+            <span class="guide-head"></span>
+            <span class="guide-body"></span>
+            <span class="guide-arm arm-left"></span>
+            <span class="guide-arm arm-right"></span>
+            <span class="guide-leg leg-left"></span>
+            <span class="guide-leg leg-right"></span>
+          </div>
+          <div class="ready-word">READY</div>
+          <label class="upload-box">
+            <input id="video-input" type="file" accept="video/*" capture="user" />
+            <strong id="upload-title">拍摄或上传你的模仿</strong>
+            <small id="upload-hint">3–8 秒，完整露出全身</small>
+          </label>
+        </div>
+
+        <aside class="challenge-brief">
+          <div id="selected-action" class="selected-feed"></div>
+          <div>
+            <span class="control-label">本局观察重点</span>
+            <div id="focus-chips" class="focus-control">
+              <button data-focus="auto" class="active">AI 自己看</button>
+              <button data-focus="upper">看手</button>
+              <button data-focus="lower">看脚</button>
+              <button data-focus="timing">卡节奏</button>
+            </div>
+          </div>
+          <div class="capture-checks">
+            <span><i></i>全身完整入镜</span>
+            <span><i></i>保留原视频节奏</span>
+            <span><i></i>只跳这一小段</span>
+          </div>
+          <button id="analyze-button" class="primary" disabled>开始 AI 判定 <span>→</span></button>
+          <button id="change-action" class="ghost">返回选关页</button>
+        </aside>
       </div>
-      <label class="upload-box">
-        <input id="video-input" type="file" accept="video/*" />
-        <strong id="upload-title">上传你的模仿</strong>
-        <small id="upload-hint">3–8 秒，单人、固定机位</small>
-      </label>
-      <video id="video-preview" class="preview hidden" controls playsinline></video>
-      <button id="analyze-button" class="primary" disabled>找出我卡在哪</button>
-      <button id="change-action" class="ghost">返回 Feed</button>
+
+      <div class="beat-lane challenge-lane">
+        <div class="lane-labels"><span>READY</span><b>跟住原拍，不做实时打分</b><span>GO</span></div>
+        <div class="lane-track moving">
+          <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+          <div class="play-head"></div>
+        </div>
+      </div>
     </section>
 
-    <section id="loading" class="panel hidden loading">
-      <div class="spinner"></div>
-      <h2>AI 正在逐帧找卡壳点</h2>
-      <p id="loading-copy">回看动作 → 找到卡壳点 → 翻译成人话</p>
+    <section id="loading" class="panel mission-panel scan-loading hidden">
+      <div class="mission-heading scan-heading">
+        <div>
+          <span>STAGE 03 · AI MOTION SCAN</span>
+          <h2>正在锁定本局 Boss</h2>
+        </div>
+        <small>不做整舞评分，只找一个最大偏差</small>
+      </div>
+      <div class="scan-arena">
+        <div class="scan-figures" aria-hidden="true">
+          <svg class="scan-skeleton standard-skeleton" viewBox="0 0 180 280">
+            <circle cx="90" cy="34" r="20"/><path d="M90 56L90 142M90 76L40 120M90 76L140 112M90 142L52 218M90 142L132 225M52 218L38 258M132 225L150 260"/>
+          </svg>
+          <svg class="scan-skeleton user-skeleton" viewBox="0 0 180 280">
+            <circle cx="90" cy="34" r="20"/><path d="M90 56L90 142M90 76L48 110M90 76L151 100M90 142L62 226M90 142L124 214M62 226L42 260M124 214L156 248"/>
+          </svg>
+          <div class="scan-sweep"></div>
+          <div class="scan-target"></div>
+        </div>
+        <div class="scan-copy">
+          <p id="loading-copy">正在捕捉动作轨迹</p>
+          <div class="scan-steps">
+            <div class="scan-step active"><i>01</i><span>捕捉动作轨迹</span><b></b></div>
+            <div class="scan-step"><i>02</i><span>对齐你的节奏</span><b></b></div>
+            <div class="scan-step"><i>03</i><span>寻找最大偏差</span><b></b></div>
+            <div class="scan-step"><i>04</i><span>匹配最短解法</span><b></b></div>
+          </div>
+        </div>
+      </div>
     </section>
 
-    <section id="result" class="panel hidden">
-      <div class="result-kicker">一句话判定</div>
-      <h2 id="result-title"></h2>
-      <p id="result-feedback" class="lead"></p>
-      <div id="comparison-video-wrap" class="analysis-replay hidden">
-        <span id="analysis-replay-label">整段骨架回放 · 红色是本次卡点</span>
-        <video id="comparison-video" class="comparison-video" controls playsinline loop muted></video>
-      </div>
-      <img id="comparison-image" class="comparison hidden" alt="参考动作与用户动作对比" />
-
-      <div class="metric-grid" id="metric-grid"></div>
-
-      <div class="advice-card">
-        <span>只练这一件事</span>
-        <strong id="drill"></strong>
+    <section id="result" class="panel mission-panel hidden">
+      <div class="boss-stage">
+        <div class="boss-orb" aria-hidden="true"><i></i><span></span></div>
+        <div class="boss-copy">
+          <div class="result-kicker">本局 Boss 已锁定</div>
+          <div id="result-judgement" class="result-judgement">MISS</div>
+          <h2 id="result-title"></h2>
+          <p id="result-feedback" class="lead"></p>
+        </div>
       </div>
 
-      <div class="search-head">
+      <div id="result-beat-lane" class="beat-lane result-lane">
+        <div class="lane-labels"><span>动作开始</span><b>只突出一个 Miss</b><span>动作完成</span></div>
+        <div class="judgement-track">
+          <div class="beat-node perfect"><i></i><span>PERFECT</span></div>
+          <div class="beat-node great"><i></i><span>GREAT</span></div>
+          <div class="beat-node miss"><i></i><span>MISS</span></div>
+          <div class="beat-node great"><i></i><span>GREAT</span></div>
+        </div>
+      </div>
+
+      <div class="result-grid">
+        <div class="result-visuals">
+          <div id="comparison-video-wrap" class="analysis-replay hidden">
+            <span id="analysis-replay-label">双色骨架回放 · 青色标准 / 品红用户</span>
+            <video id="comparison-video" class="comparison-video" controls playsinline loop muted></video>
+          </div>
+          <img id="comparison-image" class="comparison hidden" alt="参考动作与用户动作对比" />
+        </div>
+        <aside class="result-brief">
+          <div class="result-legend">
+            <span><i class="cyan-dot"></i>标准动作</span>
+            <span><i class="pink-dot"></i>你的动作</span>
+          </div>
+          <div class="metric-grid" id="metric-grid"></div>
+          <div class="advice-card">
+            <span>这局只练一件事</span>
+            <strong id="drill"></strong>
+          </div>
+          <div id="improvement" class="improvement hidden"></div>
+          <div id="warnings" class="warnings"></div>
+        </aside>
+      </div>
+
+      <div class="loadout-heading search-head result-loadout">
         <div>
           <span id="result-tutorial-source">AI 即时拆解 · 取自当前视频</span>
-          <h3 id="result-tutorial-title">三条对症拆法</h3>
+          <h3 id="result-tutorial-title">选择本局解法装备</h3>
         </div>
-        <button id="result-related-button" class="related-button" type="button">搜外部相关视频 ↗</button>
+        <button id="result-related-button" class="related-button" type="button">去抖音搜同款 ↗</button>
       </div>
-      <div id="search-results" class="search-results"></div>
+      <div id="search-results" class="search-results loadout-grid"></div>
 
-      <div id="improvement" class="improvement hidden"></div>
-      <div id="warnings" class="warnings"></div>
-
-      <button id="retry-button" class="primary">练一次，再验证</button>
-      <button id="restart-button" class="ghost">回到 Feed 换一招</button>
+      <button id="retry-button" class="primary mission-cta">再战同一拍 <span>→</span></button>
+      <button id="restart-button" class="ghost">回到选关页</button>
     </section>
 
     <section class="privacy">
@@ -173,19 +331,20 @@
       <a id="video-attribution" href="/media/feed/ATTRIBUTION.md" target="_blank" rel="noopener noreferrer">素材来源与许可 ↗</a>
     </section>
   </main>
+
   <dialog id="related-video-dialog" class="related-dialog" aria-labelledby="related-dialog-title">
     <div class="related-dialog-head">
       <div>
-        <span>RELATED VIDEO SEARCH</span>
-        <h2 id="related-dialog-title">外面有没有人把这招讲明白？</h2>
+        <span>DOUYIN RELATED VIDEO SEARCH</span>
+        <h2 id="related-dialog-title">去抖音找最短解法</h2>
       </div>
       <button id="related-close" class="dialog-close" type="button" aria-label="关闭">×</button>
     </div>
-    <p id="related-status" class="related-status" role="status" aria-live="polite">正在翻相关教学…</p>
+    <p id="related-status" class="related-status" role="status" aria-live="polite">正在按本局卡点检索…</p>
     <div id="related-query" class="related-query"></div>
     <div id="external-video-results" class="external-video-results"></div>
     <div id="related-launches" class="related-launches"></div>
-    <small class="related-note">外部结果只展示标题和入口；点击后到原平台观看。</small>
+    <small class="related-note">外部结果只展示标题和入口；点击后到抖音观看。</small>
   </dialog>
   <script src="./app.js"></script>
 </body>
