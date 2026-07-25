@@ -1,6 +1,6 @@
 # 开放视频样例署名
 
-以下素材仅用于工程烟雾测试。修改内容：去除音频、转码为 H.264 MP4；未裁剪画面。
+以下素材仅用于工程烟雾测试。修改内容：去除音频、转码为 H.264 MP4；部分素材截取单人动作段。
 
 ## breakdance_6_step
 
@@ -50,6 +50,48 @@
 - 作者：Tcshaw427
 - 来源：https://commons.wikimedia.org/wiki/File:Tendu,_ballet_technique_tutorial.webm
 - 许可：CC BY-SA 3.0（https://creativecommons.org/licenses/by-sa/3.0/）
+
+## ballet_assemble
+
+- 内容：3.8 秒单人 Assemblé 动作段；适合测试起跳、并腿落地和动作幅度。
+- 作者：Tcshaw427
+- 来源：https://commons.wikimedia.org/wiki/File:Assembl%C3%A9_dance_technique_1080p.webm
+- 许可：CC BY-SA 3.0（https://creativecommons.org/licenses/by-sa/3.0/）
+
+## ballet_balance
+
+- 内容：6.8 秒单人 Balancé 动作段；适合测试左右重心切换和手脚配合。
+- 作者：Tcshaw427
+- 来源：https://commons.wikimedia.org/wiki/File:Balanc%C3%A9,_ballet_technique_tutorial.webm
+- 许可：CC BY-SA 3.0（https://creativecommons.org/licenses/by-sa/3.0/）
+
+## ballet_chasse
+
+- 内容：3.5 秒单人 Chassé 动作段；适合测试横向移动、并步和落点路线。
+- 作者：Tcshaw427
+- 来源：https://commons.wikimedia.org/wiki/File:Chass%C3%A9,_ballet_technique_tutorial.webm
+- 许可：CC BY-SA 3.0（https://creativecommons.org/licenses/by-sa/3.0/）
+
+## ballet_plie
+
+- 内容：7 秒单人 Plié 动作段；适合测试膝髋幅度、下沉和回正。
+- 作者：Tcshaw427
+- 来源：https://commons.wikimedia.org/wiki/File:Pli%C3%A9,_ballet_technique_tutorial.webm
+- 许可：CC BY-SA 3.0（https://creativecommons.org/licenses/by-sa/3.0/）
+
+## jazz_pas_de_bourree
+
+- 内容：6.4 秒单人爵士 Pas de bourrée 动作段；适合测试交叉步、方向和上肢路线。
+- 作者：Tcshaw427
+- 来源：https://commons.wikimedia.org/wiki/File:Pas_de_bourr%C3%A9e,_jazz_dance_technique.webm
+- 许可：CC BY-SA 3.0（https://creativecommons.org/licenses/by-sa/3.0/）
+
+## tap_dance_technique
+
+- 内容：124 秒单人踢踏舞脚步教程；适合测试局部脚步、节奏与长 Feed 暂停。
+- 作者：Dbuetow
+- 来源：https://commons.wikimedia.org/wiki/File:Tap_Dance_Technique.webm
+- 许可：CC BY-SA 4.0（https://creativecommons.org/licenses/by-sa/4.0/）
 
 ## 派生诊断参考片段
 

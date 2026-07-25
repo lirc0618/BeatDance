@@ -30,6 +30,8 @@ class Sample:
     license_url: str
     description: str
     expected_duration_seconds: float
+    clip_start_seconds: float | None = None
+    clip_duration_seconds: float | None = None
 
     @property
     def download_url(self) -> str:
@@ -117,6 +119,91 @@ SAMPLES = (
         description="16 秒单人芭蕾脚尖伸展教程；用于测试落点、方向与回位暂停。",
         expected_duration_seconds=16.0,
     ),
+    Sample(
+        sample_id="ballet_assemble",
+        commons_filename="Assemblé dance technique 1080p.webm",
+        source_page=(
+            "https://commons.wikimedia.org/wiki/"
+            "File:Assembl%C3%A9_dance_technique_1080p.webm"
+        ),
+        author="Tcshaw427",
+        license_name="CC BY-SA 3.0",
+        license_url="https://creativecommons.org/licenses/by-sa/3.0/",
+        description="3.8 秒单人 Assemblé 动作段；适合测试起跳、并腿落地和动作幅度。",
+        expected_duration_seconds=3.8,
+        clip_start_seconds=2.6,
+        clip_duration_seconds=3.8,
+    ),
+    Sample(
+        sample_id="ballet_balance",
+        commons_filename="Balancé, ballet technique tutorial.webm",
+        source_page=(
+            "https://commons.wikimedia.org/wiki/"
+            "File:Balanc%C3%A9,_ballet_technique_tutorial.webm"
+        ),
+        author="Tcshaw427",
+        license_name="CC BY-SA 3.0",
+        license_url="https://creativecommons.org/licenses/by-sa/3.0/",
+        description="6.8 秒单人 Balancé 动作段；适合测试左右重心切换和手脚配合。",
+        expected_duration_seconds=6.8,
+        clip_start_seconds=1.5,
+        clip_duration_seconds=6.8,
+    ),
+    Sample(
+        sample_id="ballet_chasse",
+        commons_filename="Chassé, ballet technique tutorial.webm",
+        source_page=(
+            "https://commons.wikimedia.org/wiki/"
+            "File:Chass%C3%A9,_ballet_technique_tutorial.webm"
+        ),
+        author="Tcshaw427",
+        license_name="CC BY-SA 3.0",
+        license_url="https://creativecommons.org/licenses/by-sa/3.0/",
+        description="3.5 秒单人 Chassé 动作段；适合测试横向移动、并步和落点路线。",
+        expected_duration_seconds=3.5,
+        clip_start_seconds=2.2,
+        clip_duration_seconds=3.5,
+    ),
+    Sample(
+        sample_id="ballet_plie",
+        commons_filename="Plié, ballet technique tutorial.webm",
+        source_page=(
+            "https://commons.wikimedia.org/wiki/"
+            "File:Pli%C3%A9,_ballet_technique_tutorial.webm"
+        ),
+        author="Tcshaw427",
+        license_name="CC BY-SA 3.0",
+        license_url="https://creativecommons.org/licenses/by-sa/3.0/",
+        description="7 秒单人 Plié 动作段；适合测试膝髋幅度、下沉和回正。",
+        expected_duration_seconds=7.0,
+        clip_start_seconds=1.5,
+        clip_duration_seconds=7.0,
+    ),
+    Sample(
+        sample_id="jazz_pas_de_bourree",
+        commons_filename="Pas de bourrée, jazz dance technique.webm",
+        source_page=(
+            "https://commons.wikimedia.org/wiki/"
+            "File:Pas_de_bourr%C3%A9e,_jazz_dance_technique.webm"
+        ),
+        author="Tcshaw427",
+        license_name="CC BY-SA 3.0",
+        license_url="https://creativecommons.org/licenses/by-sa/3.0/",
+        description="6.4 秒单人爵士 Pas de bourrée 动作段；适合测试交叉步、方向和上肢路线。",
+        expected_duration_seconds=6.4,
+        clip_start_seconds=1.8,
+        clip_duration_seconds=6.4,
+    ),
+    Sample(
+        sample_id="tap_dance_technique",
+        commons_filename="Tap Dance Technique.webm",
+        source_page="https://commons.wikimedia.org/wiki/File:Tap_Dance_Technique.webm",
+        author="Dbuetow",
+        license_name="CC BY-SA 4.0",
+        license_url="https://creativecommons.org/licenses/by-sa/4.0/",
+        description="124 秒单人踢踏舞脚步教程；适合测试局部脚步、节奏与长 Feed 暂停。",
+        expected_duration_seconds=124.4,
+    ),
 )
 
 REFERENCE_CLIPS = (
@@ -146,7 +233,7 @@ def download(sample: Sample, target: Path) -> None:
         shutil.copyfileobj(response, output)
 
 
-def transcode(source: Path, target: Path) -> None:
+def transcode(source: Path, target: Path, sample: Sample) -> None:
     ffmpeg = shutil.which("ffmpeg")
     if not ffmpeg:
         raise RuntimeError("未找到 ffmpeg。请先安装 ffmpeg，或使用 --keep-source 跳过转码。")
@@ -161,21 +248,29 @@ def transcode(source: Path, target: Path) -> None:
             "-y",
             "-i",
             str(source),
-            "-an",
-            "-vf",
-            "scale='min(1280,iw)':-2:flags=lanczos,fps=25",
-            "-c:v",
-            "libx264",
-            "-preset",
-            "veryfast",
-            "-crf",
-            "23",
-            "-pix_fmt",
-            "yuv420p",
-            "-movflags",
-            "+faststart",
-            str(pending),
         ]
+        if sample.clip_start_seconds is not None:
+            command.extend(["-ss", str(sample.clip_start_seconds)])
+        if sample.clip_duration_seconds is not None:
+            command.extend(["-t", str(sample.clip_duration_seconds)])
+        command.extend(
+            [
+                "-an",
+                "-vf",
+                "scale='min(1280,iw)':-2:flags=lanczos,fps=25",
+                "-c:v",
+                "libx264",
+                "-preset",
+                "veryfast",
+                "-crf",
+                "23",
+                "-pix_fmt",
+                "yuv420p",
+                "-movflags",
+                "+faststart",
+                str(pending),
+            ]
+        )
         subprocess.run(command, check=True)
         if not valid_video(pending):
             raise RuntimeError(f"转码结果无效：{target.name}")
@@ -259,7 +354,7 @@ def atomic_write_text(path: Path, content: str) -> None:
 
 
 def sample_payload(sample: Sample) -> dict:
-    item = asdict(sample)
+    item = {key: value for key, value in asdict(sample).items() if value is not None}
     item["download_url"] = sample.download_url
     item["local_file"] = f"{sample.sample_id}.mp4"
     return item
@@ -275,7 +370,7 @@ def write_attribution(samples: list[Sample], output_dir: Path) -> None:
     lines = [
         "# 开放视频样例署名",
         "",
-        "以下素材仅用于工程烟雾测试。修改内容：去除音频、转码为 H.264 MP4；未裁剪画面。",
+        "以下素材仅用于工程烟雾测试。修改内容：去除音频、转码为 H.264 MP4；部分素材截取单人动作段。",
         "",
     ]
     for sample in available:
@@ -359,7 +454,7 @@ def main() -> int:
         print(f"[下载] {sample.sample_id}")
         try:
             download(sample, source)
-            transcode(source, target)
+            transcode(source, target, sample)
         except Exception as exc:  # noqa: BLE001 - CLI should report per-file failure
             print(f"[失败] {sample.sample_id}: {exc}", file=sys.stderr)
             source.unlink(missing_ok=True)

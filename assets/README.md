@@ -34,4 +34,8 @@ assets/
 python scripts/download_open_samples.py
 ```
 
-下载后的 3 条 CC BY 3.0 视频位于 `assets/samples/open_sources/`，可用于上传、解码、关键点提取和 DTW 烟雾测试。由于人员、机位和动作不同，不能拿它们训练或标定节奏/轨迹/幅度三类错误。
+下载后的 13 条 Creative Commons 视频位于 `assets/samples/open_sources/`，覆盖
+breakdance、站立踏步、手臂路线、恰恰、芭蕾、爵士和踢踏舞，可用于上传、
+解码、关键点提取和 DTW 烟雾测试。由于人员、机位和动作不同，不能拿它们
+训练或标定节奏/轨迹/幅度三类错误。每条素材的作者、来源和许可见同目录
+`ATTRIBUTION.md`。

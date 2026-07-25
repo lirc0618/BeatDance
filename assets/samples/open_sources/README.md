@@ -9,6 +9,12 @@
 - `six_step_tutorial.mp4`：106.5 秒六步完整教程；
 - `arm_movements_veil.mp4`：12 秒手臂路线片段；
 - `tendu_tutorial.mp4`：16.3 秒 Tendu 单人教程；
+- `ballet_assemble.mp4`：单人起跳与并腿落地；
+- `ballet_balance.mp4`：单人左右重心切换；
+- `ballet_chasse.mp4`：单人横向并步；
+- `ballet_plie.mp4`：单人膝髋下沉与回正；
+- `jazz_pas_de_bourree.mp4`：单人爵士交叉步；
+- `tap_dance_technique.mp4`：单人踢踏舞脚步教程；
 - `arm_movements_reference.mp4`、`tendu_reference.mp4`：从对应 Feed 截取的
   5 秒同源诊断参考。
 
