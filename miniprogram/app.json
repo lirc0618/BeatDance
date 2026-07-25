@@ -6,9 +6,9 @@
   ],
   "window": {
     "navigationBarTitleText": "定格教练·卡点搜索",
-    "navigationBarBackgroundColor": "#08090d",
+    "navigationBarBackgroundColor": "#090a08",
     "navigationBarTextStyle": "white",
-    "backgroundColor": "#08090d"
+    "backgroundColor": "#090a08"
   },
   "style": "v2",
   "sitemapLocation": "sitemap.json"

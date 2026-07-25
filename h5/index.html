@@ -8,23 +8,38 @@
 </head>
 <body>
   <main class="shell">
+    <nav class="topbar">
+      <div class="brand"><i>定</i><span>定格教练<small>FRAME COACH</small></span></div>
+      <div class="system-status"><i></i>动作搜索已就绪</div>
+    </nav>
+
     <header class="hero">
-      <div class="badge">Feed 定格 · 动作卡点搜索</div>
-      <h1>定格教练</h1>
-      <p>刷到一个没看懂的动作，停在那一秒。AI 先找出你卡在哪里，再搜索最适合你的背面、慢速或局部拆解。</p>
+      <div class="hero-copy">
+        <div class="badge">AI ACTION SEARCH · 01</div>
+        <h1>不会的动作，<br><em>停在这一秒。</em></h1>
+        <p>不用知道动作名。暂停、模仿一次，AI 会找到你真正卡住的地方，再换一种更适合你的角度讲明白。</p>
+      </div>
+      <div class="flow-strip" aria-label="使用流程">
+        <span><b>01</b>停住画面</span>
+        <i>→</i>
+        <span><b>02</b>模仿一次</span>
+        <i>→</i>
+        <span><b>03</b>找到拆法</span>
+      </div>
     </header>
 
     <section id="step-actions" class="panel">
       <div class="panel-title">
-        <span>1</span>
-        <div><h2>在 Feed 里定格一招</h2><p>以下为比赛用的 3 个受控片段。</p></div>
+        <span>01</span>
+        <div><h2>先挑一个动作</h2><p>播放视频，在没看懂的位置按下暂停。</p></div>
+        <small>3 条开放素材</small>
       </div>
       <div id="action-list" class="feed-grid"></div>
     </section>
 
     <section id="step-insight" class="panel hidden">
       <div class="panel-title">
-        <span>2</span>
+        <span>02</span>
         <div><h2>这一秒发生了什么？</h2><p id="pause-context">已截取暂停点前后 1.5 秒。</p></div>
       </div>
       <div class="pause-stage">
@@ -50,7 +65,7 @@
 
     <section id="step-upload" class="panel hidden">
       <div class="panel-title">
-        <span>3</span>
+        <span>03</span>
         <div><h2>你卡在哪里？</h2><p>先表达关注点，再上传 3–8 秒模仿。</p></div>
       </div>
       <div class="selected-feed" id="selected-action"></div>
@@ -106,9 +121,8 @@
     </section>
 
     <section class="privacy">
-      <strong>产品边界</strong>
-      <p>它不是整支舞评分工具。只处理从 Feed 定格出的短动作卡点；原视频默认分析后删除，不做人脸身份识别。</p>
-      <a id="video-attribution" href="/media/feed/ATTRIBUTION.md" target="_blank" rel="noopener noreferrer">开放视频来源、修改说明与许可证</a>
+      <div><strong>只看动作，不认人脸。</strong><p>上传视频分析后默认删除；它只解决一个短动作卡点，不评价整支舞。</p></div>
+      <a id="video-attribution" href="/media/feed/ATTRIBUTION.md" target="_blank" rel="noopener noreferrer">素材来源与许可 ↗</a>
     </section>
   </main>
   <script src="./app.js"></script>

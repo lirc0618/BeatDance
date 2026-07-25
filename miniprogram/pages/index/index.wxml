@@ -1,14 +1,26 @@
 <view class="container">
-  <view class="hero">
-    <view class="badge">Feed 定格 · 动作卡点搜索</view>
-    <view class="hero-title">定格教练</view>
-    <view class="hero-copy">刷到一个没看懂的动作，停在那一秒。AI 找出你卡在哪里，再搜索最适合你的拆解。</view>
+  <view class="hero" wx:if="{{!insight}}">
+    <view class="badge">AI ACTION SEARCH · 01</view>
+    <view class="hero-title">
+      <view>不会的动作，</view>
+      <view class="accent">停在这一秒。</view>
+    </view>
+    <view class="hero-copy">不用知道动作名。暂停、模仿一次，AI 会找到你真正卡住的地方，再换一种更适合你的角度讲明白。</view>
+    <view class="flow-strip">
+      <view><text>01</text>停住画面</view><text>→</text>
+      <view><text>02</text>模仿一次</view><text>→</text>
+      <view><text>03</text>找到拆法</view>
+    </view>
   </view>
 
   <view wx:if="{{loading}}" class="card"><view class="card-copy">正在读取暂停点和动作上下文…</view></view>
   <view wx:if="{{error}}" class="card"><view class="warning">{{error}}</view><button class="ghost" bindtap="loadActions">重试</button></view>
 
   <block wx:if="{{!insight}}">
+    <view class="section-head">
+      <view class="step-index">01</view>
+      <view><view class="section-title">先挑一个动作</view><view class="section-copy">播放视频，在没看懂的位置按下暂停。</view></view>
+    </view>
     <block wx:for="{{actions}}" wx:key="id">
       <view class="feed-card">
         <view class="feed-visual">
@@ -17,9 +29,10 @@
           <view class="pause">Ⅱ</view>
         </view>
         <view class="feed-body">
-          <view class="creator">{{item.creator}}</view>
+          <view class="feed-meta"><view class="creator">{{item.creator}}</view><text>0{{index + 1}}</text></view>
           <view class="feed-title">{{item.feed_caption || item.name}}</view>
           <view class="card-copy">{{item.description}}</view>
+          <view class="pause-hint"><view class="pause-dot"></view>播放，停在没看懂的那一帧</view>
           <button class="feed-cta" disabled="{{!item.reference_ready || !item.pauseReady}}" data-id="{{item.id}}" bindtap="chooseAction">{{item.reference_ready ? (item.pauseCopy || '播放视频，停在没看懂处') : '待配置参考片段'}}</button>
         </view>
       </view>

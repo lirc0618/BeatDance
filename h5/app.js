@@ -11,7 +11,11 @@ localStorage.setItem('freezeCoachSession', state.sessionId);
 const el = (id) => document.getElementById(id);
 el('video-attribution').href = mediaUrl('/media/feed/ATTRIBUTION.md');
 const sections = ['step-actions', 'step-insight', 'step-upload', 'loading', 'result'];
-function show(id) { sections.forEach((name) => el(name).classList.toggle('hidden', name !== id)); }
+function show(id) {
+  sections.forEach((name) => el(name).classList.toggle('hidden', name !== id));
+  document.body.classList.toggle('flow-active', id !== 'step-actions');
+  requestAnimationFrame(() => window.scrollTo({ top: id === 'step-actions' ? 0 : 54, behavior: 'auto' }));
+}
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, character => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -53,13 +57,14 @@ async function loadActions() {
     <article class="feed-card" data-id="${escapeHtml(action.id)}">
       <div class="feed-visual visual-${index + 1} ${action.reference_ready ? 'has-video' : 'placeholder'}">
         ${action.reference_ready ? `<video class="feed-video" src="${escapeHtml(mediaUrl(action.feed_video_url || action.reference_video_url))}" muted playsinline controls preload="metadata"></video>` : ''}
-        <span>${escapeHtml(action.segment_label || '动作片段')}</span>
-        <b>Ⅱ</b>
+        <span class="clip-label">${escapeHtml(action.segment_label || '动作片段')}</span>
+        <b class="pause-mark">Ⅱ</b>
       </div>
       <div class="feed-body">
-        <small>${escapeHtml(action.creator || '@创作者')}</small>
+        <div class="feed-meta"><small>${escapeHtml(action.creator || '@创作者')}</small><i>0${index + 1}</i></div>
         <strong>${escapeHtml(action.feed_caption || action.name)}</strong>
         <p>${escapeHtml(action.description)}</p>
+        <div class="pause-hint"><i></i>播放，停在没看懂的那一帧</div>
         <button data-id="${escapeHtml(action.id)}" disabled>
           ${action.reference_ready ? '播放视频，停在没看懂处' : '待配置参考片段'}
         </button>
