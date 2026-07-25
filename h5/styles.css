@@ -946,9 +946,6 @@ h1, h2, h3, p { margin-top: 0; }
 .comparison { margin-top: 10px; }
 .result-legend { display: flex; gap: 15px; color: var(--muted); font-size: 9px; }
 .result-legend span { display: flex; align-items: center; gap: 6px; }
-.result-legend i { width: 7px; height: 7px; border-radius: 50%; }
-.cyan-dot { background: var(--cyan); box-shadow: 0 0 8px var(--cyan); }
-.pink-dot { background: var(--pink); box-shadow: 0 0 8px var(--pink); }
 .metric-grid { margin-top: 16px; display: grid; gap: 8px; }
 .metric { padding: 14px; border: 1px solid var(--line); border-radius: 11px; background: #090b15; }
 .metric span { color: var(--muted); font-size: 9px; }
