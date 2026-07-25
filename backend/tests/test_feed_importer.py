@@ -74,13 +74,7 @@ def test_imported_feed_keeps_its_audio_track(tmp_path):
     settings = runtime_settings(tmp_path)
     registry = ActionRegistry(settings.action_registry_path)
     importer = FeedImporter(settings, registry)
-    sample = (
-        Path(__file__).parents[2]
-        / "assets"
-        / "samples"
-        / "open_sources"
-        / "simple_step.mp4"
-    )
+    sample = Path(__file__).parents[2] / "assets" / "samples" / "open_sources" / "simple_step.mp4"
     source = tmp_path / "with-audio.mp4"
     subprocess.run(
         [
