@@ -1,7 +1,7 @@
 API ?= http://127.0.0.1:8000/api/v1
 ADMIN_TOKEN ?= change-me
 
-.PHONY: setup setup-h5 dev demo-seed accept up down logs test test-h5 lint video-smoke zip
+.PHONY: setup setup-h5 dev demo-seed accept up down logs test test-h5 lint content-check video-smoke zip
 
 setup:
 	uv venv --python 3.11 .venv
@@ -44,6 +44,9 @@ test-h5:
 
 lint:
 	.venv/bin/ruff check backend/app backend/tests scripts
+
+content-check:
+	.venv/bin/python scripts/validate_content_matrix.py
 
 video-smoke:
 	.venv/bin/python scripts/video_sample_smoke_test.py

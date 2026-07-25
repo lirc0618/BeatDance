@@ -16,6 +16,7 @@ Feed 暂停 → 卡点诊断 → 动作片段搜索 → 二练验证
 - `docs/COMPETITIVE_POSITIONING.md`
 - `docs/PROJECT_CONTROL.md`
 - `docs/MIGRATION_V1_TO_V2.md`
+- `docs/CONTENT_MATRIX.md`
 
 ## 本地开发启动
 
@@ -62,6 +63,33 @@ make dev
 本地 `make dev` 仅在回环地址上允许示例令牌 `change-me`。部署时必须在 `.env`
 中设置一个至少 24 字符的随机 `ADMIN_TOKEN`；空值、默认值和文档占位值都会
 禁用导入和参考视频更新接口。
+
+## 教学内容矩阵
+
+用于动作分析的 Feed、标准参考和测试片段保存在本地；用于推荐的教学内容保存
+标题、标签、封面、原始链接、许可状态及可选本地文件路径。推荐索引为：
+
+```text
+动作 × 卡点类型 × 教学视角
+```
+
+20 条教学记录位于 `backend/app/data/tutorial_catalog.json`。现有诊断服务继续按
+动作、失败指标、身体部位和用户关注点进行排序，并从不同教学视角中返回 Top-3。
+
+开发阶段执行结构校验：
+
+```bash
+make content-check
+```
+
+演示发布前执行严格来源与许可校验：
+
+```bash
+.venv/bin/python scripts/validate_content_matrix.py --strict-sources
+```
+
+当前教学视频已记录为 `permission_granted + local_allowed`。实际文件统一放在
+`assets/tutorials/`；尚未复制文件时可暂时留空 `local_asset`。
 
 ## 本地完整流程验收
 

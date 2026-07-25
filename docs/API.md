@@ -86,7 +86,13 @@ JSON 请求：
       {
         "title": "慢速启动：肩、肘、腕不要一起动",
         "view_type": "慢速分拍",
-        "why_matched": "正好治这个问题、盯的是同一块"
+        "why_matched": "正好治这个问题、盯的是同一块",
+        "source_platform": "douyin_search",
+        "source_url": "",
+        "license_status": "permission_granted",
+        "license_name": "项目已获授权",
+        "download_policy": "local_allowed",
+        "local_asset": ""
       }
     ]
   }

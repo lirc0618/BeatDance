@@ -21,6 +21,16 @@ class Tutorial(BaseModel):
     creator: str = ""
     clip_seconds: str = ""
     why_matched: str = ""
+    source_platform: str = ""
+    source_url: str = ""
+    cover_url: str = ""
+    license_status: Literal["unverified", "verified_open", "permission_granted"] = (
+        "unverified"
+    )
+    license_name: str = ""
+    license_url: str = ""
+    download_policy: Literal["link_only", "local_allowed"] = "link_only"
+    local_asset: str = ""
     tags: list[str] = Field(default_factory=list)
 
 

@@ -3,6 +3,8 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import Any
 
+from .tutorial_catalog import tutorials_for_action
+
 PROFILES: dict[str, dict[str, Any]] = {
     "aini": {
         "description": "手势要甜，拍点要脆，点到就收。",
@@ -404,4 +406,6 @@ def with_coaching_profile(action: dict[str, Any]) -> dict[str, Any]:
     profile = PROFILES.get(str(profile_key))
     if profile is None:
         return action
-    return {**action, **deepcopy(profile)}
+    enriched = {**action, **deepcopy(profile)}
+    enriched["tutorials"] = tutorials_for_action(str(action.get("id", "")))
+    return enriched
