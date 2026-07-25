@@ -12,12 +12,18 @@ from app.services.pause_coach import PauseCoach
 def _skeleton(frame_count: int = 60) -> np.ndarray:
     coords = np.zeros((frame_count, 33, 3), dtype=np.float32)
     fixed = {
-        11: (-0.4, -1.0), 12: (0.4, -1.0),
-        13: (-0.7, -0.3), 14: (0.7, -0.3),
-        15: (-0.9, 0.4), 16: (0.9, 0.4),
-        23: (-0.25, 0.0), 24: (0.25, 0.0),
-        25: (-0.25, 0.8), 26: (0.25, 0.8),
-        27: (-0.25, 1.6), 28: (0.25, 1.6),
+        11: (-0.4, -1.0),
+        12: (0.4, -1.0),
+        13: (-0.7, -0.3),
+        14: (0.7, -0.3),
+        15: (-0.9, 0.4),
+        16: (0.9, 0.4),
+        23: (-0.25, 0.0),
+        24: (0.25, 0.0),
+        25: (-0.25, 0.8),
+        26: (0.25, 0.8),
+        27: (-0.25, 1.6),
+        28: (0.25, 1.6),
     }
     for joint, (x, y) in fixed.items():
         coords[:, joint, 0] = x
@@ -46,6 +52,9 @@ def test_delayed_right_arm_is_timing_error():
     assert result.diagnosis.primary_metric == "timing"
     assert result.diagnosis.body_part == "右臂"
     assert result.diagnosis.timing_offset_seconds > 0.3
+    assert "网卡" in result.diagnosis.primary_error
+    assert "单机模式" in result.diagnosis.drill
+    assert "动作延后" not in result.diagnosis.primary_error
 
 
 def test_identical_motion_is_aligned():
@@ -61,6 +70,8 @@ def test_identical_motion_is_aligned():
 
     assert result.diagnosis.status == "aligned"
     assert result.diagnosis.tutorial is None
+    assert "对味" in result.diagnosis.primary_error
+    assert "别再抠" in result.diagnosis.priority_feedback
 
 
 def test_shifted_arm_path_is_trajectory_error():
@@ -80,6 +91,10 @@ def test_shifted_arm_path_is_trajectory_error():
     assert result.diagnosis.status == "issue_detected"
     assert result.diagnosis.primary_metric == "trajectory"
     assert result.diagnosis.body_part == "右臂"
+    assert "导航" in result.diagnosis.primary_error
+    assert "参考轨迹" not in result.diagnosis.priority_feedback
+    trajectory = next(item for item in result.diagnosis.metrics if item.kind == "trajectory")
+    assert "偏差" not in trajectory.human_value
 
 
 def test_bent_elbow_is_angle_error():
@@ -99,6 +114,9 @@ def test_bent_elbow_is_angle_error():
     assert result.diagnosis.status == "issue_detected"
     assert result.diagnosis.primary_metric == "angle"
     assert result.diagnosis.body_part == "右肘"
+    assert "定格照" in result.diagnosis.primary_error
+    angle = next(item for item in result.diagnosis.metrics if item.kind == "angle")
+    assert "°" not in angle.human_value
 
 
 def test_card_point_search_returns_diverse_views():
@@ -108,7 +126,7 @@ def test_card_point_search_returns_diverse_views():
     assert len(results) == 3
     assert len({item.view_type for item in results}) == 3
     assert results[0].error_type == "timing"
-    assert results[0].why_matched
+    assert "正好治" in results[0].why_matched
     assert all(item.url.startswith("https://www.douyin.com/search/") for item in results)
 
 
@@ -242,9 +260,9 @@ def test_pause_coach_explains_the_exact_moment_with_context_and_searches(tmp_pat
     assert insight.context_start_seconds == 16.5
     assert insight.context_end_seconds == 19.5
     assert insight.phase == "动作进入"
-    assert insight.likely_stuck_at
-    assert insight.watch_for
-    assert insight.observed_motion
+    assert "导航" in insight.likely_stuck_at
+    assert insight.watch_for.startswith("别一口气看全身")
+    assert "检测到" not in insight.observed_motion
     assert insight.sampled_frame_count >= 20
     assert insight.suggested_focus == "lower"
     assert [item.view_type for item in insight.search_results] == [

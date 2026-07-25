@@ -79,14 +79,14 @@ JSON 请求：
   "source_phase": "动作进入",
   "reference_source": "feed_pause_context",
   "diagnosis": {
-    "primary_error": "右臂动作提前",
+    "primary_error": "右臂抢跑了，像偷偷开了倍速",
     "user_focus": "upper",
     "search_query": "手臂路线 右臂 拍点 慢速分拍 背面跟练",
     "search_results": [
       {
         "title": "慢速启动：肩、肘、腕不要一起动",
         "view_type": "慢速分拍",
-        "why_matched": "对应当前主要卡点、身体区域一致"
+        "why_matched": "正好治这个问题、盯的是同一块"
       }
     ]
   }

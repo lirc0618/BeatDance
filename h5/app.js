@@ -45,7 +45,7 @@ function searchCards(results) {
         <span>${escapeHtml(item.view_type)}${item.clip_seconds ? ` · ${escapeHtml(item.clip_seconds)}` : ''}</span>
         <strong>${escapeHtml(item.title)}</strong>
         <p>${escapeHtml(item.description)}</p>
-        <small>${escapeHtml(item.why_matched || '与当前卡点匹配')}${item.creator ? ` · ${escapeHtml(item.creator)}` : ''}</small>
+        <small>${escapeHtml(item.why_matched || '这条正好对症')}${item.creator ? ` · ${escapeHtml(item.creator)}` : ''}</small>
       </div>
     </a>`).join('');
 }
@@ -124,7 +124,7 @@ async function requestPauseInsight(id) {
   state.action = state.actions.find(item => item.id === id);
   state.pausedAt = pausedAt;
   state.feedDuration = duration;
-  el('loading-copy').textContent = '读取暂停点 → 截取前后动作 → 匹配拆解方向';
+  el('loading-copy').textContent = '回看这一秒 → 找到谁先乱了 → 翻译成人话';
   show('loading');
   try {
     const response = await fetch(`${API}/actions/${id}/pause-insight`, {
@@ -150,7 +150,7 @@ function renderPauseInsight(insight) {
     preview.pause();
   }, { once: true });
   el('pause-time').textContent = `定格 ${formatTime(insight.timestamp_seconds)}`;
-  el('pause-context').textContent = `正在看 ${formatTime(insight.context_start_seconds)}–${formatTime(insight.context_end_seconds)} 的动作上下文。`;
+  el('pause-context').textContent = `AI 偷偷回看了 ${formatTime(insight.context_start_seconds)}–${formatTime(insight.context_end_seconds)}，免得只凭一帧瞎猜。`;
   el('pause-phase').textContent = insight.phase;
   el('pause-stuck').textContent = insight.likely_stuck_at;
   el('pause-watch').textContent = insight.watch_for;
@@ -214,14 +214,14 @@ function renderResult(result) {
   const d = result.diagnosis;
   el('result-title').textContent = d.primary_error;
   document.querySelector('.result-kicker').textContent = d.status === 'aligned'
-    ? '这一招已经很接近了'
-    : '你不是不会，只是卡在这一处';
+    ? '可以啊，这把对味了'
+    : '别慌，AI 抓到谁在拖后腿了';
   el('result-feedback').textContent = d.vlm_summary || d.priority_feedback;
   el('drill').textContent = d.drill;
   el('search-query').textContent = d.search_query || '';
   el('metric-grid').innerHTML = d.metrics.map(item => `
     <div class="metric">
-      <span>${({timing:'节奏', trajectory:'路线', angle:'幅度'})[item.kind]} · ${escapeHtml(item.body_part)}</span>
+      <span>${({timing:'出手时间', trajectory:'走的路线', angle:'摆的造型'})[item.kind]} · ${escapeHtml(item.body_part)}</span>
       <strong>${escapeHtml(item.human_value)}</strong>
       <div class="metric-track"><i style="width:${Math.round(item.normalized_score * 100)}%"></i></div>
     </div>`).join('');
@@ -237,7 +237,7 @@ function renderResult(result) {
 
   el('improvement').classList.toggle('hidden', !result.improvement);
   if (result.improvement) el('improvement').textContent = result.improvement.message;
-  el('warnings').innerHTML = (result.warnings || []).map(item => `<div>提示：${escapeHtml(item)}</div>`).join('');
+  el('warnings').innerHTML = (result.warnings || []).map(item => `<div>小提醒：${escapeHtml(item)}</div>`).join('');
   if (!state.baselineId) state.baselineId = result.id;
   show('result');
 }
@@ -252,7 +252,7 @@ el('retry-button').addEventListener('click', () => {
   el('video-input').value = '';
   el('video-preview').classList.add('hidden');
   el('upload-title').textContent = '上传第二次练习';
-  el('upload-hint').textContent = '系统会验证刚才的卡点是否改善';
+  el('upload-hint').textContent = '再来一遍，看看刚才拖后腿的地方跟上没';
   el('analyze-button').disabled = true;
   show('step-upload');
 });

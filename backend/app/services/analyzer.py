@@ -242,20 +242,20 @@ class Analyzer:
                 improvement_percent=round(percentage, 1),
                 message=(
                     (
-                        "这次已经没有明显主导偏差，可以把完整动作加回来。"
+                        "这遍顺了！刚才那个卡壳点基本消失，可以把完整动作接回来。"
                         if bundle.diagnosis.status == "aligned"
-                        else f"这次关键偏差降低约 {percentage:.0f}% ，可以把完整动作加回来。"
+                        else f"这遍顺了约 {percentage:.0f}%！拖后腿的地方终于跟上队伍了。"
                     )
                     if improved
-                    else "这次变化还不明显。继续只练当前卡点，再录一次。"
+                    else "还差一点，先别加难度。只练刚才那一小段，再来一遍。"
                 ),
             )
 
         warnings: list[str] = []
         if use_mirror:
-            warnings.append("系统检测到镜像画面，已自动进行左右校正。")
+            warnings.append("你拍的是镜像画面，AI 已自动把左右翻回来，不用你烧脑。")
         if candidate_sequence.coverage < 0.8:
-            warnings.append("部分帧关键点置信度较低，建议光线更亮并保持全身入镜。")
+            warnings.append("有几帧人快跑出镜头了。灯开亮一点，全身别出框。")
 
         result = AnalysisResult(
             id=analysis_id,

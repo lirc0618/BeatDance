@@ -57,8 +57,8 @@ class PauseCoach:
             context_start_seconds=round(context_start, 2),
             context_end_seconds=round(context_end, 2),
             phase=str(guide["phase"]),
-            likely_stuck_at=str(guide["likely_stuck_at"]),
-            watch_for=f"{guide['watch_for']} {observed_motion}",
+            likely_stuck_at=self._plain_problem(guide),
+            watch_for=(f"别一口气看全身，今天只抓一件事：{guide['watch_for']} {observed_motion}"),
             observed_motion=observed_motion,
             sampled_frame_count=sampled_frames,
             suggested_focus=guide["suggested_focus"],
@@ -155,12 +155,23 @@ class PauseCoach:
             raise ValueError("暂停点附近没有足够视频帧")
         intensity = float(np.mean(differences)) if differences else 0.0
         if intensity < 0.015:
-            level = "动作变化较小，适合先看定格姿势。"
+            level = "这几秒像按了暂停键，正适合照着摆造型。"
         elif intensity < 0.045:
-            level = "检测到连续动作转换，适合慢速查看启动顺序。"
+            level = "这几秒正在“换挡”，开 0.5 倍最容易看懂。"
         else:
-            level = "检测到快速动作变化，适合缩小到局部路线查看。"
+            level = "这几秒手脚有点忙，先只盯一个部位，别让眼睛加班。"
         return level, sampled_frames
+
+    @staticmethod
+    def _plain_problem(guide: dict[str, Any]) -> str:
+        phase = str(guide["phase"])
+        body_part = str(guide["body_part"])
+        metric = str(guide["metric"])
+        if metric == "timing":
+            return f"{phase}这里，{body_part}和拍子没对上暗号，像两个人抢着说话。"
+        if metric == "trajectory":
+            return f"{phase}这里，{body_part}的导航容易走偏。不是不会，是眼睛一下看太多了。"
+        return f"{phase}这里，{body_part}的“定格照”容易没摆到位，就差最后一下。"
 
     @staticmethod
     def _guide_for_progress(action: dict[str, Any], progress: float) -> dict[str, Any]:
@@ -168,9 +179,9 @@ class PauseCoach:
         if not guides:
             return {
                 "until_ratio": 1.0,
-                "phase": "关键动作",
+                "phase": "最容易卡壳的地方",
                 "likely_stuck_at": action["description"],
-                "watch_for": "先看动作方向和启动顺序，再拍一次自己的尝试。",
+                "watch_for": "先看谁最先动，再看它最后停在哪。",
                 "suggested_focus": "auto",
                 "metric": "timing",
                 "body_part": "躯干",

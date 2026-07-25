@@ -17,13 +17,13 @@
   </view>
 
   <view class="card card-gap">
-    <view class="section-label">先练这一件事</view>
+    <view class="section-label">先别贪多，只修这一件事</view>
     <view class="card-title">{{result.diagnosis.drill}}</view>
   </view>
 
   <view class="search-title">
-    <view class="section-label cyan">动作片段搜索</view>
-    <view class="card-title">为你找到 3 种更合适的拆法</view>
+    <view class="section-label cyan">不懂就换个角度看</view>
+    <view class="card-title">给你 3 种不烧脑的拆法</view>
     <view class="query">{{result.diagnosis.search_query}}</view>
   </view>
 
@@ -38,7 +38,7 @@
   </block>
 
   <view class="card" wx:if="{{result.improvement}}"><view class="card-title">{{result.improvement.message}}</view></view>
-  <block wx:for="{{result.warnings}}" wx:key="*this"><view class="warning">提示：{{item}}</view></block>
+  <block wx:for="{{result.warnings}}" wx:key="*this"><view class="warning">小提醒：{{item}}</view></block>
 
   <button class="primary" bindtap="retry">{{retryText}}</button>
   <button class="ghost" bindtap="restart">回到 Feed 换一招</button>

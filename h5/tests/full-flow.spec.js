@@ -121,7 +121,7 @@ test('用户暂停 Feed 后获得时刻解释，再完成首练和二练验证',
     createdIds.push((await retryResponse.json()).id);
     await expect(page.locator('#result')).toBeVisible({ timeout: 30_000 });
     await expect(page.locator('#improvement')).toBeVisible();
-    await expect(page.locator('#improvement')).toContainText('可以把完整动作加回来');
+    await expect(page.locator('#improvement')).toContainText('跟上队伍了');
   } finally {
     for (const analysisId of createdIds) {
       const response = await request.delete(`http://127.0.0.1:8000/api/v1/results/${analysisId}`);

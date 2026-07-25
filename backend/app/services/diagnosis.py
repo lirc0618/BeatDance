@@ -168,24 +168,24 @@ class ActionRegistry:
             reasons: list[str] = []
             if item.get("error_type") == metric:
                 score += 5
-                reasons.append("对应当前主要卡点")
+                reasons.append("正好治这个问题")
             if item.get("body_part") == body_part:
                 score += 3
-                reasons.append(f"聚焦{body_part}")
+                reasons.append(f"只盯{body_part}")
             elif _part_focus(str(item.get("body_part", ""))) == part_focus and part_focus != "auto":
                 score += 1.5
-                reasons.append("身体区域一致")
+                reasons.append("盯的是同一块")
             tags = set(item.get("tags", []))
             if focus != "auto" and focus in tags:
                 score += 2
-                reasons.append("符合你选择的关注部位")
+                reasons.append("就是你想看的部位")
             if focus == "timing" and item.get("error_type") == "timing":
                 score += 2
-                reasons.append("专门处理拍点")
+                reasons.append("专治抢拍和慢拍")
             # 优先召回更适合短视频学习的局部/背面/慢速内容。
             if item.get("view_type") in {"局部特写", "背面跟练", "慢速分拍"}:
                 score += 0.5
-            scored.append((score, item, "、".join(reasons) or "与当前动作相关"))
+            scored.append((score, item, "、".join(reasons) or "换个角度更好懂"))
 
         scored.sort(key=lambda row: row[0], reverse=True)
         picked: list[Tutorial] = []
@@ -307,34 +307,35 @@ def compare_poses(
 
     if primary_metric == "timing":
         body_part = timing_group
-        direction = "提前" if timing_offset < 0 else "延后"
-        primary_error = f"{body_part}动作{direction}"
-        feedback = (
-            f"其他部分先别改，把{body_part}的启动时机{('稍微延后' if timing_offset < 0 else '稍微提前')}。"
-        )
-        drill = f"只练{body_part}，跟着四拍做 3 次，再把完整动作加回来。"
+        if timing_offset < 0:
+            primary_error = f"{body_part}抢跑了，像偷偷开了倍速"
+            feedback = f"先别管全身。让{body_part}晚一点出发，嘴里数到“走”再动。"
+        else:
+            primary_error = f"{body_part}慢半拍，像网卡了一下"
+            feedback = f"先别管全身。给{body_part}一点提前量，嘴里喊“走”时它就出发。"
+        drill = f"开启“{body_part}单机模式”：跟四拍做 3 遍，再把全身叫回来。"
         ref_key, cand_key = trajectory_peak.get(
             body_part, (len(reference.coords) // 2, len(candidate.coords) // 2)
         )
     elif primary_metric == "trajectory":
         body_part = trajectory_group
-        primary_error = f"{body_part}运动路线没有贴上参考"
-        feedback = f"节奏基本跟上了，先把{body_part}的移动路线贴近参考轨迹。"
-        drill = f"把动作放慢到 0.5 倍，只画{body_part}的路线，连续练 3 次。"
+        primary_error = f"{body_part}的导航走偏了"
+        feedback = f"拍子没大问题，是{body_part}绕了点路。只看“从哪出发、最后停哪”。"
+        drill = f"开 0.5 倍速，把{body_part}当成鼠标光标，沿同一条路走 3 遍。"
         ref_key, cand_key = trajectory_peak[trajectory_group]
     else:
         body_part = angle_joint
-        primary_error = f"{body_part}展开幅度不同"
-        feedback = f"主要差异在{body_part}的展开幅度，先对准这个关键定格姿势。"
-        drill = f"停在关键帧保持 2 秒，确认{body_part}角度后再连起来。"
+        primary_error = f"{body_part}这张“定格照”还没摆到位"
+        feedback = f"方向已经对了，就差{body_part}最后那一下。先把造型摆像，再追求连贯。"
+        drill = f"停在最大动作那一帧 2 秒，照着摆{body_part}，摆对再连起来。"
         ref_key, cand_key = angle_peak[angle_joint]
 
     status = "issue_detected"
     if issue_strength < aligned_threshold:
         status = "aligned"
-        primary_error = "这一招已经基本对齐"
-        feedback = "节奏、路线和幅度没有明显主导偏差，可以开始练连贯性。"
-        drill = "按原速完整做 2 次，重点保持连贯，不必继续抠单个关节。"
+        primary_error = "这把对味了，动作已经像了"
+        feedback = "别再抠零件啦。现在最重要的是一口气做完，别把顺手的动作想复杂。"
+        drill = "按原速完整来 2 遍：不停、不回看，让身体自己记住。"
 
     phase = phase_name(ref_key, len(reference.coords))
     confidence = float(np.clip(0.58 + abs(issue_strength - aligned_threshold) * 0.45, 0.58, 0.96))
@@ -350,7 +351,11 @@ def compare_poses(
             normalized_score=timing_norm,
             body_part=timing_group,
             phase=phase,
-            human_value=f"{abs(timing_offset):.2f} 秒",
+            human_value=(
+                f"快了 {abs(timing_offset):.1f} 秒"
+                if timing_offset < 0
+                else f"慢了 {abs(timing_offset):.1f} 秒"
+            ),
         ),
         MetricDetail(
             kind="trajectory",
@@ -358,7 +363,9 @@ def compare_poses(
             normalized_score=trajectory_norm,
             body_part=trajectory_group,
             phase=phase,
-            human_value=f"偏差 {trajectory_error:.2f}",
+            human_value=(
+                "稍微走偏" if trajectory_norm < 0.45 else "绕了点路" if trajectory_norm < 0.8 else "明显走偏"
+            ),
         ),
         MetricDetail(
             kind="angle",
@@ -366,7 +373,9 @@ def compare_poses(
             normalized_score=angle_norm,
             body_part=angle_joint,
             phase=phase,
-            human_value=f"约 {angle_error:.0f}°",
+            human_value=(
+                "造型差一点" if angle_norm < 0.45 else "还得再打开" if angle_norm < 0.8 else "造型没摆开"
+            ),
         ),
     ]
 

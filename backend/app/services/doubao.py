@@ -28,7 +28,10 @@ class DoubaoService:
         if not self.configured:
             return None
         prompt = {
-            "任务": "把结构化卡点诊断改写成短视频动作学习场景的一句反馈。不要打分，不要夸大精度，只指出一个最关键问题和一个可执行动作。",
+            "任务": (
+                "把动作诊断改写成一句小白秒懂的话。先用一个轻松比喻点出问题，"
+                "再告诉用户马上怎么做。不要打分，不要术语，不嘲讽用户。"
+            ),
             "动作": action_name,
             "阶段": diagnosis.phase,
             "主要问题": diagnosis.primary_error,
@@ -39,7 +42,7 @@ class DoubaoService:
             "练习": diagnosis.drill,
             "用户主动关注": diagnosis.user_focus,
             "后续搜索词": diagnosis.search_query,
-            "输出约束": "中文，45字以内，只输出一句话。",
+            "输出约束": "中文，50字以内，只输出一句话；像朋友提醒，不像教科书。",
         }
         user_content: Any = json.dumps(prompt, ensure_ascii=False)
         if comparison_image and comparison_image.exists() and self.settings.ark_send_images:
@@ -53,7 +56,7 @@ class DoubaoService:
                     "type": "text",
                     "text": (
                         "左侧是参考动作，右侧是用户动作，红色骨架标出算法定位的重点部位。"
-                        "请结合画面核验结构化诊断，只输出一句具体、谨慎、可执行的中文反馈。\n"
+                        "请结合画面核验，只输出一句小白能秒懂、有一点趣味、又能马上照做的话。\n"
                         + json.dumps(prompt, ensure_ascii=False)
                     ),
                 },
@@ -61,7 +64,13 @@ class DoubaoService:
         payload: dict[str, Any] = {
             "model": self.settings.ark_model,
             "messages": [
-                {"role": "system", "content": "你是短视频动作卡点搜索助手。你只解释当前最关键的一处差异，不进行整舞评分。"},
+                {
+                    "role": "system",
+                    "content": (
+                        "你是一个会说人话的动作搭子。只讲最关键的一处，"
+                        "可以用一个轻松比喻，但不要堆梗、羞辱用户或装专业。"
+                    ),
+                },
                 {"role": "user", "content": user_content},
             ],
             "temperature": 0.2,
