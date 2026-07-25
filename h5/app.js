@@ -149,7 +149,7 @@ function renderPauseInsight(insight) {
     preview.pause();
   }, { once: true });
   el('pause-time').textContent = `定格 ${formatTime(insight.timestamp_seconds)}`;
-  el('pause-context').textContent = `前后 3 秒都看了，不瞎猜。`;
+  el('pause-context').textContent = insight.observed_motion;
   el('pause-phase').textContent = insight.phase;
   el('pause-stuck').textContent = insight.likely_stuck_at;
   el('pause-watch').textContent = insight.watch_for;
@@ -215,7 +215,7 @@ function renderResult(result) {
   document.querySelector('.result-kicker').textContent = d.status === 'aligned'
     ? '这把可以'
     : '一句话判定';
-  el('result-feedback').textContent = d.priority_feedback;
+  el('result-feedback').textContent = d.vlm_summary || d.priority_feedback;
   el('drill').textContent = d.drill;
   const primaryMetrics = d.metrics.filter(item => item.kind === d.primary_metric);
   el('metric-grid').innerHTML = primaryMetrics.map(item => `

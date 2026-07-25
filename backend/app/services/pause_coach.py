@@ -153,11 +153,11 @@ class PauseCoach:
             raise ValueError("暂停点附近没有足够视频帧")
         intensity = float(np.mean(differences)) if differences else 0.0
         if intensity < 0.015:
-            level = "这几秒像按了暂停键，正适合照着摆造型。"
+            level = "这秒几乎没动：照着摆。"
         elif intensity < 0.045:
-            level = "这几秒正在“换挡”，开 0.5 倍最容易看懂。"
+            level = "这秒正在换挡：开 0.5×。"
         else:
-            level = "这几秒手脚有点忙，先只盯一个部位，别让眼睛加班。"
+            level = "这秒手脚高能：只盯一个部位。"
         return level, sampled_frames
 
     @staticmethod

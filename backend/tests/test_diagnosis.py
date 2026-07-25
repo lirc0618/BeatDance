@@ -267,20 +267,18 @@ def test_pause_coach_explains_the_exact_moment_with_context_and_searches(tmp_pat
     insight = coach.explain("groove_step", timestamp_seconds=18.0)
 
     assert insight.timestamp_seconds == 18.0
-    assert insight.feed_duration_seconds == 106.52
+    assert insight.feed_duration_seconds == 20.8
     assert insight.context_start_seconds == 16.5
     assert insight.context_end_seconds == 19.5
-    assert insight.phase == "动作进入"
-    assert insight.likely_stuck_at == "你停在进入六步的准备段，常见难点是手先撑稳还是脚先跨出。"
-    assert insight.watch_for == "先只看支撑手与第一步落点，不要同时追整套脚步。"
+    assert insight.phase == "收尾定点"
+    assert insight.likely_stuck_at == "笑容可以松，拍子不能掉。"
+    assert insight.watch_for == "口令：停住半拍。"
     assert "检测到" not in insight.observed_motion
     assert insight.sampled_frame_count >= 20
-    assert insight.suggested_focus == "lower"
-    assert {item.view_type for item in insight.search_results} == {
-        "背面跟练",
-        "慢速分拍",
-        "局部特写",
-    }
+    assert insight.observed_motion.startswith("这秒")
+    assert insight.suggested_focus == "upper"
+    assert len(insight.search_results) == 3
+    assert insight.search_results[0].error_type == "angle"
 
 
 def test_pause_coach_rejects_a_timestamp_outside_the_feed(tmp_path):

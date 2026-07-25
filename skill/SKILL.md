@@ -1,4 +1,4 @@
-# 定格教练 · 卡点搜索 Skill
+# 对拍 Skill
 
 ## 1. Skill 名称
 
@@ -22,7 +22,7 @@
 - 用户愿意上传自己的 3–8 秒模仿；
 - 系统需要把“分析”继续承接到内容搜索和练习验证。
 
-MVP 支持：`groove_step`、`arm_wave`、`cross_step`。
+MVP 支持：`groove_step`（爱你）、`arm_wave`（科目三）、`cross_step`（摇一摇）、`two_step_demo`（Jumpstyle）。
 
 ## 4. 输入
 

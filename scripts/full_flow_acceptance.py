@@ -17,11 +17,13 @@ SAMPLES = {
     "groove_step": "breakdance_6_step.mp4",
     "arm_wave": "arm_movements_reference.mp4",
     "cross_step": "tendu_reference.mp4",
+    "two_step_demo": "simple_step.mp4",
 }
 FEED_DURATIONS = {
-    "groove_step": 106.52,
-    "arm_wave": 12.0,
-    "cross_step": 16.28,
+    "groove_step": 20.8,
+    "arm_wave": 28.4,
+    "cross_step": 14.76,
+    "two_step_demo": 17.44,
 }
 CREATED_ANALYSIS_IDS: list[str] = []
 
@@ -63,6 +65,10 @@ def create_mirrored_video(source: Path, target: Path) -> None:
             "-loglevel",
             "error",
             "-y",
+            "-ss",
+            "8",
+            "-t",
+            "4",
             "-i",
             str(source),
             "-an",
@@ -132,7 +138,7 @@ def main() -> int:
         health.raise_for_status()
         health_data = health.json()
         assert health_data["status"] == "ok"
-        assert health_data["total_actions"] >= 3, health_data
+        assert health_data["total_actions"] >= 4, health_data
         assert (
             health_data["reference_actions_ready"] == health_data["total_actions"]
         ), health_data
@@ -141,7 +147,7 @@ def main() -> int:
         actions = client.get(f"{api}/actions")
         actions.raise_for_status()
         action_data = actions.json()
-        assert len(action_data) >= 3
+        assert len(action_data) >= 4
         assert all(action["reference_ready"] for action in action_data)
         assert all(action["feed_video_url"].startswith("/media/feed/") for action in action_data)
 
@@ -168,11 +174,8 @@ def main() -> int:
             assert insight["sampled_frame_count"] > 0
             assert insight["context_start_seconds"] < paused_at
             assert insight["context_end_seconds"] > paused_at
-            assert [item["view_type"] for item in insight["search_results"]] == [
-                "背面跟练",
-                "慢速分拍",
-                "局部特写",
-            ]
+            assert len(insight["search_results"]) == 3
+            assert len({item["view_type"] for item in insight["search_results"]}) == 3
             pause_insights[action_id] = insight
 
         short_video = Path(temp_dir) / "short.mp4"
@@ -182,7 +185,7 @@ def main() -> int:
         create_blank_video(short_video, 2)
         create_blank_video(long_video, 9)
         create_blank_video(blank_video, 4)
-        create_mirrored_video(samples_dir / SAMPLES["groove_step"], mirrored_video)
+        create_mirrored_video(samples_dir / "爱你.MP4", mirrored_video)
 
         for video in (short_video, long_video):
             response = post_video(
@@ -344,11 +347,11 @@ def main() -> int:
         assert any("镜像" in warning for warning in mirrored["warnings"])
 
     cleanup_created_results(api, strict=True)
-    print("PASS: 三个内置 Feed 动作均已配置参考视频")
-    print("PASS: 三条内置 Feed 均可按暂停时刻返回上下文和三种拆解")
+    print("PASS: 四个内置 Feed 动作均已配置参考视频")
+    print("PASS: 四条内置 Feed 均可按暂停时刻返回上下文和三种拆解")
     print("PASS: 时长和无人画面校验返回可读错误")
     print("PASS: 非法参考上传被拒绝且不破坏已有参考")
-    print("PASS: 三个内置动作均返回诊断、三种拆法和对比图")
+    print("PASS: 四个内置动作均返回诊断、三种拆法和对比图")
     if doubao_configured:
         print("PASS: 豆包已配置时诊断主链正常")
     else:

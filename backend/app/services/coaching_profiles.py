@@ -4,7 +4,7 @@ from copy import deepcopy
 from typing import Any
 
 PROFILES: dict[str, dict[str, Any]] = {
-    "爱你": {
+    "aini": {
         "description": "手势要甜，拍点要脆，点到就收。",
         "feed_caption": "甜妹感不是甩大，是每一下都刚好。",
         "pause_guides": [
@@ -73,9 +73,33 @@ PROFILES: dict[str, dict[str, Any]] = {
                 "clip_seconds": "8 秒",
                 "tags": ["upper", "timing"],
             },
+            {
+                "id": "aini-freeze",
+                "title": "定点摆拍｜停住半拍",
+                "url": "",
+                "error_type": "angle",
+                "body_part": "双臂",
+                "description": "先把收尾造型卡住。",
+                "view_type": "定点摆拍",
+                "creator": "@动作搜索",
+                "clip_seconds": "7 秒",
+                "tags": ["upper", "angle"],
+            },
+            {
+                "id": "aini-easy",
+                "title": "新手半身版｜先手后胯",
+                "url": "",
+                "error_type": "trajectory",
+                "body_part": "双手",
+                "description": "先关掉脚步，只练上半身。",
+                "view_type": "新手半身版",
+                "creator": "@动作搜索",
+                "clip_seconds": "10 秒",
+                "tags": ["upper", "trajectory", "beginner"],
+            },
         ],
     },
-    "科目三": {
+    "kemusan": {
         "description": "脚下点火、重心换挡，落地还得弹。",
         "feed_caption": "脚在蹦迪，重心可别还在加载。",
         "pause_guides": [
@@ -144,9 +168,33 @@ PROFILES: dict[str, dict[str, Any]] = {
                 "clip_seconds": "8 秒",
                 "tags": ["lower", "timing"],
             },
+            {
+                "id": "kemusan-freeze",
+                "title": "落地定格｜别坐死",
+                "url": "",
+                "error_type": "angle",
+                "body_part": "双腿",
+                "description": "停住看膝髋有没有弹性。",
+                "view_type": "落地定格",
+                "creator": "@动作搜索",
+                "clip_seconds": "8 秒",
+                "tags": ["lower", "angle"],
+            },
+            {
+                "id": "kemusan-easy",
+                "title": "扶墙简化｜只练换挡",
+                "url": "",
+                "error_type": "trajectory",
+                "body_part": "髋部",
+                "description": "扶稳上身，单刷重心换边。",
+                "view_type": "扶墙简化",
+                "creator": "@动作搜索",
+                "clip_seconds": "12 秒",
+                "tags": ["lower", "trajectory", "beginner"],
+            },
         ],
     },
-    "摇一摇": {
+    "shake": {
         "description": "肩胯一起联网，摇得松但轴心不跑。",
         "feed_caption": "摇不是散架，松弛感也有主心骨。",
         "pause_guides": [
@@ -214,6 +262,30 @@ PROFILES: dict[str, dict[str, Any]] = {
                 "creator": "@动作搜索",
                 "clip_seconds": "11 秒",
                 "tags": ["trajectory"],
+            },
+            {
+                "id": "shake-freeze",
+                "title": "回正定格｜惯性到此为止",
+                "url": "",
+                "error_type": "angle",
+                "body_part": "躯干",
+                "description": "停住检查身体有没有回中。",
+                "view_type": "回正定格",
+                "creator": "@动作搜索",
+                "clip_seconds": "7 秒",
+                "tags": ["angle"],
+            },
+            {
+                "id": "shake-easy",
+                "title": "坐姿练肩｜先把肩摇明白",
+                "url": "",
+                "error_type": "trajectory",
+                "body_part": "双肩",
+                "description": "固定下半身，只练肩膀路线。",
+                "view_type": "坐姿练肩",
+                "creator": "@动作搜索",
+                "clip_seconds": "9 秒",
+                "tags": ["upper", "trajectory", "beginner"],
             },
         ],
     },
@@ -286,15 +358,50 @@ PROFILES: dict[str, dict[str, Any]] = {
                 "clip_seconds": "9 秒",
                 "tags": ["lower", "trajectory"],
             },
+            {
+                "id": "jumpstyle-freeze",
+                "title": "膝盖定格｜落地别锁死",
+                "url": "",
+                "error_type": "angle",
+                "body_part": "双腿",
+                "description": "停住看膝盖有没有留弹性。",
+                "view_type": "膝盖定格",
+                "creator": "@动作搜索",
+                "clip_seconds": "8 秒",
+                "tags": ["lower", "angle"],
+            },
+            {
+                "id": "jumpstyle-easy",
+                "title": "原地简化｜先练踢落弹",
+                "url": "",
+                "error_type": "trajectory",
+                "body_part": "双腿",
+                "description": "不往前跑，先把脚下循环练顺。",
+                "view_type": "原地简化",
+                "creator": "@动作搜索",
+                "clip_seconds": "11 秒",
+                "tags": ["lower", "trajectory", "beginner"],
+            },
         ],
     }
+}
+
+
+FEATURED_PROFILE_BY_ACTION_ID = {
+    "groove_step": "aini",
+    "arm_wave": "kemusan",
+    "cross_step": "shake",
+    "two_step_demo": "jumpstyle",
 }
 
 
 def with_coaching_profile(action: dict[str, Any]) -> dict[str, Any]:
     """Return an action with its named coaching personality applied."""
 
-    profile = PROFILES.get(str(action.get("name", "")).strip().casefold())
+    profile_key = action.get("coaching_profile") or FEATURED_PROFILE_BY_ACTION_ID.get(
+        str(action.get("id", ""))
+    )
+    profile = PROFILES.get(str(profile_key))
     if profile is None:
         return action
     return {**action, **deepcopy(profile)}

@@ -2,16 +2,16 @@
   "actions": [
     {
       "id": "groove_step",
-      "name": "Breaking 六步·重心切换",
-      "description": "播放完整六步教程，停在手脚配合或重心换边没看懂的时刻。",
-      "duration_hint": "3–8 秒，完整六步",
+      "name": "爱你",
+      "description": "手势要甜，拍点要脆，点到就收。",
+      "duration_hint": "上传 3–8 秒模仿",
       "cover_url": "",
       "reference_video_url": "/media/references/groove_step.mp4",
-      "feed_caption": "六步到底先动手还是先动脚？停在你开始混乱的那一秒。",
-      "creator": "@Neil Sweeney · CC BY 3.0",
-      "segment_label": "完整教程 · 任意时刻暂停",
+      "feed_caption": "甜妹感不是甩大，是每一下都刚好。",
+      "creator": "@测试素材",
+      "segment_label": "完整动作 · 任意暂停",
       "entry_copy": "定格学这一招",
-      "feed_video_url": "/media/feed/six_step_tutorial.mp4",
+      "feed_video_url": "/media/feed/爱你.MP4",
       "pause_guides": [
         {
           "until_ratio": 0.34,
@@ -111,16 +111,16 @@
     },
     {
       "id": "arm_wave",
-      "name": "手臂路线·越顶与落位",
-      "description": "播放手臂越顶动作，停在肩、肘、腕方向变化没看懂的时刻。",
-      "duration_hint": "3–5 秒，上半身清晰",
+      "name": "科目三",
+      "description": "脚下点火、重心换挡，落地还得弹。",
+      "duration_hint": "上传 3–8 秒模仿",
       "cover_url": "",
       "reference_video_url": "/media/references/arm_wave.mp4",
-      "feed_caption": "手臂越过头顶时，肘和手腕到底沿哪条路线走？",
-      "creator": "@Fabiola Mastache · CC BY-SA 4.0",
-      "segment_label": "12 秒手臂片段 · 任意暂停",
+      "feed_caption": "脚在蹦迪，重心可别还在加载。",
+      "creator": "@测试素材",
+      "segment_label": "完整动作 · 任意暂停",
       "entry_copy": "定格看手怎么走",
-      "feed_video_url": "/media/feed/arm_movements_veil.mp4",
+      "feed_video_url": "/media/feed/科目三.MP4",
       "pause_guides": [
         {
           "until_ratio": 0.34,
@@ -220,16 +220,16 @@
     },
     {
       "id": "cross_step",
-      "name": "Tendu 脚尖伸展·方向与回位",
-      "description": "播放单人 Tendu 教程，停在脚尖向前、侧、后伸展没看懂的时刻。",
-      "duration_hint": "3–8 秒，正面全身",
+      "name": "摇一摇",
+      "description": "肩胯一起联网，摇得松但轴心不跑。",
+      "duration_hint": "上传 3–8 秒模仿",
       "cover_url": "",
       "reference_video_url": "/media/references/cross_step.mp4",
-      "feed_caption": "脚尖向三个方向伸出去，支撑腿和髋为什么不能跟着跑？",
-      "creator": "@Tcshaw427 · CC BY-SA 3.0",
-      "segment_label": "16 秒教程 · 任意时刻暂停",
+      "feed_caption": "摇不是散架，松弛感也有主心骨。",
+      "creator": "@测试素材",
+      "segment_label": "完整动作 · 任意暂停",
       "entry_copy": "定格看落点",
-      "feed_video_url": "/media/feed/tendu_tutorial.mp4",
+      "feed_video_url": "/media/feed/摇一摇.MP4",
       "pause_guides": [
         {
           "until_ratio": 0.34,
@@ -321,6 +321,26 @@
           "tags": ["lower", "beginner"]
         }
       ],
+      "diagnosis": {
+        "thresholds": {"timing_seconds": 0.55, "trajectory": 0.55, "angle_degrees": 55.0},
+        "weights": {"timing": 1.05, "trajectory": 1.0, "angle": 0.95},
+        "aligned_threshold": 0.22
+      }
+    },
+    {
+      "id": "two_step_demo",
+      "name": "Jumpstyle",
+      "description": "腿快、点准、落地还能接着弹。",
+      "duration_hint": "上传 3–8 秒模仿",
+      "cover_url": "",
+      "reference_video_url": "/media/references/two_step_demo.mp4",
+      "feed_caption": "腿像弹幕一样刷过去，落地还得稳。",
+      "creator": "@测试素材",
+      "segment_label": "完整动作 · 任意暂停",
+      "entry_copy": "停拍看这一招",
+      "feed_video_url": "/media/feed/jumpstyle.MP4",
+      "pause_guides": [],
+      "tutorials": [],
       "diagnosis": {
         "thresholds": {"timing_seconds": 0.55, "trajectory": 0.55, "angle_degrees": 55.0},
         "weights": {"timing": 1.05, "trajectory": 1.0, "angle": 0.95},

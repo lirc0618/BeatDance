@@ -2,7 +2,7 @@
   <view class="hero">
     <view class="badge">{{resultBadge}}</view>
     <view class="big-result">{{result.diagnosis.primary_error}}</view>
-    <view class="feedback">{{result.diagnosis.priority_feedback}}</view>
+    <view class="feedback">{{result.diagnosis.vlm_summary || result.diagnosis.priority_feedback}}</view>
   </view>
 
   <image wx:if="{{comparisonUrl}}" class="comparison" src="{{comparisonUrl}}" mode="widthFix"></image>
