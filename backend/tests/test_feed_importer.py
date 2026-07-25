@@ -20,7 +20,7 @@ def runtime_settings(tmp_path: Path) -> Settings:
         data_dir=tmp_path / "data",
         feed_dir=tmp_path / "feeds",
         target_fps=8,
-        admin_token="test-secret",
+        admin_token="test-secret-that-is-long-enough",
     )
     settings.ensure_directories()
     shutil.copy2(
@@ -33,6 +33,7 @@ def runtime_settings(tmp_path: Path) -> Settings:
 def test_imported_feed_is_immediately_available_as_a_fourth_action(tmp_path):
     settings = runtime_settings(tmp_path)
     registry = ActionRegistry(settings.action_registry_path)
+    stale_reader = ActionRegistry(settings.action_registry_path)
     importer = FeedImporter(settings, registry)
     source = Path(__file__).parents[2] / "assets" / "samples" / "open_sources" / "breakdance_2_step.mp4"
 
@@ -49,6 +50,7 @@ def test_imported_feed_is_immediately_available_as_a_fourth_action(tmp_path):
     assert result.created is True
     assert result.action["id"] == "demo_four"
     assert len(registry.list()) == 4
+    assert stale_reader.get("demo_four")["name"] == "第四条测试动作"
     stored = registry.get("demo_four")
     feed_name = Path(stored["feed_video_url"]).name
     assert (settings.feed_dir / feed_name).is_file()
@@ -126,8 +128,32 @@ def test_failed_replacement_keeps_the_previous_action_usable(tmp_path):
     assert Analyzer(settings).reference_ready("safe_move") is True
 
 
+def test_cleanup_failure_does_not_rollback_a_committed_import(tmp_path, monkeypatch):
+    settings = runtime_settings(tmp_path)
+    registry = ActionRegistry(settings.action_registry_path)
+    importer = FeedImporter(settings, registry)
+    source = Path(__file__).parents[2] / "assets" / "samples" / "open_sources" / "simple_step.mp4"
+
+    def fail_cleanup(*args, **kwargs):
+        raise OSError("simulated cleanup failure")
+
+    monkeypatch.setattr(importer, "_prune_old_generations", fail_cleanup)
+    result = importer.import_video(
+        source,
+        FeedImportSpec(action_id="cleanup_safe", name="清理失败仍可用"),
+    )
+
+    assert result.created is True
+    assert registry.get("cleanup_safe")["name"] == "清理失败仍可用"
+    assert (settings.feed_dir / Path(result.action["feed_video_url"]).name).is_file()
+    assert Analyzer(settings).reference_ready("cleanup_safe") is True
+
+
 def test_authenticated_http_import_publishes_the_action(tmp_path):
     settings = runtime_settings(tmp_path)
+    settings.admin_token = "replace-with-a-long-random-secret"
+    assert settings.admin_mutations_enabled is False
+    settings.admin_token = "test-secret-that-is-long-enough"
     app = FastAPI()
     app.include_router(
         create_router(settings, Analyzer(settings)),
@@ -141,16 +167,15 @@ def test_authenticated_http_import_publishes_the_action(tmp_path):
         "pause_at_seconds": "3",
     }
 
-    settings.admin_token = "change-me"
+    settings.admin_token = ""
     with source.open("rb") as handle:
         disabled = client.post(
             f"{settings.api_prefix}/actions/import",
             data=form,
             files={"video": ("move.mp4", handle, "video/mp4")},
-            headers={"X-Admin-Token": "change-me"},
         )
     assert disabled.status_code == 503
-    settings.admin_token = "test-secret"
+    settings.admin_token = "test-secret-that-is-long-enough"
 
     with source.open("rb") as handle:
         unauthorized = client.post(
@@ -165,13 +190,34 @@ def test_authenticated_http_import_publishes_the_action(tmp_path):
             f"{settings.api_prefix}/actions/import",
             data=form,
             files={"video": ("move.mp4", handle, "video/mp4")},
-            headers={"X-Admin-Token": "test-secret"},
+            headers={"X-Admin-Token": "test-secret-that-is-long-enough"},
         )
 
     assert imported.status_code == 200
     assert imported.json()["created"] is True
     actions = client.get(f"{settings.api_prefix}/actions").json()
     assert any(action["id"] == "http_move" and action["reference_ready"] for action in actions)
+
+    insight = client.post(
+        f"{settings.api_prefix}/actions/http_move/pause-insight",
+        json={"timestamp_seconds": 3},
+    )
+    assert insight.status_code == 200
+    assert insight.json()["sampled_frame_count"] > 0
+
+    with source.open("rb") as handle:
+        analyzed = client.post(
+            f"{settings.api_prefix}/analyze",
+            data={
+                "action_id": "http_move",
+                "session_id": "dynamic-http-test",
+                "pause_timestamp_seconds": "3",
+            },
+            files={"video": ("attempt.mp4", handle, "video/mp4")},
+        )
+    assert analyzed.status_code == 200
+    assert analyzed.json()["reference_source"] == "feed_pause_context"
+    assert client.delete(f"{settings.api_prefix}/results/{analyzed.json()['id']}").status_code == 200
 
 
 def test_startup_removes_only_orphaned_generated_files(tmp_path):

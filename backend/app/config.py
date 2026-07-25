@@ -91,7 +91,14 @@ class Settings(BaseSettings):
 
     @property
     def admin_mutations_enabled(self) -> bool:
-        return self.admin_token != "change-me" or self.allow_insecure_admin_token
+        token = self.admin_token.strip()
+        if self.allow_insecure_admin_token:
+            return bool(token)
+        placeholders = {
+            "change-me",
+            "replace-with-a-long-random-secret",
+        }
+        return self.admin_token == token and len(token) >= 24 and token not in placeholders
 
     def bootstrap_runtime_catalog(self) -> None:
         """Seed the persistent catalog and bundled feeds on first startup."""

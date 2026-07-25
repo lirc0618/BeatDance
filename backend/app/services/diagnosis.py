@@ -75,15 +75,25 @@ class ActionRegistry:
         self.reload()
 
     def reload(self) -> None:
-        data = json.loads(self.path.read_text(encoding="utf-8"))
-        actions = {item["id"]: item for item in data["actions"]}
-        with self.lock:
+        lock_path = self.path.with_suffix(f"{self.path.suffix}.lock")
+        with self.lock, lock_path.open("a+") as lock_file:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_SH)
+            try:
+                data = json.loads(self.path.read_text(encoding="utf-8"))
+                version = self._file_version()
+            finally:
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+            actions = {item["id"]: item for item in data["actions"]}
             self.data = data
             self.actions = actions
-            self.modified_ns = self.path.stat().st_mtime_ns
+            self.file_version = version
+
+    def _file_version(self) -> tuple[int, int, int]:
+        stat = self.path.stat()
+        return stat.st_ino, stat.st_mtime_ns, stat.st_size
 
     def _reload_if_changed(self) -> None:
-        if self.path.stat().st_mtime_ns != self.modified_ns:
+        if self._file_version() != self.file_version:
             self.reload()
 
     def list(self) -> list[dict[str, Any]]:
@@ -123,7 +133,7 @@ class ActionRegistry:
                     pending.unlink(missing_ok=True)
                 self.data = payload
                 self.actions = {item["id"]: item for item in items}
-                self.modified_ns = self.path.stat().st_mtime_ns
+                self.file_version = self._file_version()
                 return created
             finally:
                 fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)

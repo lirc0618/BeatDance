@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import fcntl
 import json
+import logging
 import re
 import shutil
 import subprocess
@@ -16,6 +18,8 @@ from .pose import extract_pose_sequence
 from .video import VideoValidationError, probe_video
 
 ACTION_ID = re.compile(r"^[a-z][a-z0-9_-]{0,63}$")
+logger = logging.getLogger(__name__)
+_PROCESS_IMPORT_LOCK = threading.Lock()
 
 
 class FeedImportBusyError(RuntimeError):
@@ -62,6 +66,19 @@ class FeedImporter:
             self.import_slots.release()
 
     def _import_video(
+        self,
+        source: Path,
+        spec: FeedImportSpec,
+    ) -> FeedImportResult:
+        lock_path = self.settings.data_dir / ".feed-import.lock"
+        with _PROCESS_IMPORT_LOCK, lock_path.open("a+") as lock_file:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+            try:
+                return self._publish_video(source, spec)
+            finally:
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+
+    def _publish_video(
         self,
         source: Path,
         spec: FeedImportSpec,
@@ -142,11 +159,20 @@ class FeedImporter:
                 reference_manifest=reference_manifest.name,
             )
             created = self.registry.replace_action(action)
-            self._prune_old_generations(
-                spec.action_id,
-                current_action=action,
-                previous_action=previous_action,
-            )
+            try:
+                self._prune_old_generations(
+                    spec.action_id,
+                    current_action=action,
+                    previous_action=previous_action,
+                )
+            except Exception:
+                # The catalog is already committed. Cleanup is best effort and
+                # must not send control into the rollback path below.
+                logger.warning(
+                    "Failed to prune old Feed generations for %s",
+                    spec.action_id,
+                    exc_info=True,
+                )
             return FeedImportResult(
                 created=created,
                 action=action,

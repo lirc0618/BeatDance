@@ -20,19 +20,22 @@ vim .env
 docker compose up --build -d
 ```
 
+`.env` 中的 `ADMIN_TOKEN` 必须显式填写至少 24 字符的随机值；空值、默认值和
+文档占位值都不会开启管理员写接口。
+
 反向代理示例（Nginx）：
 
 ```nginx
 server {
   listen 443 ssl http2;
   server_name coach.example.com;
-  client_max_body_size 45m;
+  client_max_body_size 220m;
 
   location / {
     proxy_pass http://127.0.0.1:8000;
     proxy_set_header Host $host;
     proxy_set_header X-Forwarded-Proto $scheme;
-    proxy_read_timeout 120s;
+    proxy_read_timeout 360s;
   }
 }
 ```
