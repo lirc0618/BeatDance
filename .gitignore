@@ -11,4 +11,5 @@ __pycache__/
 project.private.config.json
 project.config.json
 /data/
+/backend/app/data/*.lock
 evaluation.csv
