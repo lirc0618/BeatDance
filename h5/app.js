@@ -7,7 +7,7 @@ const state = {
   baselineId: null, pausedAt: null, feedDuration: null, pauseInsight: null,
   actionSignature: '', actionsLoading: false, library: [], libraryLoading: false,
   relatedMetric: 'trajectory', relatedBodyPart: '', scanTimer: null,
-  lastResultWasRetry: false, baselineReplayUrl: ''
+  lastResultWasRetry: false, baselineReplayUrl: '', fileUrl: ''
 };
 localStorage.setItem('freezeCoachSession', state.sessionId);
 
@@ -294,10 +294,18 @@ async function loadActions() {
   state.actionSignature = signature;
   state.actions = actions;
   el('action-count').textContent = String(state.actions.length);
-  el('action-list').innerHTML = state.actions.map((action, index) => `
+  el('action-list').innerHTML = state.actions.map((action, index) => {
+    const coverUrl = mediaUrl(action.cover_url);
+    return `
     <article class="feed-card" data-id="${escapeHtml(action.id)}">
-      <div class="feed-visual visual-${index + 1} ${action.reference_ready ? 'has-video' : 'placeholder'}">
-        ${action.reference_ready ? `<video class="feed-video" src="${escapeHtml(mediaUrl(action.feed_video_url || action.reference_video_url))}" playsinline controls preload="metadata"></video>` : ''}
+      <div class="feed-visual media-stage visual-${index + 1} ${action.reference_ready ? 'has-video' : 'placeholder'}" data-media-stage>
+        ${action.reference_ready ? `
+          <img class="media-backdrop" src="${escapeHtml(coverUrl)}" alt="" aria-hidden="true" />
+          <video class="feed-video" src="${escapeHtml(mediaUrl(action.feed_video_url || action.reference_video_url))}" poster="${escapeHtml(coverUrl)}" playsinline controls preload="metadata"></video>
+        ` : ''}
+        <button class="freeze-action" data-id="${escapeHtml(action.id)}" disabled>
+          ${action.reference_ready ? '暂停后锁定这一拍' : '待配置参考片段'}
+        </button>
         <span class="clip-label">${escapeHtml(action.segment_label || '动作片段')}</span>
         <b class="pause-mark">Ⅱ</b>
       </div>
@@ -308,11 +316,12 @@ async function loadActions() {
         <p>${escapeHtml(action.description)}</p>
         <div class="mini-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
         <div class="pause-hint"><i></i>播放，停在没看懂的那一帧</div>
-        <button data-id="${escapeHtml(action.id)}" disabled>
-          ${action.reference_ready ? '播放视频，停在没看懂处' : '待配置参考片段'}
-        </button>
       </div>
-    </article>`).join('');
+    </article>`;
+  }).join('');
+  document.querySelectorAll('[data-media-stage] .feed-video').forEach(
+    video => window.BeatDanceMedia.enhance(video)
+  );
   document.querySelectorAll('.feed-card button[data-id]').forEach(button => {
     button.addEventListener('click', (event) => {
       event.stopPropagation();
@@ -323,15 +332,27 @@ async function loadActions() {
     const card = video.closest('.feed-card');
     const button = card.querySelector('button');
     video.addEventListener('play', () => {
+      document.querySelectorAll('.feed-card .feed-video').forEach(other => {
+        if (other === video || other.paused) return;
+        other.dataset.autoPaused = 'true';
+        other.pause();
+        other.closest('.feed-card').classList.remove('is-paused');
+      });
+      card.classList.remove('is-paused');
       button.disabled = true;
       button.textContent = '看到没懂的地方就暂停';
     });
     video.addEventListener('pause', () => {
+      if (video.dataset.autoPaused) {
+        delete video.dataset.autoPaused;
+        return;
+      }
       if (video.ended || video.currentTime <= 0 || !Number.isFinite(video.duration)) return;
       card.dataset.pausedAt = String(video.currentTime);
       card.dataset.duration = String(video.duration);
+      card.classList.add('is-paused');
       button.disabled = false;
-      button.textContent = `分析 ${formatTime(video.currentTime)} 这一秒`;
+      button.textContent = `就学 ${formatTime(video.currentTime)} 这一拍`;
     });
   });
 }
@@ -455,17 +476,31 @@ function renderPauseInsight(insight) {
   show('step-insight');
 }
 
-function selectAction() {
+function resetUpload(title, hint) {
   state.file = null;
+  if (state.fileUrl) URL.revokeObjectURL(state.fileUrl);
+  state.fileUrl = '';
+  el('video-input').value = '';
+  const preview = el('video-preview');
+  preview.pause();
+  preview.removeAttribute('src');
+  preview.load();
+  preview.classList.add('hidden');
+  document.querySelector('.challenge-stage').classList.remove('has-file');
+  el('upload-title').textContent = title;
+  el('upload-hint').textContent = hint;
+  el('upload-validation').innerHTML =
+    '<span>选择视频后，会先检查时长、比例、画面尺寸和清晰度。</span>';
+  el('analyze-button').disabled = true;
+}
+
+function selectAction() {
   syncFocusControls();
   el('selected-action').innerHTML = `
     <span>定格 ${formatTime(state.pausedAt)} · ${escapeHtml(state.pauseInsight.phase)}</span>
     <strong>${escapeHtml(state.action.name)}</strong>
     <p>${escapeHtml(state.pauseInsight.likely_stuck_at)}</p>`;
-  el('video-input').value = '';
-  el('video-preview').classList.add('hidden');
-  document.querySelector('.challenge-stage').classList.remove('has-file');
-  el('analyze-button').disabled = true;
+  resetUpload('拍摄或上传你的模仿', '3–8 秒，完整露出全身');
   show('step-upload');
 }
 
@@ -474,15 +509,45 @@ document.querySelectorAll('.focus-control button').forEach(button => button.addE
   syncFocusControls();
 }));
 
-el('video-input').addEventListener('change', (event) => {
-  state.file = event.target.files[0];
-  if (!state.file) return;
-  el('video-preview').src = URL.createObjectURL(state.file);
-  el('video-preview').classList.remove('hidden');
-  document.querySelector('.challenge-stage').classList.add('has-file');
-  el('upload-title').textContent = state.file.name;
-  el('upload-hint').textContent = `${(state.file.size / 1024 / 1024).toFixed(1)} MB`;
-  el('analyze-button').disabled = false;
+el('video-input').addEventListener('change', async (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+  state.file = null;
+  el('analyze-button').disabled = true;
+  el('upload-title').textContent = file.name;
+  el('upload-hint').textContent = '正在检查视频…';
+  el('upload-validation').innerHTML = '<span>正在读取时长、比例和画面清晰度…</span>';
+  if (state.fileUrl) URL.revokeObjectURL(state.fileUrl);
+  state.fileUrl = '';
+  try {
+    const inspection = await window.BeatDanceMedia.inspectFile(file, el('video-preview'));
+    state.fileUrl = inspection.objectUrl;
+    el('video-preview').classList.remove('hidden');
+    document.querySelector('.challenge-stage').classList.add('has-file');
+    const shapeName = {
+      portrait: '竖屏',
+      landscape: '横屏',
+      square: '方屏'
+    }[inspection.orientation];
+    const facts =
+      `${shapeName} · ${inspection.width} × ${inspection.height} · ${inspection.duration.toFixed(1)} 秒`;
+    el('upload-hint').textContent =
+      `${facts} · ${(file.size / 1024 / 1024).toFixed(1)} MB`;
+    el('upload-validation').innerHTML = [
+      `<strong class="${inspection.valid ? 'check-pass' : 'check-error'}">${inspection.valid ? '基础检查通过' : '暂时不能分析'}</strong>`,
+      `<span>${escapeHtml(facts)}</span>`,
+      ...inspection.errors.map(item => `<span class="check-error">${escapeHtml(item)}</span>`),
+      ...inspection.warnings.map(item => `<span class="check-warning">${escapeHtml(item)}</span>`)
+    ].join('');
+    if (inspection.valid) {
+      state.file = file;
+      el('analyze-button').disabled = false;
+    }
+  } catch (error) {
+    el('upload-validation').innerHTML =
+      `<span class="check-error">${escapeHtml(error.message)}</span>`;
+    el('upload-hint').textContent = '换一个可读取的视频再试';
+  }
 });
 
 async function analyze() {
@@ -516,15 +581,22 @@ function renderResult(result, wasRetry = false) {
   state.relatedBodyPart = d.body_part || '';
   el('result-title').textContent = d.primary_error;
   const improved = Boolean(result.improvement?.improved);
-  const judgement = d.status === 'aligned' || improved
+  const judgement = d.status === 'aligned'
     ? 'CLEAR'
-    : (result.improvement ? 'ALMOST' : 'MISS');
+    : (improved ? 'ALMOST' : 'MISS');
   const judgementNode = el('result-judgement');
   judgementNode.textContent = judgement;
   judgementNode.className = `result-judgement ${judgement.toLowerCase()}`;
+  el('result-overall').textContent = d.status === 'aligned'
+    ? (d.overall_feedback || '整体节奏、路线和造型已经基本对上。')
+    : (improved
+      ? '整体比上一遍更顺，但还没有完全过关。'
+      : (result.improvement
+        ? '整体还没有明显改善，先把一个关键问题练稳。'
+        : (d.overall_feedback || '整体能跟上动作，但关键部位还有明显偏差。')));
   document.querySelector('.result-kicker').textContent = d.status === 'aligned'
     ? '这一拍已经过关'
-    : (result.improvement ? '再战判定' : '本局 Boss 已锁定');
+    : (result.improvement ? '再战总体评价' : '本局总体评价');
   el('result-feedback').textContent = d.vlm_summary || d.priority_feedback;
   el('drill').textContent = d.drill;
   const primaryMetrics = d.metrics.filter(item => item.kind === d.primary_metric);
@@ -534,10 +606,7 @@ function renderResult(result, wasRetry = false) {
       <strong>${escapeHtml(item.human_value)}</strong>
       <div class="metric-track"><i style="width:${Math.round(item.normalized_score * 100)}%"></i></div>
     </div>`).join('');
-  const lockedPercent = Number.isFinite(state.pausedAt) && state.feedDuration > 0
-    ? Math.max(0, Math.min(1, state.pausedAt / state.feedDuration))
-    : 0.5;
-  const missIndex = Math.round(lockedPercent * 3);
+  const missIndex = 2;
   document.querySelectorAll('#result-beat-lane .beat-node').forEach((node, index) => {
     node.classList.remove('miss', 'great', 'perfect');
     if (judgement !== 'CLEAR' && index === missIndex) {
@@ -549,8 +618,8 @@ function renderResult(result, wasRetry = false) {
     }
   });
   el('result-lane-summary').textContent = judgement === 'CLEAR'
-    ? '这一拍已全线通过'
-    : `卡点在动作 ${Math.round(lockedPercent * 100)}% 处`;
+    ? '整体已经过关'
+    : '问题标记，不代表精确发生时间';
 
   const comparisonVideo = el('comparison-video');
   const comparisonVideoWrap = el('comparison-video-wrap');
@@ -606,21 +675,17 @@ el('insight-back').addEventListener('click', () => show('step-actions'));
 el('change-action').addEventListener('click', () => {
   state.baselineId = null;
   state.baselineReplayUrl = '';
+  resetUpload('拍摄或上传你的模仿', '3–8 秒，完整露出全身');
   show('step-actions');
 });
 el('restart-button').addEventListener('click', () => {
   state.baselineId = null;
   state.baselineReplayUrl = '';
+  resetUpload('拍摄或上传你的模仿', '3–8 秒，完整露出全身');
   show('step-actions');
 });
 el('retry-button').addEventListener('click', () => {
-  state.file = null;
-  el('video-input').value = '';
-  el('video-preview').classList.add('hidden');
-  document.querySelector('.challenge-stage').classList.remove('has-file');
-  el('upload-title').textContent = '上传第二次练习';
-  el('upload-hint').textContent = '再来一遍，看看刚才那个卡壳点顺了没';
-  el('analyze-button').disabled = true;
+  resetUpload('上传第二次练习', '再来一遍，看看刚才那个卡壳点顺了没');
   show('step-upload');
 });
 

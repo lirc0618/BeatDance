@@ -89,11 +89,13 @@ class FeedImporter:
             previous_action = None
         nonce = uuid4().hex
         feed_target = self.settings.feed_dir / f"{spec.action_id}-{nonce}.mp4"
+        cover_target = self.settings.covers_dir / f"{spec.action_id}-{nonce}.jpg"
         reference_video = self.settings.references_dir / f"{spec.action_id}-{nonce}.mp4"
         reference_sequence = self.settings.references_dir / f"{spec.action_id}-{nonce}.npz"
         reference_manifest = self.settings.references_dir / f"{spec.action_id}-{nonce}.current.json"
         published = [
             feed_target,
+            cover_target,
             reference_video,
             reference_sequence,
             reference_manifest,
@@ -110,6 +112,7 @@ class FeedImporter:
             )
             if pause_at < 0 or pause_at > metadata.duration_seconds:
                 raise VideoValidationError("参考时间点必须位于 Feed 视频时长范围内")
+            self._cover(ffmpeg, feed_target, cover_target, pause_at)
 
             clip_duration = min(5.0, metadata.duration_seconds)
             clip_start = min(
@@ -151,6 +154,7 @@ class FeedImporter:
                 spec,
                 duration_seconds=metadata.duration_seconds,
                 feed_name=feed_target.name,
+                cover_name=cover_target.name,
                 reference_manifest=reference_manifest.name,
             )
             created = self.registry.replace_action(action)
@@ -204,7 +208,11 @@ class FeedImporter:
     def _storage_bytes(self) -> int:
         return sum(
             path.stat().st_size
-            for root in (self.settings.feed_dir, self.settings.references_dir)
+            for root in (
+                self.settings.feed_dir,
+                self.settings.references_dir,
+                self.settings.covers_dir,
+            )
             for path in root.iterdir()
             if path.is_file()
         )
@@ -225,6 +233,9 @@ class FeedImporter:
             feed_name = Path(str(action.get("feed_video_url", ""))).name
             if feed_name:
                 keep.add(self.settings.feed_dir / feed_name)
+            cover_name = Path(str(action.get("cover_url", ""))).name
+            if cover_name:
+                keep.add(self.settings.covers_dir / cover_name)
             manifest_name = Path(
                 str(
                     action.get(
@@ -246,9 +257,13 @@ class FeedImporter:
 
         generated = re.compile(
             rf"^{re.escape(action_id)}-[0-9a-f]{{32}}"
-            r"\.(?:mp4|npz|current\.json)$"
+            r"\.(?:mp4|npz|jpg|current\.json)$"
         )
-        for root in (self.settings.feed_dir, self.settings.references_dir):
+        for root in (
+            self.settings.feed_dir,
+            self.settings.references_dir,
+            self.settings.covers_dir,
+        ):
             for path in root.iterdir():
                 if path not in keep and generated.fullmatch(path.name):
                     try:
@@ -350,6 +365,42 @@ class FeedImporter:
         )
 
     @staticmethod
+    def _cover(ffmpeg: str, source: Path, target: Path, timestamp: float) -> None:
+        pending = target.with_name(f".{target.stem}-{uuid4().hex}.pending.jpg")
+        try:
+            try:
+                subprocess.run(
+                    [
+                        ffmpeg,
+                        "-hide_banner",
+                        "-loglevel",
+                        "error",
+                        "-y",
+                        "-ss",
+                        str(timestamp),
+                        "-i",
+                        str(source),
+                        "-frames:v",
+                        "1",
+                        "-vf",
+                        "scale=w='min(960,iw)':h='min(960,ih)'"
+                        ":force_original_aspect_ratio=decrease"
+                        ":force_divisible_by=2:flags=lanczos",
+                        "-q:v",
+                        "3",
+                        str(pending),
+                    ],
+                    check=True,
+                    capture_output=True,
+                    timeout=60,
+                )
+            except (subprocess.TimeoutExpired, subprocess.CalledProcessError) as exc:
+                raise VideoValidationError("无法生成视频封面，请换一个视频重试") from exc
+            pending.replace(target)
+        finally:
+            pending.unlink(missing_ok=True)
+
+    @staticmethod
     def _save_pose(pose, target: Path) -> None:
         pending = target.with_name(f".{target.name}-{uuid4().hex}.pending.npz")
         try:
@@ -376,6 +427,7 @@ class FeedImporter:
         *,
         duration_seconds: float,
         feed_name: str,
+        cover_name: str,
         reference_manifest: str,
     ) -> dict[str, Any]:
         body_part = {
@@ -391,7 +443,7 @@ class FeedImporter:
             "name": name,
             "description": spec.description.strip() or "播放视频，停在动作衔接、方向或发力顺序没看懂的时刻。",
             "duration_hint": "上传 3–8 秒模仿",
-            "cover_url": "",
+            "cover_url": f"/media/covers/{cover_name}",
             "reference_video_url": "",
             "reference_manifest": reference_manifest,
             "feed_caption": spec.feed_caption.strip() or f"{name} 到底怎么做？停在你没看懂的那一秒。",

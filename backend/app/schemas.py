@@ -134,6 +134,7 @@ class Diagnosis(BaseModel):
     primary_metric: MetricKind
     primary_error: str
     body_part: str
+    overall_feedback: str = ""
     priority_feedback: str
     drill: str
     confidence: float = Field(ge=0, le=1)

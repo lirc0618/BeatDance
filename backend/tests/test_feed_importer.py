@@ -55,6 +55,11 @@ def test_imported_feed_is_immediately_available_as_an_additional_action(tmp_path
     stored = registry.get("demo_extra")
     feed_name = Path(stored["feed_video_url"]).name
     assert (settings.feed_dir / feed_name).is_file()
+    assert stored["cover_url"].startswith("/media/covers/")
+    cover_name = Path(stored["cover_url"]).name
+    cover = settings.covers_dir / cover_name
+    assert cover.is_file()
+    assert cover.stat().st_size > 0
     manifest = json.loads(
         (settings.references_dir / stored["reference_manifest"]).read_text(encoding="utf-8")
     )

@@ -55,7 +55,10 @@ class PauseCoach:
             context_start_seconds=round(context_start, 2),
             context_end_seconds=round(context_end, 2),
             phase=str(guide["phase"]),
-            likely_stuck_at=str(guide["likely_stuck_at"]),
+            likely_stuck_at=(
+                f"你锁定了{guide['phase']}。按这个位置先排查："
+                f"{guide['likely_stuck_at']}"
+            ),
             watch_for=str(guide["watch_for"]),
             observed_motion=observed_motion,
             sampled_frame_count=sampled_frames,

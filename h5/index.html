@@ -142,8 +142,9 @@
 
         <aside class="lock-brief">
           <div class="boss-label"><i></i>BOSS PREVIEW</div>
+          <p class="insight-basis">位置排查，不是对你跟拍动作的诊断</p>
           <span id="pause-phase" class="phase-chip"></span>
-          <small>这一拍最可能卡在</small>
+          <small>按暂停位置，先排查</small>
           <h3 id="pause-stuck"></h3>
           <p id="pause-context"></p>
           <div class="watch-card">
@@ -210,6 +211,9 @@
 
         <aside class="challenge-brief">
           <div id="selected-action" class="selected-feed"></div>
+          <div id="upload-validation" class="upload-validation" aria-live="polite">
+            <span>选择视频后，会先检查时长、比例、画面尺寸和清晰度。</span>
+          </div>
           <div>
             <span class="control-label">本局观察重点</span>
             <div id="focus-chips" class="focus-control">
@@ -275,13 +279,18 @@
         <div class="boss-copy">
           <div class="result-kicker">本局 Boss 已锁定</div>
           <div id="result-judgement" class="result-judgement">MISS</div>
-          <h2 id="result-title"></h2>
-          <p id="result-feedback" class="lead"></p>
+          <span class="feedback-label overall-label">整体评价</span>
+          <h2 id="result-overall"></h2>
+          <div class="focus-summary">
+            <span class="feedback-label focus-label">重点问题</span>
+            <h3 id="result-title"></h3>
+            <p id="result-feedback" class="lead"></p>
+          </div>
         </div>
       </div>
 
       <div id="result-beat-lane" class="beat-lane result-lane">
-        <div class="lane-labels"><span>动作开始</span><b id="result-lane-summary">只突出一个最大偏差</b><span>动作完成</span></div>
+        <div class="lane-labels"><span>整体表现</span><b id="result-lane-summary">问题标记，不代表精确发生时间</b><span>重点问题</span></div>
         <div class="judgement-track">
           <div class="beat-node perfect"><i></i><span>PERFECT</span></div>
           <div class="beat-node great"><i></i><span>GREAT</span></div>
@@ -350,6 +359,7 @@
     <div id="related-launches" class="related-launches"></div>
     <small class="related-note">外部结果只展示标题和入口；点击后到抖音观看。</small>
   </dialog>
+  <script src="./media.js"></script>
   <script src="./app.js"></script>
 </body>
 </html>

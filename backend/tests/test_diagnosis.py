@@ -53,6 +53,7 @@ def test_delayed_right_arm_is_timing_error():
     assert result.diagnosis.body_part == "右臂"
     assert result.diagnosis.timing_offset_seconds > 0.3
     assert result.diagnosis.primary_error == "右臂掉拍了"
+    assert result.diagnosis.overall_feedback == "整体能跟上动作，但关键部位还有明显偏差。"
     assert result.diagnosis.priority_feedback == "口令：喊“走”就动。"
     assert result.diagnosis.drill == "右臂单刷 ×3"
 
@@ -71,6 +72,7 @@ def test_identical_motion_is_aligned():
     assert result.diagnosis.status == "aligned"
     assert result.diagnosis.tutorial is None
     assert result.diagnosis.primary_error == "这把同频了"
+    assert result.diagnosis.overall_feedback == "整体节奏、路线和造型已经基本对上。"
     assert result.diagnosis.priority_feedback == "别抠，直接整套。"
     assert result.diagnosis.drill == "原速连跳 ×2"
     timing = next(item for item in result.diagnosis.metrics if item.kind == "timing")
@@ -272,7 +274,8 @@ def test_pause_coach_explains_the_exact_moment_with_context_and_searches(tmp_pat
     assert insight.context_start_seconds == 16.5
     assert insight.context_end_seconds == 19.5
     assert insight.phase == "收尾定点"
-    assert insight.likely_stuck_at == "笑容可以松，拍子不能掉。"
+    assert insight.likely_stuck_at.startswith("你锁定了收尾定点。按这个位置先排查：")
+    assert "笑容可以松，拍子不能掉。" in insight.likely_stuck_at
     assert insight.watch_for == "口令：停住半拍。"
     assert "检测到" not in insight.observed_motion
     assert insight.sampled_frame_count >= 20

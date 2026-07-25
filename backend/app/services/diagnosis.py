@@ -401,6 +401,11 @@ def compare_poses(
         primary_metric=primary_metric,  # type: ignore[arg-type]
         primary_error=primary_error,
         body_part=body_part,
+        overall_feedback=(
+            "整体节奏、路线和造型已经基本对上。"
+            if status == "aligned"
+            else "整体能跟上动作，但关键部位还有明显偏差。"
+        ),
         priority_feedback=feedback,
         drill=drill,
         confidence=confidence,

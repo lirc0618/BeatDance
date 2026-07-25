@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import re
 import shutil
+import subprocess
 from functools import lru_cache
 from pathlib import Path
 from uuid import uuid4
@@ -74,6 +75,10 @@ class Settings(BaseSettings):
         return self.data_dir / "results"
 
     @property
+    def covers_dir(self) -> Path:
+        return self.data_dir / "covers"
+
+    @property
     def visualizations_dir(self) -> Path:
         return self.data_dir / "visualizations"
 
@@ -103,6 +108,7 @@ class Settings(BaseSettings):
             self.uploads_dir,
             self.references_dir,
             self.results_dir,
+            self.covers_dir,
             self.visualizations_dir,
             self.comparison_videos_dir,
             self.pause_contexts_dir,
@@ -177,7 +183,11 @@ class Settings(BaseSettings):
             target = self.feed_dir / filename
             if not target.exists() and source.is_file():
                 self._atomic_copy(source, target)
+            if self._ensure_feed_cover(action, target):
+                catalog_changed = True
             self._seed_reference(action)
+        if catalog_changed:
+            self._atomic_write_json(runtime_registry, payload)
         attribution = self.seed_feed_dir / "ATTRIBUTION.md"
         if attribution.is_file() and not (self.feed_dir / attribution.name).exists():
             self._atomic_copy(attribution, self.feed_dir / attribution.name)
@@ -201,6 +211,52 @@ class Settings(BaseSettings):
         if not target_manifest.exists():
             self._atomic_copy(source_manifest, target_manifest)
 
+    def _ensure_feed_cover(self, action: dict, feed_path: Path) -> bool:
+        """Generate a stable preview frame without changing the source aspect ratio."""
+
+        if not feed_path.is_file():
+            return False
+        cover_name = f"{feed_path.stem}.jpg"
+        cover_path = self.covers_dir / cover_name
+        changed = action.get("cover_url") != f"/media/covers/{cover_name}"
+        if not cover_path.is_file():
+            ffmpeg = shutil.which("ffmpeg")
+            if not ffmpeg:
+                return False
+            pending = cover_path.with_name(f".{cover_path.stem}-{uuid4().hex}.pending.jpg")
+            try:
+                subprocess.run(
+                    [
+                        ffmpeg,
+                        "-hide_banner",
+                        "-loglevel",
+                        "error",
+                        "-y",
+                        "-ss",
+                        "0.5",
+                        "-i",
+                        str(feed_path),
+                        "-frames:v",
+                        "1",
+                        "-vf",
+                        "scale=w='min(960,iw)':h='min(960,ih)'"
+                        ":force_original_aspect_ratio=decrease"
+                        ":force_divisible_by=2:flags=lanczos",
+                        "-q:v",
+                        "3",
+                        str(pending),
+                    ],
+                    check=True,
+                    timeout=60,
+                )
+                pending.replace(cover_path)
+            except (OSError, subprocess.SubprocessError):
+                return False
+            finally:
+                pending.unlink(missing_ok=True)
+        action["cover_url"] = f"/media/covers/{cover_name}"
+        return changed
+
     def _reconcile_generated_files(self, payload: dict) -> None:
         """Remove interrupted and superseded imports after a clean startup."""
 
@@ -209,6 +265,7 @@ class Settings(BaseSettings):
             feed_name = Path(str(action.get("feed_video_url", ""))).name
             if feed_name:
                 active.add(self.feed_dir / feed_name)
+                active.add(self.covers_dir / f"{Path(feed_name).stem}.jpg")
             manifest_name = Path(
                 str(
                     action.get(
@@ -230,9 +287,9 @@ class Settings(BaseSettings):
 
         generated = re.compile(
             r"^[a-z][a-z0-9_-]{0,63}-[0-9a-f]{32}"
-            r"\.(?:mp4|npz|current\.json)$"
+            r"\.(?:mp4|npz|jpg|current\.json)$"
         )
-        for root in (self.feed_dir, self.references_dir):
+        for root in (self.feed_dir, self.references_dir, self.covers_dir):
             for path in root.iterdir():
                 is_interrupted = path.name.startswith(".") and ".pending" in path.name
                 is_orphan = generated.fullmatch(path.name) and path not in active

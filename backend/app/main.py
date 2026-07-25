@@ -35,6 +35,7 @@ app.mount(
     name="comparison-videos",
 )
 app.mount("/media/references", StaticFiles(directory=settings.references_dir), name="references")
+app.mount("/media/covers", StaticFiles(directory=settings.covers_dir), name="covers")
 app.mount(
     "/media/tutorials",
     StaticFiles(directory=settings.tutorial_assets_dir),

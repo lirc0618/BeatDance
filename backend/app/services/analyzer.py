@@ -236,9 +236,13 @@ class Analyzer:
             f"/media/comparison-videos/{rendered_video.name}" if rendered_video else None
         )
         if bundle.diagnosis.status == "issue_detected":
-            bundle.diagnosis.vlm_summary = await self.doubao.refine_feedback(
+            refinement = await self.doubao.refine_feedback(
                 bundle.diagnosis, action["name"], rendered
             )
+            if refinement.overall:
+                bundle.diagnosis.overall_feedback = refinement.overall
+            if refinement.focus:
+                bundle.diagnosis.vlm_summary = refinement.focus
 
         improvement = None
         if baseline_analysis_id:
