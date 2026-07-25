@@ -76,7 +76,7 @@ async function loadActions() {
   el('action-list').innerHTML = state.actions.map((action, index) => `
     <article class="feed-card" data-id="${escapeHtml(action.id)}">
       <div class="feed-visual visual-${index + 1} ${action.reference_ready ? 'has-video' : 'placeholder'}">
-        ${action.reference_ready ? `<video class="feed-video" src="${escapeHtml(mediaUrl(action.feed_video_url || action.reference_video_url))}" muted playsinline controls preload="metadata"></video>` : ''}
+        ${action.reference_ready ? `<video class="feed-video" src="${escapeHtml(mediaUrl(action.feed_video_url || action.reference_video_url))}" playsinline controls preload="metadata"></video>` : ''}
         <span class="clip-label">${escapeHtml(action.segment_label || '动作片段')}</span>
         <b class="pause-mark">Ⅱ</b>
       </div>

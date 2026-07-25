@@ -24,7 +24,7 @@
     <block wx:for="{{actions}}" wx:key="id">
       <view class="feed-card">
         <view class="feed-visual">
-          <video wx:if="{{item.reference_ready}}" class="feed-video" src="{{item.feed_video_full_url}}" muted controls object-fit="cover" data-id="{{item.id}}" bindtimeupdate="trackFeedTime" bindpause="pauseFeed"></video>
+          <video wx:if="{{item.reference_ready}}" class="feed-video" src="{{item.feed_video_full_url}}" controls object-fit="cover" data-id="{{item.id}}" bindtimeupdate="trackFeedTime" bindpause="pauseFeed"></video>
           <view class="feed-segment">{{item.segment_label}}</view>
           <view class="pause">Ⅱ</view>
         </view>
@@ -41,7 +41,7 @@
 
   <view wx:if="{{insight}}" class="card">
     <view class="section-label cyan">定格 {{insight.timestamp_seconds}} 秒 · {{insight.phase}}</view>
-    <video class="video-preview" src="{{selectedAction.feed_video_full_url}}" initial-time="{{insight.timestamp_seconds}}" controls muted object-fit="contain"></video>
+    <video class="video-preview" src="{{selectedAction.feed_video_full_url}}" initial-time="{{insight.timestamp_seconds}}" controls object-fit="contain"></video>
     <view class="creator card-gap">先说人话版 · 想看自己的问题，再拍一遍</view>
     <view class="card-title card-gap">{{insight.likely_stuck_at}}</view>
     <view class="card-copy">{{insight.watch_for}}</view>

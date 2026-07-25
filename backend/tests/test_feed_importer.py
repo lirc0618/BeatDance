@@ -1,5 +1,6 @@
 import json
 import shutil
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -67,6 +68,71 @@ def test_imported_feed_is_immediately_available_as_a_fourth_action(tmp_path):
     ).explain("demo_four", timestamp_seconds=3.0)
     assert insight.sampled_frame_count > 0
     assert len(insight.search_results) == 3
+
+
+def test_imported_feed_keeps_its_audio_track(tmp_path):
+    settings = runtime_settings(tmp_path)
+    registry = ActionRegistry(settings.action_registry_path)
+    importer = FeedImporter(settings, registry)
+    sample = (
+        Path(__file__).parents[2]
+        / "assets"
+        / "samples"
+        / "open_sources"
+        / "simple_step.mp4"
+    )
+    source = tmp_path / "with-audio.mp4"
+    subprocess.run(
+        [
+            "ffmpeg",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-y",
+            "-i",
+            str(sample),
+            "-f",
+            "lavfi",
+            "-i",
+            "sine=frequency=440:sample_rate=44100",
+            "-map",
+            "0:v:0",
+            "-map",
+            "1:a:0",
+            "-c:v",
+            "copy",
+            "-c:a",
+            "aac",
+            "-shortest",
+            str(source),
+        ],
+        check=True,
+    )
+
+    result = importer.import_video(
+        source,
+        FeedImportSpec(action_id="audio_move", name="有声动作"),
+    )
+    feed = settings.feed_dir / Path(result.action["feed_video_url"]).name
+    probe = subprocess.run(
+        [
+            "ffprobe",
+            "-v",
+            "error",
+            "-select_streams",
+            "a:0",
+            "-show_entries",
+            "stream=codec_name",
+            "-of",
+            "default=nw=1:nk=1",
+            str(feed),
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert probe.stdout.strip() == "aac"
 
 
 def test_importing_the_same_id_replaces_the_catalog_entry(tmp_path):

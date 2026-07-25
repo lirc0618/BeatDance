@@ -286,7 +286,10 @@ class FeedImporter:
                 "-y",
                 "-i",
                 str(source),
-                "-an",
+                "-map",
+                "0:v:0",
+                "-map",
+                "0:a:0?",
                 "-vf",
                 "scale=w='min(1280,iw)':h='min(1280,ih)'"
                 ":force_original_aspect_ratio=decrease"
@@ -299,6 +302,10 @@ class FeedImporter:
                 "23",
                 "-pix_fmt",
                 "yuv420p",
+                "-c:a",
+                "aac",
+                "-b:a",
+                "128k",
                 "-movflags",
                 "+faststart",
             ],

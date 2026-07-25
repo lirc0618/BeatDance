@@ -55,6 +55,7 @@ test('用户暂停 Feed 后获得时刻解释，再完成首练和二练验证',
     );
     for (let index = 0; index < actionCount; index += 1) {
       await expect(actionButtons.nth(index)).toBeDisabled();
+      await expect(page.locator('.feed-card .feed-video').nth(index)).not.toHaveAttribute('muted', '');
     }
 
     const grooveVideo = page.locator('.feed-card[data-id="groove_step"] .feed-video');
