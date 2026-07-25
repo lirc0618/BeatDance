@@ -10,6 +10,7 @@
       <view class="focus-chip {{focus === item.id ? 'active' : ''}}" data-focus="{{item.id}}" bindtap="selectFocus">{{item.label}}</view>
     </block>
   </view>
+  <view class="hint">手势可看掌心方向和开合，暂不做逐指关节评分。</view>
 
   <view class="card" bindtap="chooseVideo">
     <view class="card-title">{{filePath ? '已选择模仿视频' : '从相册上传你的模仿'}}</view>
@@ -20,5 +21,5 @@
   <button class="primary" disabled="{{!filePath || analyzing}}" loading="{{analyzing}}" bindtap="analyze">{{analyzing ? '正在搜索卡点…' : '找出我卡在哪'}}</button>
   <button class="ghost" bindtap="chooseVideo">重新选择</button>
 
-  <view class="hint upload-hint">动作对齐 → 定位关键差异 → 按失败状态召回背面、慢速或局部拆解。</view>
+  <view class="hint upload-hint">动作身份确认 → 动作对齐 → 定位一个关键差异 → 召回背面、慢速或局部拆解。</view>
 </view>

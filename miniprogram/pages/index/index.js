@@ -46,7 +46,8 @@ Page({
         action.name,
         action.feed_video_url,
         action.reference_video_url,
-        action.reference_ready
+        action.reference_ready,
+        action.skill_focus
       ]));
       if (signature !== this.actionSignature) {
         this.actionSignature = signature;
@@ -76,7 +77,7 @@ Page({
     const index = this.data.actions.findIndex(item => item.id === actionId);
     this.setData({
       [`actions[${index}].pauseReady`]: true,
-      [`actions[${index}].pauseCopy`]: `分析 ${formatTime(timestamp)} 这一秒`,
+      [`actions[${index}].pauseCopy`]: `就学 ${formatTime(timestamp)} 这一拍`,
       [`actions[${index}].pausedAt`]: timestamp
     });
   },

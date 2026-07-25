@@ -5,10 +5,12 @@ Page({
     actionId: '', actionName: '', segment: '', caption: '', filePath: '',
     analyzing: false, baselineId: '', focus: 'auto', pauseAt: '',
     focusOptions: [
-      { id: 'auto', label: '我也说不清' },
-      { id: 'upper', label: '手部没看懂' },
-      { id: 'lower', label: '脚步没看懂' },
-      { id: 'timing', label: '总跟不上拍' }
+      { id: 'auto', label: 'AI 选重点' },
+      { id: 'hands', label: '看手势' },
+      { id: 'arms', label: '看手臂' },
+      { id: 'torso', label: '看核心' },
+      { id: 'lower', label: '看脚步' },
+      { id: 'timing', label: '卡节奏' }
     ]
   },
   onLoad(options) {
@@ -49,7 +51,12 @@ Page({
       wx.setStorageSync(`analysis:${result.id}`, result);
       wx.redirectTo({ url: `/pages/result/result?id=${result.id}` });
     } catch (error) {
-      wx.showModal({ title: '搜索失败', content: error.message, showCancel: false });
+      const mismatch = /动作.*对不上|更像《.+》.*不是当前/.test(error.message);
+      wx.showModal({
+        title: mismatch ? '这段先不分析' : '暂时看不清',
+        content: error.message,
+        showCancel: false
+      });
     } finally {
       this.setData({ analyzing: false });
     }
