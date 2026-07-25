@@ -25,8 +25,8 @@ def assess_action_match(
     candidate_variants: list[NormalizedPose],
     references: dict[str, NormalizedPose],
     action_names: dict[str, str],
-    maximum_match_cost: float = 1.15,
-    alternative_ratio: float = 0.72,
+    maximum_match_cost: float = 2.0,
+    alternative_ratio: float = 0.65,
 ) -> ActionMatchAssessment:
     """Decide whether a clip is the selected dance before giving technique advice."""
 

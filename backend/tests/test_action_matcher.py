@@ -1,5 +1,6 @@
 import numpy as np
 
+from app.config import Settings
 from app.services.action_matcher import assess_action_match
 from app.services.features import NormalizedPose
 
@@ -58,3 +59,18 @@ def test_selected_dance_passes_the_identity_gate():
     assert result.matched is True
     assert result.closest_action_id == "aini"
     assert result.message == "动作身份通过：这段和《爱你》属于同一套动作。"
+
+
+def test_selected_dance_with_moderate_performance_variation_is_not_skipped():
+    settings = Settings()
+    result = assess_action_match(
+        expected_action_id="aini",
+        candidate_variants=[pose(0.5)],
+        references={"aini": pose(0.0), "jumpstyle": pose(2.0)},
+        action_names={"aini": "爱你", "jumpstyle": "Jumpstyle"},
+        maximum_match_cost=settings.action_match_max_cost,
+        alternative_ratio=settings.action_match_alternative_ratio,
+    )
+
+    assert result.matched is True
+    assert result.closest_action_id == "aini"
